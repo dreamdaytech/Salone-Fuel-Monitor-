@@ -1,0 +1,249 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { 
+  Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
+  ChevronDown, LayoutGrid, Activity, ClipboardList, 
+  PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
+  Menu, X
+} from 'lucide-react';
+import NotificationBell from './NotificationBell';
+import { Button } from './ui/Button';
+import { toast } from 'sonner';
+
+export default function Navbar() {
+  const { user, profile, logOut } = useAuth();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    const toastId = toast.loading('Logging out...');
+    try {
+      await logOut();
+      setIsMenuOpen(false);
+      toast.success('Logged out successfully', { id: toastId });
+      navigate('/');
+    } catch (error) {
+      toast.error('Logout failed', { id: toastId });
+    }
+  };
+
+  return (
+    <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="bg-surface-900 p-2 rounded-lg">
+                <Fuel className="h-6 w-6 text-primary" />
+              </div>
+              <span className="text-xl font-bold text-surface-900 hidden sm:block">
+                SL Fuel Monitor
+              </span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="hidden sm:flex items-center gap-4 md:gap-6 mr-2 sm:mr-4">
+              <Link
+                to="/"
+                className="text-gray-600 hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+              >
+                <MapPin className="h-4 w-4" />
+                <span>Fuel Stations</span>
+              </Link>
+
+              <Link
+                to="/transport-prices"
+                className="text-gray-600 hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+              >
+                <Bus className="h-4 w-4" />
+                <span>Transport Prices</span>
+              </Link>
+
+              <Link
+                to="/about"
+                className="text-gray-600 hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+              >
+                <Info className="h-4 w-4" />
+                <span>About</span>
+              </Link>
+            </div>
+
+            {user ? (
+              <div className="flex items-center gap-2 sm:gap-4">
+                <NotificationBell />
+                
+                <div className="relative" ref={menuRef}>
+                  <Button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    showNotification={false}
+                    variant="ghost"
+                    className={`flex items-center gap-2 p-1 pr-3 rounded-full border-2 transition-all ${
+                      isMenuOpen ? 'border-primary/20 bg-emerald-50/50' : 'border-transparent hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center">
+                      {profile?.avatarUrl ? (
+                        <img 
+                          src={profile.avatarUrl} 
+                          alt={profile.name} 
+                          className="w-full h-full object-cover" 
+                          referrerPolicy="no-referrer" 
+                        />
+                      ) : (
+                        <User className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex flex-col items-start leading-tight">
+                      <span className="hidden sm:block text-[10px] text-gray-500 font-medium uppercase tracking-wider">Hello,</span>
+                      <span className="text-xs sm:text-sm font-bold text-primary">
+                        {profile?.name?.split(' ')[0] || 'User'}
+                      </span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+                  </Button>
+
+                  {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform origin-top-right transition-all z-50">
+                      {/* Dropdown Header */}
+                      <div className="p-5 bg-emerald-50/50 border-b border-emerald-100">
+                        <h3 className="text-lg font-bold text-surface-900 leading-tight">
+                          {profile?.name || 'User'}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-3 truncate">
+                          {profile?.email || user.email}
+                        </p>
+                        {profile?.role === 'admin' && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-white text-[10px] font-bold uppercase tracking-wider">
+                            <ShieldCheck className="w-3 h-3" />
+                            ADMIN
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="p-1.5">
+                        <Link
+                          to={profile?.role === 'admin' ? '/admin' : '/dashboard'}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-3 p-2 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors group"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-primary group-hover:bg-emerald-100 transition-colors">
+                            <LayoutGrid className="w-4.5 h-4.5" />
+                          </div>
+                          <span className="font-semibold text-sm">Dashboard</span>
+                        </Link>
+
+                        {(profile?.role === 'station_owner' || profile?.role === 'admin') && (
+                          <Link
+                            to="/dashboard"
+                            onClick={() => setIsMenuOpen(false)}
+                            className="flex items-center gap-3 p-2 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors group"
+                          >
+                            <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500 group-hover:bg-emerald-50 group-hover:text-primary transition-colors">
+                              <MapPin className="w-4.5 h-4.5" />
+                            </div>
+                            <span className="font-semibold text-sm">Stations</span>
+                          </Link>
+                        )}
+
+                        <Link
+                          to="/profile"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-3 p-2 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors group"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500 group-hover:bg-emerald-50 group-hover:text-primary transition-colors">
+                            <User className="w-4.5 h-4.5" />
+                          </div>
+                          <span className="font-semibold text-sm">My Profile</span>
+                        </Link>
+                      </div>
+
+                      {/* Logout */}
+                      <div className="p-1.5 border-t border-gray-100">
+                        <Button
+                          onClick={handleLogout}
+                          showNotification={false}
+                          variant="ghost"
+                          className="w-full flex items-center gap-3 p-2 rounded-xl text-red-600 hover:bg-red-50 transition-colors group"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center text-red-600 group-hover:bg-red-100 transition-colors">
+                            <LogOut className="w-4.5 h-4.5" />
+                          </div>
+                          <span className="font-semibold text-sm">Log out</span>
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 border border-transparent text-xs sm:text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>Sign In</span>
+                </Link>
+              </div>
+            )}
+
+            <Button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              showNotification={false}
+              className="sm:hidden p-2 -mr-2 text-gray-600 hover:text-primary rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="sm:hidden border-t border-gray-100 bg-white animate-in slide-in-from-top-2 duration-200">
+          <div className="px-4 pt-2 pb-4 space-y-1">
+            <Link
+              to="/"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-emerald-50 hover:text-primary font-medium transition-colors"
+            >
+              <MapPin className="h-5 w-5" />
+              <span>Fuel Stations</span>
+            </Link>
+            <Link
+              to="/transport-prices"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-emerald-50 hover:text-primary font-medium transition-colors"
+            >
+              <Bus className="h-5 w-5" />
+              <span>Transport Prices</span>
+            </Link>
+            <Link
+              to="/about"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-emerald-50 hover:text-primary font-medium transition-colors"
+            >
+              <Info className="h-5 w-5" />
+              <span>About</span>
+            </Link>
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}

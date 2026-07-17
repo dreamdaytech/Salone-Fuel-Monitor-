@@ -1,0 +1,7 @@
+{
+  "name": "Remix:  Remix: Salone Fuel Monitor",
+  "description": "A location input feature for Sierra Leone using Google Maps and Places API.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

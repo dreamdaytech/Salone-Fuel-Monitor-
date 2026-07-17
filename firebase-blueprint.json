@@ -1,0 +1,283 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and role information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "station_owner", "user"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "avatarUrl": { "type": "string", "format": "uri" },
+        "optInAlerts": { "type": "boolean" },
+        "optInSms": { "type": "boolean" },
+        "phoneNumber": { "type": "string" },
+        "alertDistricts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "alertFuelTypes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "priceThresholds": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "fcmToken": {
+          "type": "string"
+        },
+        "onboardingCompleted": {
+          "type": "boolean"
+        }
+      },
+      "required": ["uid", "name", "role", "createdAt", "onboardingCompleted"]
+    },
+    "Station": {
+      "title": "Fuel Station",
+      "description": "Information about a fuel station and its current prices.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "name": { "type": "string" },
+        "district": { "type": "string" },
+        "location": { "type": "string" },
+        "brand": { "type": "string" },
+        "contact": { "type": "string" },
+        "operatingHours": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "fuelTypes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "prices": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "isVerified": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["pending", "approved", "disapproved"] },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "name", "district", "location", "brand", "fuelTypes", "prices", "isVerified", "lastUpdated", "createdAt"]
+    },
+    "GovernmentPrice": {
+      "title": "Government Price",
+      "description": "Official government approved fuel prices.",
+      "type": "object",
+      "properties": {
+        "prices": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["prices", "updatedAt", "updatedBy"]
+    },
+    "PriceHistory": {
+      "title": "Price History",
+      "description": "Log of price changes for a station.",
+      "type": "object",
+      "properties": {
+        "stationId": { "type": "string" },
+        "fuelType": { "type": "string" },
+        "price": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["stationId", "fuelType", "price", "timestamp"]
+    },
+    "Subscription": {
+      "title": "Subscription",
+      "description": "User subscription to a station or district for price alerts.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["station", "district"] },
+        "targetId": { "type": "string" },
+        "targetName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "targetId", "targetName", "createdAt"]
+    },
+    "Favorite": {
+      "title": "Favorite Station",
+      "description": "User's favorite fuel station for quick access.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "stationId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "stationId", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "Notification sent to a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "link": { "type": "string" },
+        "type": { "type": "string", "enum": ["price_update", "gov_update", "system"] }
+      },
+      "required": ["userId", "title", "message", "read", "createdAt"]
+    },
+    "TransportPrice": {
+      "title": "Transport Price",
+      "description": "Official transport price for a specific route and vehicle type.",
+      "type": "object",
+      "properties": {
+        "route": { "type": "string" },
+        "vehicleType": { "type": "string" },
+        "price": { "type": "number" },
+        "date": { "type": "string", "format": "date" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["route", "vehicleType", "price", "date", "lastUpdated", "updatedBy"]
+    },
+    "SupportMessage": {
+      "title": "Support Message",
+      "description": "Message sent by a user to support.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "category": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "read", "replied", "archived"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "category", "message", "status", "createdAt"]
+    },
+    "Review": {
+      "title": "Station Review",
+      "description": "User review and rating for a fuel station.",
+      "type": "object",
+      "properties": {
+        "stationId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "number" },
+        "text": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["stationId", "userId", "userName", "rating", "text", "status", "createdAt"]
+    },
+    "Promotion": {
+      "title": "Station Promotion",
+      "description": "Promotions and discounts offered by multiple stations and fuel types.",
+      "type": "object",
+      "properties": {
+        "stationIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "fuelTypes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "discountAmount": { "type": "number" },
+        "discountType": { "type": "string", "enum": ["fixed", "percentage"] },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["stationIds", "fuelTypes", "discountAmount", "discountType", "startTime", "endTime", "isActive", "createdAt", "ownerId"]
+    },
+    "TransportPriceHistory": {
+      "title": "Transport Price History",
+      "description": "Historical log of transport price changes.",
+      "type": "object",
+      "properties": {
+        "priceId": { "type": "string" },
+        "price": { "type": "number" },
+        "date": { "type": "string", "format": "date" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["priceId", "price", "date", "timestamp"]
+    },
+    "VehicleType": {
+      "title": "Vehicle Type",
+      "description": "Types of vehicles for transport prices (e.g., Bus, Taxi, Car).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles."
+    },
+    "/stations/{stationId}": {
+      "schema": { "$ref": "#/entities/Station" },
+      "description": "Fuel stations."
+    },
+    "/government_prices/{docId}": {
+      "schema": { "$ref": "#/entities/GovernmentPrice" },
+      "description": "Government prices (docId usually 'current')."
+    },
+    "/price_history/{historyId}": {
+      "schema": { "$ref": "#/entities/PriceHistory" },
+      "description": "Historical price logs."
+    },
+    "/subscriptions/{subId}": {
+      "schema": { "$ref": "#/entities/Subscription" },
+      "description": "User subscriptions."
+    },
+    "/favorites/{favId}": {
+      "schema": { "$ref": "#/entities/Favorite" },
+      "description": "User favorite stations."
+    },
+    "/notifications/{notifId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "User notifications."
+    },
+    "/transport_prices/{priceId}": {
+      "schema": { "$ref": "#/entities/TransportPrice" },
+      "description": "Transport prices for different routes."
+    },
+    "/transport_price_history/{historyId}": {
+      "schema": { "$ref": "#/entities/TransportPriceHistory" },
+      "description": "Historical transport price logs."
+    },
+    "support_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/SupportMessage" },
+      "description": "Messages from the contact form."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "User reviews for stations."
+    },
+    "/promotions/{promoId}": {
+      "schema": { "$ref": "#/entities/Promotion" },
+      "description": "Fuel station promotions and discounts."
+    },
+    "/vehicle_types/{typeId}": {
+      "schema": { "$ref": "#/entities/VehicleType" },
+      "description": "Available vehicle types for transport pricing."
+    }
+  }
+}
