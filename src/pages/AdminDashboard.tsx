@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, where, limit } from '../firebase';
-import { Shield, Save, Users, Building2, TrendingUp, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square } from 'lucide-react';
+import { Shield, Save, Users, Building2, TrendingUp, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AdminPriceTrends } from '../components/AdminPriceTrends';
 import AdminTransportPrices from '../components/AdminTransportPrices';
 import AdminMessages from '../components/AdminMessages';
 import AdminStationMap from '../components/AdminStationMap';
@@ -38,7 +39,7 @@ export default function AdminDashboard() {
   const [historyFuelFilter, setHistoryFuelFilter] = useState<string>('All');
   const [sortField, setSortField] = useState<'name' | 'district' | 'isVerified'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'transport' | 'messages' | 'reviews' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'settings'>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,6 +60,14 @@ export default function AdminDashboard() {
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [selectedStationIds, setSelectedStationIds] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
+  const [stationToDelete, setStationToDelete] = useState<any | null>(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+  const [stationActionConfirm, setStationActionConfirm] = useState<{
+    type: 'suspend' | 'unsuspend' | 'publish' | 'unpublish' | 'verify' | 'revoke';
+    stationId: string;
+    newValue: boolean;
+  } | null>(null);
+  
   const cancelEditStation = () => {
     setIsEditingStation(false);
     setEditFormData(null);
@@ -297,63 +306,84 @@ export default function AdminDashboard() {
     }
   };
 
-    const handleUpdateStationVerification = async (stationId: string, isVerified: boolean) => {
-      try {
-        await updateDoc(doc(db, 'stations', stationId), { 
-          isVerified,
-          lastUpdated: serverTimestamp()
-        });
-        setSuccessMessage(`Station ${isVerified ? 'verified' : 'unverified'} successfully`);
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `stations/${stationId}`);
-      }
+    const handleUpdateStationVerification = (stationId: string, isVerified: boolean) => {
+      setStationActionConfirm({
+        type: isVerified ? 'verify' : 'revoke',
+        stationId,
+        newValue: isVerified
+      });
     };
 
-    const handleUpdateStationPublished = async (stationId: string, isPublished: boolean) => {
-      try {
-        await updateDoc(doc(db, 'stations', stationId), { 
-          isPublished,
-          lastUpdated: serverTimestamp()
-        });
-        setSuccessMessage(`Station ${isPublished ? 'published' : 'unpublished'} successfully`);
-      } catch (error) {
-        handleFirestoreError(error, OperationType.UPDATE, `stations/${stationId}`);
-      }
+    const handleUpdateStationPublished = (stationId: string, isPublished: boolean) => {
+      setStationActionConfirm({
+        type: isPublished ? 'publish' : 'unpublish',
+        stationId,
+        newValue: isPublished
+      });
     };
 
-    const handleDeleteStation = async (stationId: string) => {
-      if (!window.confirm('Are you sure you want to permanently delete this station? This action cannot be undone.')) return;
-      
-      setIsDeletingStation(true);
-      try {
-        await deleteDoc(doc(db, 'stations', stationId));
-        setSuccessMessage('Station deleted successfully');
-        setSelectedStation(null);
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `stations/${stationId}`);
-      } finally {
-        setIsDeletingStation(false);
-      }
+    const handleToggleSuspend = (stationId: string, currentStatus: boolean) => {
+      setStationActionConfirm({
+        type: currentStatus ? 'unsuspend' : 'suspend',
+        stationId,
+        newValue: !currentStatus
+      });
     };
 
-    const handleToggleSuspend = async (stationId: string, currentStatus: boolean) => {
-      const action = currentStatus ? 'unsuspend' : 'suspend';
-      if (!window.confirm(`Are you sure you want to ${action} this station?`)) return;
-      
+    const confirmStationAction = async () => {
+      if (!stationActionConfirm) return;
       setIsSuspendingStation(true);
+      
+      const { type, stationId, newValue } = stationActionConfirm;
       try {
-        await updateDoc(doc(db, 'stations', stationId), {
-          isSuspended: !currentStatus,
-          lastUpdated: serverTimestamp()
-        });
-        setSuccessMessage(`Station ${action}ed successfully`);
-        if (selectedStation?.id === stationId) {
-          setSelectedStation({ ...selectedStation, isSuspended: !currentStatus });
+        let updateData: any = { lastUpdated: serverTimestamp() };
+        let successMsg = '';
+        
+        if (type === 'suspend' || type === 'unsuspend') {
+          updateData.isSuspended = newValue;
+          successMsg = `Station ${type}ed successfully`;
+        } else if (type === 'publish' || type === 'unpublish') {
+          updateData.isPublished = newValue;
+          successMsg = `Station ${type}ed successfully`;
+        } else if (type === 'verify' || type === 'revoke') {
+          updateData.isVerified = newValue;
+          successMsg = `Station ${type === 'verify' ? 'verified' : 'verification revoked'} successfully`;
         }
+        
+        await updateDoc(doc(db, 'stations', stationId), updateData);
+        
+        if (selectedStation?.id === stationId) {
+          setSelectedStation({ ...selectedStation, ...updateData });
+        }
+        
+        setSuccessMessage(successMsg);
+        setStationActionConfirm(null);
       } catch (error) {
         handleFirestoreError(error, OperationType.UPDATE, `stations/${stationId}`);
       } finally {
         setIsSuspendingStation(false);
+      }
+    };
+
+    const handleDeleteStation = (stationId: string) => {
+      const station = stations.find(s => s.id === stationId);
+      if (station) {
+        setStationToDelete(station);
+      }
+    };
+
+    const confirmDeleteStation = async () => {
+      if (!stationToDelete) return;
+      setIsDeletingStation(true);
+      try {
+        await deleteDoc(doc(db, 'stations', stationToDelete.id));
+        setSuccessMessage('Station deleted successfully');
+        setSelectedStation(null);
+        setStationToDelete(null);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `stations/${stationToDelete.id}`);
+      } finally {
+        setIsDeletingStation(false);
       }
     };
 
@@ -403,9 +433,13 @@ export default function AdminDashboard() {
       }
     };
 
-    const handleBulkDelete = async () => {
+    const handleBulkDelete = () => {
       if (selectedStationIds.length === 0 || isBulkActionLoading) return;
-      if (!window.confirm(`Are you sure you want to permanently delete ${selectedStationIds.length} stations? This action cannot be undone.`)) return;
+      setShowBulkDeleteConfirm(true);
+    };
+
+    const confirmBulkDelete = async () => {
+      if (selectedStationIds.length === 0 || isBulkActionLoading) return;
       
       setIsBulkActionLoading(true);
       try {
@@ -415,6 +449,7 @@ export default function AdminDashboard() {
         await Promise.all(promises);
         setSuccessMessage(`${selectedStationIds.length} stations deleted successfully`);
         setSelectedStationIds([]);
+        setShowBulkDeleteConfirm(false);
       } catch (error) {
         setErrorMessage(`Failed to delete stations: ${error instanceof Error ? error.message : 'Unknown error'}`);
         handleFirestoreError(error, OperationType.DELETE, 'stations/bulk');
@@ -713,30 +748,25 @@ export default function AdminDashboard() {
                 <span className="text-white font-bold text-lg tracking-tight">SL Fuel Monitor</span>
               </div>
             )}
-            <Button 
+            <Button
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
               showNotification={false}
               variant="ghost"
-              className="hidden md:flex p-1.5 rounded-full bg-surface-800 hover:bg-surface-700 text-white transition-colors items-center justify-center"
+              className="hidden md:flex p-2 hover:bg-white/10 text-white rounded-lg transition-colors"
             >
-              {isSidebarCollapsed ? <ChevronDown className="w-4 h-4 rotate-270" /> : <ChevronDown className="w-4 h-4 rotate-90" />}
+              <Menu className="w-5 h-5" />
             </Button>
-            <Button 
+            <Button
               onClick={() => setIsMobileMenuOpen(false)}
               showNotification={false}
               variant="ghost"
-              className="md:hidden p-1.5 rounded-full bg-surface-800 hover:bg-surface-700 text-white transition-colors items-center justify-center"
+              className="md:hidden p-2 hover:bg-white/10 text-white rounded-lg transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </Button>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-            <div className="mb-4 px-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-              {(!isSidebarCollapsed || isMobileMenuOpen) && 'Main Menu'}
-            </div>
-            
+          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
             <Button 
               onClick={() => { setActiveTab('overview'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -751,7 +781,6 @@ export default function AdminDashboard() {
               <LayoutDashboard className={`w-5 h-5 shrink-0 ${activeTab === 'overview' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Overview</span>}
             </Button>
-
             <Button 
               onClick={() => { setActiveTab('stations'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -766,7 +795,6 @@ export default function AdminDashboard() {
               <Building2 className={`w-5 h-5 shrink-0 ${activeTab === 'stations' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Stations</span>}
             </Button>
-
             <Button 
               onClick={() => { setActiveTab('submitted_stations'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -781,7 +809,6 @@ export default function AdminDashboard() {
               <Clock className={`w-5 h-5 shrink-0 ${activeTab === 'submitted_stations' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Submitted Stations</span>}
             </Button>
-
             <Button 
               onClick={() => { setActiveTab('map'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -796,7 +823,6 @@ export default function AdminDashboard() {
               <MapPin className={`w-5 h-5 shrink-0 ${activeTab === 'map' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Map View</span>}
             </Button>
-
             <Button 
               onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -809,9 +835,8 @@ export default function AdminDashboard() {
             >
               {activeTab === 'users' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
               <Users className={`w-5 h-5 shrink-0 ${activeTab === 'users' ? 'text-primary' : 'group-hover:text-white'}`} />
-              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Members</span>}
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Users</span>}
             </Button>
-
             <Button 
               onClick={() => { setActiveTab('prices'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -826,7 +851,20 @@ export default function AdminDashboard() {
               <TrendingUp className={`w-5 h-5 shrink-0 ${activeTab === 'prices' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Official Prices</span>}
             </Button>
-
+            <Button 
+              onClick={() => { setActiveTab('price_trends'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'price_trends' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {activeTab === 'price_trends' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <Activity className={`w-5 h-5 shrink-0 ${activeTab === 'price_trends' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Price Trends</span>}
+            </Button>
             <Button 
               onClick={() => { setActiveTab('transport'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -903,7 +941,7 @@ export default function AdminDashboard() {
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           {/* Top Header */}
           <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30">
             <div className="flex items-center gap-4">
@@ -928,7 +966,375 @@ export default function AdminDashboard() {
           </header>
 
           {/* Content Area */}
-          <main className="flex-1 overflow-y-auto p-8">
+          <main className="flex-1 flex flex-col min-h-0 bg-surface-50 relative">
+  {selectedStation ? (
+        <div className="flex flex-col animate-in fade-in duration-300 absolute inset-0 bg-surface-50 z-10">
+          <header className="bg-white border-b border-gray-200 h-16 flex items-center px-4 md:px-8 shrink-0">
+            <Button 
+              onClick={() => { setSelectedStation(null); setHistoryLimit(30); }}
+              variant="ghost"
+              className="flex items-center gap-2 text-gray-600 hover:text-primary p-2 -ml-2 h-auto min-w-0"
+              showNotification={false}
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span className="font-bold">Back to Stations</span>
+            </Button>
+          </header>
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+            <div className="bg-white rounded-[2.5rem] max-w-5xl mx-auto w-full shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+              <div className="p-6 sm:p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 sticky top-0 z-10">
+                <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-100 text-primary flex-shrink-0 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-lg sm:text-2xl font-bold text-surface-900 break-words">{selectedStation.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[10px] font-bold uppercase tracking-wider truncate max-w-[80px] sm:max-w-none">{selectedStation.brand}</span>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                        selectedStation.isVerified ? 'bg-emerald-100 text-primary' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {selectedStation.isVerified ? 'Verified' : 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            
+            <div className="p-6 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Basic Information</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <span className="text-sm text-gray-500 font-medium">Added On</span>
+                        <span className="text-sm font-bold text-surface-900">
+                          {selectedStation.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <span className="text-sm text-gray-500 font-medium">Last Updated</span>
+                        <span className="text-sm font-bold text-surface-900">
+                          {selectedStation.lastUpdated?.toDate?.()?.toLocaleDateString() || 'Unknown'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Location & Contact</h4>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="flex items-center gap-2 text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">
+                          <MapPin className="w-3 h-3" /> District
+                        </div>
+                        <div className="text-sm font-bold text-surface-900">{selectedStation.district}</div>
+                      </div>
+                      <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Address</div>
+                        <div className="text-sm font-bold text-surface-900">{selectedStation.location}</div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Contact</div>
+                          <div className="text-sm font-bold text-surface-900">{selectedStation.contact || 'N/A'}</div>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Hours</div>
+                          <div className="text-sm font-bold text-surface-900">
+                            {Array.isArray(selectedStation.operatingHours) ? (
+                              <div className="space-y-1">
+                                {selectedStation.operatingHours.map((h: string, i: number) => (
+                                  <div key={i}>{h}</div>
+                                ))}
+                              </div>
+                            ) : (
+                              selectedStation.operatingHours || 'N/A'
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Current Fuel Prices</h4>
+                    <div className="grid grid-cols-1 gap-4">
+                      {['Petrol', 'Diesel', 'Kerosene'].map((fuel) => (
+                        <div key={fuel} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                              selectedStation.fuelTypes?.includes(fuel) ? 'bg-emerald-50 text-primary' : 'bg-gray-50 text-gray-300'
+                            }`}>
+                              <Fuel className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-bold text-gray-700">{fuel}</span>
+                          </div>
+                          <div className="text-lg font-bold text-surface-900">
+                            {selectedStation.prices?.[fuel] ? `Le ${selectedStation.prices[fuel].toLocaleString()}` : '—'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                      <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price History</h4>
+                      <div className="flex items-center gap-4">
+                        <div className="flex bg-gray-100 rounded-lg p-1">
+                          <button
+                            onClick={() => setHistoryViewMode('chart')}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${historyViewMode === 'chart' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                          >
+                            Chart
+                          </button>
+                          <button
+                            onClick={() => setHistoryViewMode('table')}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${historyViewMode === 'table' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                          >
+                            Table
+                          </button>
+                        </div>
+                        <Button
+                          onClick={() => seedStationHistory(selectedStation.id)}
+                          notificationMessage="Seeding station history data..."
+                          variant="unstyled"
+                          className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest flex items-center gap-1 p-0 h-auto min-w-0"
+                        >
+                          <Database className="w-3 h-3" /> Seed Data
+                        </Button>
+                      </div>
+                    </div>
+
+                    {historyViewMode === 'table' && (
+                      <div className="mb-4 flex flex-wrap gap-3 items-center bg-gray-50 p-3 rounded-2xl">
+                        <div className="flex items-center gap-2">
+                          <Filter className="w-4 h-4 text-gray-400" />
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Fuel:</span>
+                          <select 
+                            value={historyFuelFilter}
+                            onChange={(e) => setHistoryFuelFilter(e.target.value)}
+                            className="text-xs font-bold bg-white border-none rounded-lg shadow-sm focus:ring-0 py-1"
+                          >
+                            <option value="All">All Fuels</option>
+                            <option value="Petrol">Petrol</option>
+                            <option value="Diesel">Diesel</option>
+                            <option value="Kerosene">Kerosene</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={`bg-gray-50 rounded-3xl border border-gray-100 ${historyViewMode === 'chart' ? 'p-6 h-80' : 'overflow-hidden max-h-96 overflow-y-auto'}`}>
+                      {historyLoading && rawPriceHistory.length === 0 ? (
+                        <div className="flex justify-center items-center h-full p-12">
+                          <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                        </div>
+                      ) : rawPriceHistory.length > 0 ? (
+                        historyViewMode === 'chart' ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={priceHistory}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                              <XAxis 
+                                dataKey="date" 
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
+                                dy={10}
+                              />
+                              <YAxis 
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
+                                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                                dx={-10}
+                              />
+                              <Tooltip 
+                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
+                                itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                labelStyle={{ fontSize: '10px', color: '#9CA3AF', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}
+                              />
+                              <Legend 
+                                verticalAlign="top" 
+                                align="right" 
+                                iconType="circle"
+                                wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                              />
+                              <Line name="Petrol" type="monotone" dataKey="Petrol" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
+                              <Line name="Diesel" type="monotone" dataKey="Diesel" stroke="var(--color-surface-900)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
+                              <Line name="Kerosene" type="monotone" dataKey="Kerosene" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <table className="w-full text-left border-collapse">
+                            <thead className="bg-gray-100 sticky top-0 z-10">
+                              <tr>
+                                <th 
+                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
+                                  onClick={() => {
+                                    setHistorySortField('timestamp');
+                                    setHistorySortDirection(prev => historySortField === 'timestamp' && prev === 'desc' ? 'asc' : 'desc');
+                                  }}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    Date
+                                    {historySortField === 'timestamp' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                                  </div>
+                                </th>
+                                <th 
+                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
+                                  onClick={() => {
+                                    setHistorySortField('fuelType');
+                                    setHistorySortDirection(prev => historySortField === 'fuelType' && prev === 'asc' ? 'desc' : 'asc');
+                                  }}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    Fuel Type
+                                    {historySortField === 'fuelType' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                                  </div>
+                                </th>
+                                <th 
+                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
+                                  onClick={() => {
+                                    setHistorySortField('price');
+                                    setHistorySortDirection(prev => historySortField === 'price' && prev === 'desc' ? 'asc' : 'desc');
+                                  }}
+                                >
+                                  <div className="flex items-center gap-1">
+                                    Price (SLL)
+                                    {historySortField === 'price' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                                  </div>
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 bg-white">
+                              {filteredAndSortedHistory.map((item, index) => (
+                                <tr key={item.id || index} className="hover:bg-gray-50 transition-colors">
+                                  <td className="p-4 text-sm font-medium text-gray-900">
+                                    {item.timestamp?.seconds ? new Date(item.timestamp.seconds * 1000).toLocaleDateString() : 'Unknown Date'}
+                                  </td>
+                                  <td className="p-4">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${
+                                      item.fuelType === 'Petrol' ? 'bg-primary/10 text-primary' : 
+                                      item.fuelType === 'Diesel' ? 'bg-surface-900/10 text-surface-900' : 
+                                      'bg-fuchsia-100 text-fuchsia-700'
+                                    }`}>
+                                      {item.fuelType}
+                                    </span>
+                                  </td>
+                                  <td className="p-4 text-sm font-bold text-gray-900">
+                                    Le {item.price?.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                              {filteredAndSortedHistory.length === 0 && (
+                                <tr>
+                                  <td colSpan={3} className="p-8 text-center text-sm font-medium text-gray-500">
+                                    No history matches the selected filters.
+                                  </td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        )
+                      ) : (
+                        <div className="flex flex-col justify-center items-center h-full text-gray-400 p-12">
+                          <History className="w-8 h-8 mb-2 opacity-20" />
+                          <p className="text-xs font-bold uppercase tracking-widest">No history available</p>
+                          <p className="text-[10px] mt-1">Click "Seed Data" to generate history</p>
+                        </div>
+                      )}
+                    </div>
+                    {hasMoreHistory && rawPriceHistory.length > 0 && (
+                      <div className="mt-4 flex justify-center">
+                        <Button
+                          onClick={() => setHistoryLimit(prev => prev + 30)}
+                          loading={historyLoading}
+                          showNotification={false}
+                          variant="unstyled"
+                          className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest flex items-center gap-1 p-0 h-auto min-w-0"
+                        >
+                          {!historyLoading && <History className="w-3 h-3" />}
+                          {historyLoading ? 'Loading...' : 'Load More History'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 sm:p-8 border-t border-gray-100 flex flex-col sm:flex-row sm:justify-between gap-4 bg-gray-50/50">
+              <div className="flex gap-2 sm:gap-3">
+                <Button
+                  onClick={() => handleDeleteStation(selectedStation.id)}
+                  variant="danger"
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                  showNotification={false}
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </Button>
+                <Button
+                  onClick={() => handleToggleSuspend(selectedStation.id, selectedStation.isSuspended)}
+                  variant="secondary"
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                  showNotification={false}
+                >
+                  {selectedStation.isSuspended ? (
+                    <><RotateCcw className="w-4 h-4" /> Unsuspend</>
+                  ) : (
+                    <><Slash className="w-4 h-4" /> Suspend</>
+                  )}
+                </Button>
+              </div>
+              <div className="flex gap-2 sm:gap-3">
+                <Button
+                  onClick={() => {
+                    handleUpdateStationPublished(selectedStation.id, selectedStation.isPublished === false ? true : false);
+                  }}
+                  variant={selectedStation.isPublished === false ? "primary" : "secondary"}
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                  showNotification={false}
+                >
+                  {selectedStation.isPublished === false ? (
+                    <><Eye className="w-4 h-4" /> Publish</>
+                  ) : (
+                    <><Eye className="w-4 h-4" /> Unpublish</>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => startEditStation(selectedStation)}
+                  variant="secondary"
+                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                  disableAfterClick={false}
+                  showNotification={false}
+                >
+                  <Edit2 className="w-4 h-4" /> Edit
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleUpdateStationVerification(selectedStation.id, !selectedStation.isVerified);
+                  }}
+                  variant={selectedStation.isVerified ? "danger" : "primary"}
+                  className="flex-1 sm:flex-none px-4 sm:px-8 py-3 sm:py-4 rounded-2xl font-bold transition-all shadow-lg text-sm sm:text-base"
+                  showNotification={false}
+                >
+                  {selectedStation.isVerified ? 'Revoke' : 'Verify'}
+                </Button>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+      
+
+  ) : (
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+
             {activeTab === 'transport' && (
               <AdminTransportPrices />
             )}
@@ -1011,6 +1417,11 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
+            )}
+
+            
+            {activeTab === 'price_trends' && (
+              <AdminPriceTrends />
             )}
 
             {activeTab === 'prices' && (
@@ -1739,7 +2150,7 @@ export default function AdminDashboard() {
                                           className={`w-full px-4 py-2.5 text-left text-sm font-bold flex items-center gap-3 transition-colors hover:bg-gray-50 rounded-none ${
                                             s.isVerified ? 'text-rose-600' : 'text-emerald-600'
                                           }`}
-                                          notificationMessage={s.isVerified ? "Revoking verification..." : "Verifying station..."}
+                                          showNotification={false}
                                         >
                                           {s.isVerified ? (
                                             <><XCircle className="w-4 h-4" /> Revoke Verification</>
@@ -1758,7 +2169,7 @@ export default function AdminDashboard() {
                                           className={`w-full px-4 py-2.5 text-left text-sm font-bold flex items-center gap-3 transition-colors hover:bg-gray-50 rounded-none ${
                                             s.isPublished === false ? 'text-emerald-600' : 'text-amber-600'
                                           }`}
-                                          notificationMessage={s.isPublished === false ? "Publishing station..." : "Unpublishing station..."}
+                                          showNotification={false}
                                         >
                                           {s.isPublished === false ? (
                                             <><Globe className="w-4 h-4" /> Publish Station</>
@@ -1777,7 +2188,7 @@ export default function AdminDashboard() {
                                           className={`w-full px-4 py-2.5 text-left text-sm font-bold flex items-center gap-3 transition-colors hover:bg-gray-50 rounded-none ${
                                             s.isSuspended ? 'text-emerald-600 hover:text-emerald-700' : 'text-amber-600 hover:text-amber-700'
                                           }`}
-                                          notificationMessage={s.isSuspended ? "Unsuspending station..." : "Suspending station..."}
+                                          showNotification={false}
                                         >
                                           {s.isSuspended ? (
                                             <><RotateCcw className="w-4 h-4" /> Unsuspend</>
@@ -1843,373 +2254,11 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
-          </main>
+    </div>
+  )}
+</main>
         </div>
 
-      {/* Station Details Modal */}
-      {selectedStation && (
-        <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300" onClick={() => setSelectedStation(null)}>
-          <div className="bg-white rounded-[2.5rem] max-w-3xl w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 sm:p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 sticky top-0 z-10">
-              <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-emerald-100 text-primary flex-shrink-0 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-lg sm:text-2xl font-bold text-surface-900 break-words">{selectedStation.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-md text-[10px] font-bold uppercase tracking-wider truncate max-w-[80px] sm:max-w-none">{selectedStation.brand}</span>
-                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                      selectedStation.isVerified ? 'bg-emerald-100 text-primary' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {selectedStation.isVerified ? 'Verified' : 'Pending'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <Button
-                onClick={() => {
-                  setSelectedStation(null);
-                  setHistoryLimit(30);
-                }}
-                showNotification={false}
-                className="p-2 hover:bg-gray-200 rounded-xl transition-all text-gray-400 flex-shrink-0 bg-transparent border-none shadow-none h-auto min-w-0"
-              >
-                <X className="w-5 h-5 sm:w-6 sm:h-6" />
-              </Button>
-            </div>
-            
-            <div className="p-6 sm:p-8 overflow-y-auto space-y-6 sm:space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Basic Information</h4>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <span className="text-sm text-gray-500 font-medium">Added On</span>
-                        <span className="text-sm font-bold text-surface-900">
-                          {selectedStation.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <span className="text-sm text-gray-500 font-medium">Last Updated</span>
-                        <span className="text-sm font-bold text-surface-900">
-                          {selectedStation.lastUpdated?.toDate?.()?.toLocaleDateString() || 'Unknown'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Location & Contact</h4>
-                    <div className="space-y-4">
-                      <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <div className="flex items-center gap-2 text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">
-                          <MapPin className="w-3 h-3" /> District
-                        </div>
-                        <div className="text-sm font-bold text-surface-900">{selectedStation.district}</div>
-                      </div>
-                      <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                        <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Address</div>
-                        <div className="text-sm font-bold text-surface-900">{selectedStation.location}</div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Contact</div>
-                          <div className="text-sm font-bold text-surface-900">{selectedStation.contact || 'N/A'}</div>
-                        </div>
-                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                          <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Hours</div>
-                          <div className="text-sm font-bold text-surface-900">
-                            {Array.isArray(selectedStation.operatingHours) ? (
-                              <div className="space-y-1">
-                                {selectedStation.operatingHours.map((h: string, i: number) => (
-                                  <div key={i}>{h}</div>
-                                ))}
-                              </div>
-                            ) : (
-                              selectedStation.operatingHours || 'N/A'
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Current Fuel Prices</h4>
-                    <div className="grid grid-cols-1 gap-4">
-                      {['Petrol', 'Diesel', 'Kerosene'].map((fuel) => (
-                        <div key={fuel} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                              selectedStation.fuelTypes?.includes(fuel) ? 'bg-emerald-50 text-primary' : 'bg-gray-50 text-gray-300'
-                            }`}>
-                              <Fuel className="w-4 h-4" />
-                            </div>
-                            <span className="text-sm font-bold text-gray-700">{fuel}</span>
-                          </div>
-                          <div className="text-lg font-bold text-surface-900">
-                            {selectedStation.prices?.[fuel] ? `Le ${selectedStation.prices[fuel].toLocaleString()}` : '—'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                      <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price History</h4>
-                      <div className="flex items-center gap-4">
-                        <div className="flex bg-gray-100 rounded-lg p-1">
-                          <button
-                            onClick={() => setHistoryViewMode('chart')}
-                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${historyViewMode === 'chart' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                          >
-                            Chart
-                          </button>
-                          <button
-                            onClick={() => setHistoryViewMode('table')}
-                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${historyViewMode === 'table' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                          >
-                            Table
-                          </button>
-                        </div>
-                        <Button
-                          onClick={() => seedStationHistory(selectedStation.id)}
-                          notificationMessage="Seeding station history data..."
-                          variant="unstyled"
-                          className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest flex items-center gap-1 p-0 h-auto min-w-0"
-                        >
-                          <Database className="w-3 h-3" /> Seed Data
-                        </Button>
-                      </div>
-                    </div>
-
-                    {historyViewMode === 'table' && (
-                      <div className="mb-4 flex flex-wrap gap-3 items-center bg-gray-50 p-3 rounded-2xl">
-                        <div className="flex items-center gap-2">
-                          <Filter className="w-4 h-4 text-gray-400" />
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Fuel:</span>
-                          <select 
-                            value={historyFuelFilter}
-                            onChange={(e) => setHistoryFuelFilter(e.target.value)}
-                            className="text-xs font-bold bg-white border-none rounded-lg shadow-sm focus:ring-0 py-1"
-                          >
-                            <option value="All">All Fuels</option>
-                            <option value="Petrol">Petrol</option>
-                            <option value="Diesel">Diesel</option>
-                            <option value="Kerosene">Kerosene</option>
-                          </select>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className={`bg-gray-50 rounded-3xl border border-gray-100 ${historyViewMode === 'chart' ? 'p-6 h-80' : 'overflow-hidden max-h-96 overflow-y-auto'}`}>
-                      {historyLoading && rawPriceHistory.length === 0 ? (
-                        <div className="flex justify-center items-center h-full p-12">
-                          <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                        </div>
-                      ) : rawPriceHistory.length > 0 ? (
-                        historyViewMode === 'chart' ? (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={priceHistory}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                              <XAxis 
-                                dataKey="date" 
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
-                                dy={10}
-                              />
-                              <YAxis 
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
-                                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                                dx={-10}
-                              />
-                              <Tooltip 
-                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
-                                itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                                labelStyle={{ fontSize: '10px', color: '#9CA3AF', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}
-                              />
-                              <Legend 
-                                verticalAlign="top" 
-                                align="right" 
-                                iconType="circle"
-                                wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
-                              />
-                              <Line name="Petrol" type="monotone" dataKey="Petrol" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
-                              <Line name="Diesel" type="monotone" dataKey="Diesel" stroke="var(--color-surface-900)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
-                              <Line name="Kerosene" type="monotone" dataKey="Kerosene" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        ) : (
-                          <table className="w-full text-left border-collapse">
-                            <thead className="bg-gray-100 sticky top-0 z-10">
-                              <tr>
-                                <th 
-                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
-                                  onClick={() => {
-                                    setHistorySortField('timestamp');
-                                    setHistorySortDirection(prev => historySortField === 'timestamp' && prev === 'desc' ? 'asc' : 'desc');
-                                  }}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    Date
-                                    {historySortField === 'timestamp' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                                  </div>
-                                </th>
-                                <th 
-                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
-                                  onClick={() => {
-                                    setHistorySortField('fuelType');
-                                    setHistorySortDirection(prev => historySortField === 'fuelType' && prev === 'asc' ? 'desc' : 'asc');
-                                  }}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    Fuel Type
-                                    {historySortField === 'fuelType' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                                  </div>
-                                </th>
-                                <th 
-                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
-                                  onClick={() => {
-                                    setHistorySortField('price');
-                                    setHistorySortDirection(prev => historySortField === 'price' && prev === 'desc' ? 'asc' : 'desc');
-                                  }}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    Price (SLL)
-                                    {historySortField === 'price' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                                  </div>
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 bg-white">
-                              {filteredAndSortedHistory.map((item, index) => (
-                                <tr key={item.id || index} className="hover:bg-gray-50 transition-colors">
-                                  <td className="p-4 text-sm font-medium text-gray-900">
-                                    {item.timestamp?.seconds ? new Date(item.timestamp.seconds * 1000).toLocaleDateString() : 'Unknown Date'}
-                                  </td>
-                                  <td className="p-4">
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${
-                                      item.fuelType === 'Petrol' ? 'bg-primary/10 text-primary' : 
-                                      item.fuelType === 'Diesel' ? 'bg-surface-900/10 text-surface-900' : 
-                                      'bg-fuchsia-100 text-fuchsia-700'
-                                    }`}>
-                                      {item.fuelType}
-                                    </span>
-                                  </td>
-                                  <td className="p-4 text-sm font-bold text-gray-900">
-                                    Le {item.price?.toLocaleString()}
-                                  </td>
-                                </tr>
-                              ))}
-                              {filteredAndSortedHistory.length === 0 && (
-                                <tr>
-                                  <td colSpan={3} className="p-8 text-center text-sm font-medium text-gray-500">
-                                    No history matches the selected filters.
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
-                        )
-                      ) : (
-                        <div className="flex flex-col justify-center items-center h-full text-gray-400 p-12">
-                          <History className="w-8 h-8 mb-2 opacity-20" />
-                          <p className="text-xs font-bold uppercase tracking-widest">No history available</p>
-                          <p className="text-[10px] mt-1">Click "Seed Data" to generate history</p>
-                        </div>
-                      )}
-                    </div>
-                    {hasMoreHistory && rawPriceHistory.length > 0 && (
-                      <div className="mt-4 flex justify-center">
-                        <Button
-                          onClick={() => setHistoryLimit(prev => prev + 30)}
-                          loading={historyLoading}
-                          showNotification={false}
-                          variant="unstyled"
-                          className="text-[10px] font-bold text-primary hover:underline uppercase tracking-widest flex items-center gap-1 p-0 h-auto min-w-0"
-                        >
-                          {!historyLoading && <History className="w-3 h-3" />}
-                          {historyLoading ? 'Loading...' : 'Load More History'}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-6 sm:p-8 border-t border-gray-100 flex flex-col sm:flex-row sm:justify-between gap-4 bg-gray-50/50">
-              <div className="flex gap-2 sm:gap-3">
-                <Button
-                  onClick={() => handleDeleteStation(selectedStation.id)}
-                  variant="danger"
-                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
-                  notificationMessage="Deleting station..."
-                >
-                  <Trash2 className="w-4 h-4" /> Delete
-                </Button>
-                <Button
-                  onClick={() => handleToggleSuspend(selectedStation.id, selectedStation.isSuspended)}
-                  variant="secondary"
-                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
-                  notificationMessage={selectedStation.isSuspended ? "Unsuspending station..." : "Suspending station..."}
-                >
-                  {selectedStation.isSuspended ? (
-                    <><RotateCcw className="w-4 h-4" /> Unsuspend</>
-                  ) : (
-                    <><Slash className="w-4 h-4" /> Suspend</>
-                  )}
-                </Button>
-              </div>
-              <div className="flex gap-2 sm:gap-3">
-                <Button
-                  onClick={() => {
-                    handleUpdateStationPublished(selectedStation.id, selectedStation.isPublished === false ? true : false);
-                    setSelectedStation(null);
-                  }}
-                  variant={selectedStation.isPublished === false ? "primary" : "secondary"}
-                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
-                  notificationMessage={selectedStation.isPublished === false ? "Publishing station..." : "Unpublishing station..."}
-                >
-                  {selectedStation.isPublished === false ? (
-                    <><Eye className="w-4 h-4" /> Publish</>
-                  ) : (
-                    <><Eye className="w-4 h-4" /> Unpublish</>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => startEditStation(selectedStation)}
-                  variant="secondary"
-                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
-                  disableAfterClick={false}
-                  showNotification={false}
-                >
-                  <Edit2 className="w-4 h-4" /> Edit
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleUpdateStationVerification(selectedStation.id, !selectedStation.isVerified);
-                    setSelectedStation(null);
-                  }}
-                  variant={selectedStation.isVerified ? "danger" : "primary"}
-                  className="flex-1 sm:flex-none px-4 sm:px-8 py-3 sm:py-4 rounded-2xl font-bold transition-all shadow-lg text-sm sm:text-base"
-                  notificationMessage={selectedStation.isVerified ? "Revoking verification..." : "Verifying station..."}
-                >
-                  {selectedStation.isVerified ? 'Revoke' : 'Verify'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Edit Station Modal */}
       {isEditingStation && editFormData && (
         <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-300" onClick={cancelEditStation}>
@@ -2585,6 +2634,175 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Station Modal */}
+      {stationToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setStationToDelete(null)}>
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Trash2 className="w-10 h-10 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-black text-surface-900 mb-2">Delete Station?</h3>
+              <p className="text-gray-500 font-medium mb-8">
+                Are you sure you want to delete <span className="font-bold text-surface-900">{stationToDelete.name}</span>? This action cannot be undone.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={confirmDeleteStation}
+                  loading={isDeletingStation}
+                  variant="danger"
+                  notificationMessage="Station deleted successfully"
+                  className="w-full py-4 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                >
+                  Yes, Delete Station
+                </Button>
+                <Button
+                  onClick={() => setStationToDelete(null)}
+                  showNotification={false}
+                  variant="secondary"
+                  className="w-full py-4 rounded-2xl font-bold transition-all"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Bulk Delete Stations Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowBulkDeleteConfirm(false)}>
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Trash2 className="w-10 h-10 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-black text-surface-900 mb-2">Delete Stations?</h3>
+              <p className="text-gray-500 font-medium mb-8">
+                Are you sure you want to permanently delete <span className="font-bold text-surface-900">{selectedStationIds.length}</span> stations? This action cannot be undone.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={confirmBulkDelete}
+                  loading={isBulkActionLoading}
+                  variant="danger"
+                  notificationMessage={`${selectedStationIds.length} stations deleted successfully`}
+                  className="w-full py-4 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
+                >
+                  Yes, Delete Stations
+                </Button>
+                <Button
+                  onClick={() => setShowBulkDeleteConfirm(false)}
+                  showNotification={false}
+                  variant="secondary"
+                  className="w-full py-4 rounded-2xl font-bold transition-all"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Station Action Modal */}
+      {stationActionConfirm && (() => {
+        let title = '';
+        let confirmText = '';
+        let buttonVariant: 'danger' | 'primary' | 'secondary' = 'primary';
+        let icon = null;
+        let iconColor = '';
+        let iconBg = '';
+        const station = stations.find(s => s.id === stationActionConfirm.stationId) || selectedStation;
+
+        switch (stationActionConfirm.type) {
+          case 'suspend':
+            title = 'Suspend Station?';
+            confirmText = 'Yes, Suspend';
+            buttonVariant = 'danger';
+            icon = <Slash className="w-10 h-10 text-amber-600" />;
+            iconColor = 'text-amber-600';
+            iconBg = 'bg-amber-50';
+            break;
+          case 'unsuspend':
+            title = 'Unsuspend Station?';
+            confirmText = 'Yes, Unsuspend';
+            buttonVariant = 'primary';
+            icon = <RotateCcw className="w-10 h-10 text-emerald-600" />;
+            iconColor = 'text-emerald-600';
+            iconBg = 'bg-emerald-50';
+            break;
+          case 'publish':
+            title = 'Publish Station?';
+            confirmText = 'Yes, Publish';
+            buttonVariant = 'primary';
+            icon = <Globe className="w-10 h-10 text-emerald-600" />;
+            iconColor = 'text-emerald-600';
+            iconBg = 'bg-emerald-50';
+            break;
+          case 'unpublish':
+            title = 'Unpublish Station?';
+            confirmText = 'Yes, Unpublish';
+            buttonVariant = 'danger';
+            icon = <Eye className="w-10 h-10 text-amber-600" />;
+            iconColor = 'text-amber-600';
+            iconBg = 'bg-amber-50';
+            break;
+          case 'verify':
+            title = 'Verify Station?';
+            confirmText = 'Yes, Verify';
+            buttonVariant = 'primary';
+            icon = <CheckCircle className="w-10 h-10 text-emerald-600" />;
+            iconColor = 'text-emerald-600';
+            iconBg = 'bg-emerald-50';
+            break;
+          case 'revoke':
+            title = 'Revoke Verification?';
+            confirmText = 'Yes, Revoke';
+            buttonVariant = 'danger';
+            icon = <XCircle className="w-10 h-10 text-red-600" />;
+            iconColor = 'text-red-600';
+            iconBg = 'bg-red-50';
+            break;
+        }
+
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setStationActionConfirm(null)}>
+            <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300" onClick={(e) => e.stopPropagation()}>
+              <div className="p-8 text-center">
+                <div className={`w-20 h-20 ${iconBg} rounded-3xl flex items-center justify-center mx-auto mb-6`}>
+                  {icon}
+                </div>
+                <h3 className="text-2xl font-black text-surface-900 mb-2">{title}</h3>
+                <p className="text-gray-500 font-medium mb-8">
+                  Are you sure you want to {stationActionConfirm.type.replace('revoke', 'revoke verification for')} <span className="font-bold text-surface-900">{station?.name}</span>?
+                </p>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    onClick={confirmStationAction}
+                    loading={isSuspendingStation}
+                    variant={buttonVariant}
+                    showNotification={false}
+                    className={`w-full py-4 rounded-2xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 ${buttonVariant === 'danger' ? 'shadow-red-500/20' : 'shadow-primary/20'}`}
+                  >
+                    {confirmText}
+                  </Button>
+                  <Button
+                    onClick={() => setStationActionConfirm(null)}
+                    showNotification={false}
+                    variant="secondary"
+                    className="w-full py-4 rounded-2xl font-bold transition-all"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {successMessage && (
         <div className="fixed bottom-8 right-8 bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl z-[120] animate-in slide-in-from-bottom-4 duration-300 flex items-center gap-3">

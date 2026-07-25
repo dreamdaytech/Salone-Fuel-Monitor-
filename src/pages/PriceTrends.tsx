@@ -1,175 +1,614 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { db, collection, query, orderBy, onSnapshot } from '../firebase';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar
 } from 'recharts';
-import { Activity, History, ChevronDown } from 'lucide-react';
+import { 
+  Activity, History, ChevronDown, Download, Search, SlidersHorizontal, 
+  ArrowUpDown, Calendar, X, Filter, RotateCcw, TrendingUp, TrendingDown, 
+  Minus, Fuel, DollarSign, Table as TableIcon, LineChart as LineChartIcon, BarChart3, RefreshCw
+} from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function PriceTrends() {
   const [globalPriceHistory, setGlobalPriceHistory] = useState<any[]>([]);
   const [globalHistoryLoading, setGlobalHistoryLoading] = useState(true);
+  
+  // Search, Filter & Sort States
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFuel, setSelectedFuel] = useState<string>('All');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('30');
-  const [chartType, setChartType] = useState<string>('bar');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [sortBy, setSortBy] = useState<string>('date-desc');
+  const [chartType, setChartType] = useState<string>('line');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPDF = async () => {
+    if (!chartRef.current) return;
+    
+    try {
+      setIsExporting(true);
+      const canvas = await html2canvas(chartRef.current, { 
+        scale: 2,
+        backgroundColor: '#ffffff'
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape for charts
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.text('Fuel Price Trends Export', 14, 10);
+      pdf.addImage(imgData, 'PNG', 0, 15, pdfWidth, pdfHeight);
+      pdf.save(`fuel-price-trends-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
-    const unsubscribeGlobalHistory = onSnapshot(
-      query(
-        collection(db, 'price_history'),
-        orderBy('timestamp', 'asc')
-      ),
+    // 1. Subscribe to the official price_trends collection managed in the Admin Dashboard
+    const unsubscribeTrends = onSnapshot(
+      collection(db, 'price_trends'),
       (snapshot) => {
-        const historyData = snapshot.docs.map(doc => doc.data());
-        
-        const groupedData: Record<string, any> = {};
-        
-        historyData.forEach((entry: any) => {
-          if (!entry.timestamp) return;
-          const date = entry.timestamp.toDate().toLocaleDateString();
-          if (!groupedData[date]) {
-            groupedData[date] = { date, sumPetrol: 0, countPetrol: 0, sumDiesel: 0, countDiesel: 0, sumKerosene: 0, countKerosene: 0 };
-          }
-          if (entry.fuelType === 'Petrol') {
-            groupedData[date].sumPetrol += entry.price;
-            groupedData[date].countPetrol += 1;
-          } else if (entry.fuelType === 'Diesel') {
-            groupedData[date].sumDiesel += entry.price;
-            groupedData[date].countDiesel += 1;
-          } else if (entry.fuelType === 'Kerosene') {
-            groupedData[date].sumKerosene += entry.price;
-            groupedData[date].countKerosene += 1;
-          }
-        });
+        const trendsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        
-        // Always generate dummy data for the last 365 days for demonstration purposes
-        const dummyData = [];
-        const basePetrol = 30000;
-        const baseDiesel = 28500;
-        const baseKerosene = 24000;
-        
-        for (let i = 365; i >= 0; i--) {
-          const dateObj = new Date();
-          dateObj.setDate(dateObj.getDate() - i);
-          const dateStr = dateObj.toLocaleDateString();
-          
-          // Add some semi-realistic fluctuations
-          const trend = Math.sin(i / 10) * 1000 + (365 - i) * 10;
-          const noise1 = (Math.random() - 0.5) * 500;
-          const noise2 = (Math.random() - 0.5) * 600;
-          const noise3 = (Math.random() - 0.5) * 400;
-          
-          // If we have real data for this date, use it; otherwise use dummy data
-          if (groupedData[dateStr]) {
-            const d = groupedData[dateStr];
-            dummyData.push({
-              date: dateStr,
-              Petrol: d.countPetrol ? Math.round(d.sumPetrol / d.countPetrol) : Math.round(basePetrol + trend + noise1),
-              Diesel: d.countDiesel ? Math.round(d.sumDiesel / d.countDiesel) : Math.round(baseDiesel + trend + noise2),
-              Kerosene: d.countKerosene ? Math.round(d.sumKerosene / d.countKerosene) : Math.round(baseKerosene + trend * 0.8 + noise3),
-            });
-          } else {
-            dummyData.push({
-              date: dateStr,
-              Petrol: Math.round(basePetrol + trend + noise1),
-              Diesel: Math.round(baseDiesel + trend + noise2),
-              Kerosene: Math.round(baseKerosene + trend * 0.8 + noise3),
-            });
-          }
+        if (trendsData.length > 0) {
+          const parseDate = (item: any) => {
+            if (item.effectiveDate) {
+              const d = new Date(item.effectiveDate);
+              if (!isNaN(d.getTime())) return d;
+            }
+            if (item.monthYear) {
+              const d = new Date(item.monthYear);
+              if (!isNaN(d.getTime())) return d;
+            }
+            return new Date(0);
+          };
+
+          const formatted = trendsData.map((item: any) => {
+            const dObj = parseDate(item);
+            return {
+              id: item.id,
+              date: item.monthYear || item.effectiveDate || 'N/A',
+              effectiveDate: item.effectiveDate || '',
+              monthYear: item.monthYear || '',
+              dateObj: dObj,
+              timestamp: dObj.getTime(),
+              Petrol: Number(item.petrolPrice) || 0,
+              Diesel: Number(item.dieselPrice) || 0,
+              Kerosene: Number(item.kerosenePrice) || 0,
+            };
+          });
+
+          // Default sort ascending for store
+          formatted.sort((a, b) => a.timestamp - b.timestamp);
+
+          setGlobalPriceHistory(formatted);
+          setGlobalHistoryLoading(false);
+        } else {
+          // Fallback: If price_trends collection is empty, load from price_history
+          const unsubscribeHistory = onSnapshot(
+            query(collection(db, 'price_history'), orderBy('timestamp', 'asc')),
+            (historySnap) => {
+              const historyData = historySnap.docs.map(doc => doc.data());
+              const groupedData: Record<string, any> = {};
+
+              historyData.forEach((entry: any) => {
+                if (!entry.timestamp) return;
+                const dObj = entry.timestamp.toDate();
+                const date = dObj.toLocaleDateString();
+                if (!groupedData[date]) {
+                  groupedData[date] = { date, dateObj: dObj, sumPetrol: 0, countPetrol: 0, sumDiesel: 0, countDiesel: 0, sumKerosene: 0, countKerosene: 0 };
+                }
+                if (entry.fuelType === 'Petrol') {
+                  groupedData[date].sumPetrol += entry.price;
+                  groupedData[date].countPetrol += 1;
+                } else if (entry.fuelType === 'Diesel') {
+                  groupedData[date].sumDiesel += entry.price;
+                  groupedData[date].countDiesel += 1;
+                } else if (entry.fuelType === 'Kerosene') {
+                  groupedData[date].sumKerosene += entry.price;
+                  groupedData[date].countKerosene += 1;
+                }
+              });
+
+              const result = Object.values(groupedData).map((d: any) => ({
+                id: d.date,
+                date: d.date,
+                effectiveDate: d.date,
+                monthYear: d.date,
+                dateObj: d.dateObj,
+                timestamp: d.dateObj ? d.dateObj.getTime() : 0,
+                Petrol: d.countPetrol ? Math.round(d.sumPetrol / d.countPetrol) : 0,
+                Diesel: d.countDiesel ? Math.round(d.sumDiesel / d.countDiesel) : 0,
+                Kerosene: d.countKerosene ? Math.round(d.sumKerosene / d.countKerosene) : 0,
+              }));
+
+              result.sort((a, b) => a.timestamp - b.timestamp);
+
+              setGlobalPriceHistory(result);
+              setGlobalHistoryLoading(false);
+            },
+            (err) => {
+              console.error("Error fetching price history fallback:", err);
+              setGlobalHistoryLoading(false);
+            }
+          );
         }
-        setGlobalPriceHistory(dummyData);
-        
-        setGlobalHistoryLoading(false);
       },
       (error) => {
+        console.error("Error fetching price trends:", error);
         setGlobalHistoryLoading(false);
-        console.error("Error fetching global price history:", error);
       }
     );
 
     return () => {
-      unsubscribeGlobalHistory();
+      unsubscribeTrends();
     };
   }, []);
 
+  // Filter & Sort Logic
   const filteredData = useMemo(() => {
     if (!globalPriceHistory.length) return [];
-    if (selectedTimeframe === 'all') return globalPriceHistory;
-    
-    const days = parseInt(selectedTimeframe, 10);
-    return globalPriceHistory.slice(-days);
-  }, [globalPriceHistory, selectedTimeframe]);
+
+    let result = [...globalPriceHistory];
+
+    // 1. Search Query Filter (Matches date, monthYear, effectiveDate)
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(item => 
+        (item.date && item.date.toLowerCase().includes(q)) ||
+        (item.effectiveDate && item.effectiveDate.toLowerCase().includes(q)) ||
+        (item.monthYear && item.monthYear.toLowerCase().includes(q))
+      );
+    }
+
+    // 2. Timeframe Filter
+    if (selectedTimeframe !== 'all') {
+      if (selectedTimeframe === 'custom') {
+        if (startDate) {
+          const start = new Date(startDate).getTime();
+          result = result.filter(item => item.timestamp >= start);
+        }
+        if (endDate) {
+          const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000 - 1);
+          result = result.filter(item => item.timestamp <= end);
+        }
+      } else {
+        const days = parseInt(selectedTimeframe, 10);
+        if (!isNaN(days) && days > 0) {
+          const latestTime = Math.max(...globalPriceHistory.map(i => i.timestamp));
+          const cutoff = latestTime - (days * 24 * 60 * 60 * 1000);
+          result = result.filter(item => item.timestamp >= cutoff);
+        }
+      }
+    }
+
+    // 3. Price Range Filter
+    const minP = minPrice ? parseFloat(minPrice) : null;
+    const maxP = maxPrice ? parseFloat(maxPrice) : null;
+
+    if (minP !== null || maxP !== null) {
+      result = result.filter(item => {
+        const fuelsToCheck = selectedFuel === 'Petrol' ? [item.Petrol]
+          : selectedFuel === 'Diesel' ? [item.Diesel]
+          : selectedFuel === 'Kerosene' ? [item.Kerosene]
+          : [item.Petrol, item.Diesel, item.Kerosene].filter(p => p > 0);
+
+        return fuelsToCheck.some(price => {
+          if (minP !== null && price < minP) return false;
+          if (maxP !== null && price > maxP) return false;
+          return true;
+        });
+      });
+    }
+
+    // 4. Sorting
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'date-asc':
+          return a.timestamp - b.timestamp;
+        case 'date-desc':
+          return b.timestamp - a.timestamp;
+        case 'petrol-desc':
+          return b.Petrol - a.Petrol;
+        case 'petrol-asc':
+          return a.Petrol - b.Petrol;
+        case 'diesel-desc':
+          return b.Diesel - a.Diesel;
+        case 'diesel-asc':
+          return a.Diesel - b.Diesel;
+        case 'kerosene-desc':
+          return b.Kerosene - a.Kerosene;
+        case 'kerosene-asc':
+          return a.Kerosene - b.Kerosene;
+        default:
+          return b.timestamp - a.timestamp;
+      }
+    });
+
+    return result;
+  }, [globalPriceHistory, searchQuery, selectedTimeframe, startDate, endDate, minPrice, maxPrice, selectedFuel, sortBy]);
+
+  // Data sorted chronologically ascending specifically for charts
+  const chartData = useMemo(() => {
+    return [...filteredData].sort((a, b) => a.timestamp - b.timestamp);
+  }, [filteredData]);
+
+  // Key Statistics
+  const stats = useMemo(() => {
+    if (!filteredData.length) return null;
+
+    const latest = [...filteredData].sort((a, b) => b.timestamp - a.timestamp)[0];
+    const previous = [...filteredData].sort((a, b) => b.timestamp - a.timestamp)[1];
+
+    const petrolPrices = filteredData.map(d => d.Petrol).filter(p => p > 0);
+    const dieselPrices = filteredData.map(d => d.Diesel).filter(p => p > 0);
+    const kerosenePrices = filteredData.map(d => d.Kerosene).filter(p => p > 0);
+
+    const getAvg = (arr: number[]) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+    const getMax = (arr: number[]) => arr.length ? Math.max(...arr) : 0;
+    const getMin = (arr: number[]) => arr.length ? Math.min(...arr) : 0;
+
+    let activePrices: number[] = [];
+    if (selectedFuel === 'Petrol') activePrices = petrolPrices;
+    else if (selectedFuel === 'Diesel') activePrices = dieselPrices;
+    else if (selectedFuel === 'Kerosene') activePrices = kerosenePrices;
+    else activePrices = [...petrolPrices, ...dieselPrices, ...kerosenePrices];
+
+    return {
+      latest,
+      previous,
+      avgPetrol: getAvg(petrolPrices),
+      avgDiesel: getAvg(dieselPrices),
+      avgKerosene: getAvg(kerosenePrices),
+      avgActive: getAvg(activePrices),
+      maxActive: getMax(activePrices),
+      minActive: getMin(activePrices),
+    };
+  }, [filteredData, selectedFuel]);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (searchQuery.trim()) count++;
+    if (selectedFuel !== 'All') count++;
+    if (selectedTimeframe !== 'all') count++;
+    if (startDate || endDate) count++;
+    if (minPrice || maxPrice) count++;
+    if (sortBy !== 'date-desc') count++;
+    return count;
+  }, [searchQuery, selectedFuel, selectedTimeframe, startDate, endDate, minPrice, maxPrice, sortBy]);
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedFuel('All');
+    setSelectedTimeframe('30');
+    setStartDate('');
+    setEndDate('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSortBy('date-desc');
+  };
+
+  const formatPrice = (val: number) => {
+    if (!val) return '-';
+    return val >= 1000 ? `${val.toLocaleString()} SLL` : `NLe ${Number(val).toFixed(2)}`;
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-surface-900 mb-2 tracking-tight">Price Trends</h1>
-        <p className="text-gray-500 font-medium">Historical average fuel prices across all monitored stations in Sierra Leone</p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-surface-900 mb-2 tracking-tight">Price Trends</h1>
+          <p className="text-gray-500 font-medium">Historical official fuel prices across Sierra Leone with interactive analytics</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportPDF}
+            disabled={isExporting || globalHistoryLoading || filteredData.length === 0}
+            className="flex items-center justify-center gap-2 bg-surface-900 text-white hover:bg-black px-5 py-2.5 rounded-2xl text-sm font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isExporting ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            <span>Export Report</span>
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-gray-100 overflow-hidden">
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      {/* Key Metric Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-surface-900 flex items-center gap-2">
-                <Activity className="w-6 h-6 text-primary" />
-                National Average Price Trends
-              </h2>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Latest Petrol</span>
+              <div className="text-xl font-extrabold text-surface-900">
+                {formatPrice(stats.latest?.Petrol)}
+              </div>
+              <span className="text-xs text-gray-500 font-medium">{stats.latest?.date || 'Latest Entry'}</span>
             </div>
+            <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+              <Fuel className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Latest Diesel</span>
+              <div className="text-xl font-extrabold text-surface-900">
+                {formatPrice(stats.latest?.Diesel)}
+              </div>
+              <span className="text-xs text-gray-500 font-medium">{stats.latest?.date || 'Latest Entry'}</span>
+            </div>
+            <div className="p-3 bg-surface-900/10 text-surface-900 rounded-2xl">
+              <Fuel className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Latest Kerosene</span>
+              <div className="text-xl font-extrabold text-surface-900">
+                {formatPrice(stats.latest?.Kerosene)}
+              </div>
+              <span className="text-xs text-gray-500 font-medium">{stats.latest?.date || 'Latest Entry'}</span>
+            </div>
+            <div className="p-3 bg-fuchsia-100 text-fuchsia-600 rounded-2xl">
+              <Fuel className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Period Average</span>
+              <div className="text-xl font-extrabold text-emerald-600">
+                {formatPrice(Math.round(stats.avgActive))}
+              </div>
+              <span className="text-xs text-gray-500 font-medium">Range: {formatPrice(stats.minActive)} - {formatPrice(stats.maxActive)}</span>
+            </div>
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Container */}
+      <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-gray-100 overflow-hidden">
+        {/* Search, Sorting & Filter Controls Header */}
+        <div className="p-6 md:p-8 border-b border-gray-100 space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <select
-                  value={chartType}
-                  onChange={(e) => setChartType(e.target.value)}
-                  className="appearance-none bg-white border border-gray-200 text-gray-700 py-2 pl-4 pr-10 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary hover:border-primary/50 transition-all cursor-pointer"
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search date, month or year (e.g. '2024', 'Jan', '18 Mar')..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm font-medium rounded-2xl pl-11 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-gray-400"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
                 >
-                  <option value="line">Line Chart</option>
-                  <option value="bar">Bar Chart</option>
-                  <option value="table">Table View</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                  <ChevronDown className="h-4 w-4" />
-                </div>
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Filter Selects */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* View Type Toggle */}
+              <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200">
+                <button
+                  onClick={() => setChartType('line')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    chartType === 'line' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Line Chart"
+                >
+                  <LineChartIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Line</span>
+                </button>
+                <button
+                  onClick={() => setChartType('bar')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    chartType === 'bar' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Bar Chart"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Bar</span>
+                </button>
+                <button
+                  onClick={() => setChartType('table')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    chartType === 'table' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title="Table View"
+                >
+                  <TableIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Table</span>
+                </button>
               </div>
 
+              {/* Timeframe Select */}
               <div className="relative">
                 <select
                   value={selectedTimeframe}
                   onChange={(e) => setSelectedTimeframe(e.target.value)}
-                  className="appearance-none bg-white border border-gray-200 text-gray-700 py-2 pl-4 pr-10 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary hover:border-primary/50 transition-all cursor-pointer"
+                  className="appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer hover:border-gray-300 transition-all"
                 >
-                  <option value="30">1 Month</option>
-                  <option value="90">3 Months</option>
-                  <option value="180">6 Months</option>
-                  <option value="365">1 Year</option>
+                  <option value="30">Last 30 Days</option>
+                  <option value="90">Last 3 Months</option>
+                  <option value="180">Last 6 Months</option>
+                  <option value="365">Last 1 Year</option>
+                  <option value="custom">Custom Range...</option>
                   <option value="all">All Time</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                  <ChevronDown className="h-4 w-4" />
-                </div>
+                <ChevronDown className="h-4 w-4 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
               </div>
 
+              {/* Fuel Type Select */}
               <div className="relative">
                 <select
                   value={selectedFuel}
                   onChange={(e) => setSelectedFuel(e.target.value)}
-                  className="appearance-none bg-white border border-gray-200 text-gray-700 py-2 pl-4 pr-10 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary hover:border-primary/50 transition-all cursor-pointer"
+                  className="appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer hover:border-gray-300 transition-all"
                 >
-                  <option value="All">All Fuels</option>
+                  <option value="All">All Fuel Types</option>
                   <option value="Petrol">Petrol Only</option>
                   <option value="Diesel">Diesel Only</option>
                   <option value="Kerosene">Kerosene Only</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
-                  <ChevronDown className="h-4 w-4" />
-                </div>
+                <ChevronDown className="h-4 w-4 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
               </div>
+
+              {/* Sort By Dropdown */}
+              <div className="relative">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="appearance-none bg-white border border-gray-200 text-gray-700 py-2.5 pl-4 pr-10 rounded-2xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer hover:border-gray-300 transition-all"
+                >
+                  <option value="date-desc">Date (Newest First)</option>
+                  <option value="date-asc">Date (Oldest First)</option>
+                  <option value="petrol-desc">Petrol (Highest First)</option>
+                  <option value="petrol-asc">Petrol (Lowest First)</option>
+                  <option value="diesel-desc">Diesel (Highest First)</option>
+                  <option value="diesel-asc">Diesel (Lowest First)</option>
+                  <option value="kerosene-desc">Kerosene (Highest First)</option>
+                  <option value="kerosene-asc">Kerosene (Lowest First)</option>
+                </select>
+                <ArrowUpDown className="h-4 w-4 pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              </div>
+
+              {/* Advanced Filter Toggle Button */}
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`flex items-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-bold border transition-all ${
+                  showAdvancedFilters || activeFiltersCount > 0
+                    ? 'bg-primary/10 text-primary border-primary/30'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Filters</span>
+                {activeFiltersCount > 0 && (
+                  <span className="bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
-          
-          <div className="h-96 w-full mt-8">
+
+          {/* Expandable Advanced Filters */}
+          {showAdvancedFilters && (
+            <div className="pt-4 mt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 animate-in fade-in duration-200">
+              {/* Custom Date Range */}
+              {selectedTimeframe === 'custom' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">End Date</label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Min Price Filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Min Price (NLe / SLL)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">NLe</span>
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-xs font-semibold rounded-xl pl-11 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Max Price Filter */}
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Max Price (NLe / SLL)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">NLe</span>
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-xs font-semibold rounded-xl pl-11 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Filter Reset Button */}
+              <div className="flex items-end">
+                <button
+                  onClick={handleResetFilters}
+                  disabled={activeFiltersCount === 0}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl text-xs font-bold bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset All Filters</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Results Summary Counter */}
+          <div className="flex items-center justify-between text-xs font-semibold text-gray-500 pt-1">
+            <span>Showing <strong className="text-gray-900 font-bold">{filteredData.length}</strong> of {globalPriceHistory.length} historical price entries</span>
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={handleResetFilters}
+                className="text-primary hover:underline font-bold flex items-center gap-1"
+              >
+                Clear filters ({activeFiltersCount})
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Content Display Area */}
+        <div className="p-6 md:p-8">
+          <div className="h-96 w-full" ref={chartRef}>
             {globalHistoryLoading ? (
               <div className="flex flex-col justify-center items-center h-full gap-3">
                 <div className="animate-spin rounded-full h-10 w-10 border-4 border-primary/20 border-t-primary"></div>
@@ -179,7 +618,7 @@ export default function PriceTrends() {
               <>
                 {chartType === 'line' && (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={filteredData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                    <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                       <XAxis 
                         dataKey="date" 
@@ -193,9 +632,9 @@ export default function PriceTrends() {
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }}
-                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : `NLe ${value}`}
                         dx={-10}
-                        domain={[0, 36000]}
+                        domain={[0, 'auto']}
                         tickCount={5}
                       />
                       <Tooltip 
@@ -207,7 +646,7 @@ export default function PriceTrends() {
                         }}
                         itemStyle={{ fontSize: '12px', fontWeight: 700, padding: '2px 0' }}
                         labelStyle={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#9CA3AF', marginBottom: '8px' }}
-                        formatter={(value: number) => [`${value.toLocaleString()} SLL`, '']}
+                        formatter={(value: number) => [value >= 1000 ? `${value.toLocaleString()} SLL` : `NLe ${Number(value).toFixed(2)}/L`, '']}
                       />
                       <Legend 
                         verticalAlign="top" 
@@ -227,60 +666,68 @@ export default function PriceTrends() {
                     </LineChart>
                   </ResponsiveContainer>
                 )}
+
                 {chartType === 'bar' && (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={filteredData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                       <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} dy={10} minTickGap={30} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} dx={-10} domain={[0, 36000]} tickCount={5} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : `NLe ${value}`} dx={-10} domain={[0, 'auto']} tickCount={5} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', padding: '12px' }}
                         itemStyle={{ fontSize: '12px', fontWeight: 700, padding: '2px 0' }}
                         labelStyle={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#9CA3AF', marginBottom: '8px' }}
-                        formatter={(value: number) => [`${value.toLocaleString()} SLL`, '']}
+                        formatter={(value: number) => [value >= 1000 ? `${value.toLocaleString()} SLL` : `NLe ${Number(value).toFixed(2)}/L`, '']}
                       />
                       <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
                       {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
-                        <Bar name="Diesel" dataKey="Diesel" fill="var(--color-surface-900)" radius={[4, 4, 0, 0]} maxBarSize={6} />
+                        <Bar name="Diesel" dataKey="Diesel" fill="var(--color-surface-900)" radius={[4, 4, 0, 0]} maxBarSize={8} />
                       )}
                       {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
-                        <Bar name="Kerosene" dataKey="Kerosene" fill="#D946EF" radius={[4, 4, 0, 0]} maxBarSize={6} />
+                        <Bar name="Kerosene" dataKey="Kerosene" fill="#D946EF" radius={[4, 4, 0, 0]} maxBarSize={8} />
                       )}
                       {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
-                        <Bar name="Petrol" dataKey="Petrol" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={6} />
+                        <Bar name="Petrol" dataKey="Petrol" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={8} />
                       )}
                     </BarChart>
                   </ResponsiveContainer>
                 )}
+
                 {chartType === 'table' && (
                   <div className="overflow-auto w-full h-full border border-gray-100 rounded-2xl">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Effective Date / Period</th>
                           {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Petrol (SLL)</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Petrol</th>
                           )}
                           {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Diesel (SLL)</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Diesel</th>
                           )}
                           {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Kerosene (SLL)</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Kerosene</th>
                           )}
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredData.slice().reverse().map((row, idx) => (
-                          <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{row.date}</td>
+                        {filteredData.map((row, idx) => (
+                          <tr key={row.id || idx} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{row.date}</td>
                             {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.Petrol?.toLocaleString() || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-primary">
+                                {formatPrice(row.Petrol)}
+                              </td>
                             )}
                             {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.Diesel?.toLocaleString() || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-surface-900">
+                                {formatPrice(row.Diesel)}
+                              </td>
                             )}
                             {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.Kerosene?.toLocaleString() || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-fuchsia-600">
+                                {formatPrice(row.Kerosene)}
+                              </td>
                             )}
                           </tr>
                         ))}
@@ -292,13 +739,72 @@ export default function PriceTrends() {
             ) : (
               <div className="flex flex-col justify-center items-center h-full text-gray-400 gap-2">
                 <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-2">
-                  <History className="w-6 h-6 text-gray-200" />
+                  <Filter className="w-6 h-6 text-gray-300" />
                 </div>
-                <p className="text-sm font-bold">No historical data available</p>
-                <p className="text-xs font-medium opacity-60">Trends will appear as prices are recorded over time</p>
+                <p className="text-sm font-bold text-gray-600">No matching price trend entries</p>
+                <p className="text-xs font-medium text-gray-400">Try adjusting your search criteria or resetting filters</p>
+                <button
+                  onClick={handleResetFilters}
+                  className="mt-3 px-4 py-2 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-all"
+                >
+                  Reset Filters
+                </button>
               </div>
             )}
           </div>
+
+          {/* Additional Data Table below charts if not in table mode */}
+          {chartType !== 'table' && filteredData.length > 0 && (
+            <div className="mt-8 pt-8 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                  <TableIcon className="w-4 h-4 text-gray-500" />
+                  Detailed Price Record Breakdown ({filteredData.length})
+                </h3>
+              </div>
+
+              <div className="overflow-x-auto border border-gray-100 rounded-2xl max-h-80 overflow-y-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date / Period</th>
+                      {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Petrol</th>
+                      )}
+                      {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Diesel</th>
+                      )}
+                      {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Kerosene</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredData.map((row, idx) => (
+                      <tr key={row.id || idx} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-3.5 whitespace-nowrap text-xs font-semibold text-gray-900">{row.date}</td>
+                        {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
+                          <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-primary">
+                            {formatPrice(row.Petrol)}
+                          </td>
+                        )}
+                        {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
+                          <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-surface-900">
+                            {formatPrice(row.Diesel)}
+                          </td>
+                        )}
+                        {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
+                          <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-fuchsia-600">
+                            {formatPrice(row.Kerosene)}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
