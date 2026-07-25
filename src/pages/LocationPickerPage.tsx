@@ -322,7 +322,7 @@ export default function LocationPickerPage() {
         setIsLocating(false);
       },
       (error) => {
-        console.error('Error getting location:', error);
+        console.warn('Unable to retrieve location:', error.message || error);
         alert('Unable to retrieve your location');
         setIsLocating(false);
       },

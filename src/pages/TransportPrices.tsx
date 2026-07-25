@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, query, orderBy, db, handleFirestoreError, OperationType } from '../firebase';
-import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote } from 'lucide-react';
+import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ReferenceLine } from 'recharts';
 
 interface TransportPrice {
   id: string;
@@ -13,17 +14,28 @@ interface TransportPrice {
   updatedBy: string;
 }
 
+interface FuelStation {
+  id: string;
+  name: string;
+  prices: {
+    Petrol?: number;
+    Diesel?: number;
+    Kerosene?: number;
+  };
+}
+
 export default function TransportPrices() {
   const [prices, setPrices] = useState<TransportPrice[]>([]);
+  const [stations, setStations] = useState<FuelStation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVehicleType, setSelectedVehicleType] = useState('All');
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
+  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>('cards');
   const [sortField, setSortField] = useState<'route' | 'price' | 'date' | 'lastUpdated'>('route');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
+    const unsubscribeTransport = onSnapshot(
       query(collection(db, 'transport_prices'), orderBy('route')),
       (snapshot) => {
         const priceData = snapshot.docs.map(doc => ({
@@ -39,7 +51,21 @@ export default function TransportPrices() {
       }
     );
 
-    return () => unsubscribe();
+    const unsubscribeStations = onSnapshot(
+      collection(db, 'stations'),
+      (snapshot) => {
+        const stationData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as FuelStation[];
+        setStations(stationData);
+      }
+    );
+
+    return () => {
+      unsubscribeTransport();
+      unsubscribeStations();
+    };
   }, []);
 
   const vehicleTypes = ['All', ...Array.from(new Set(prices.map(p => p.vehicleType)))].sort();
@@ -102,6 +128,19 @@ export default function TransportPrices() {
 
         <div className="flex items-center bg-gray-100/50 p-1 rounded-xl self-start md:self-auto">
           <Button
+            onClick={() => setViewMode('analytics')}
+            variant="unstyled"
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+              viewMode === 'analytics'
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            showNotification={false}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Analytics
+          </Button>
+          <Button
             onClick={() => setViewMode('cards')}
             variant="unstyled"
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -158,7 +197,73 @@ export default function TransportPrices() {
       </div>
 
       {/* Results View */}
-      {viewMode === 'list' ? (
+      {viewMode === 'analytics' ? (
+        <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
+          <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-surface-900 mb-1">Fuel vs Transport Price Analysis</h2>
+              <p className="text-sm text-gray-500 font-medium">Comparing average transport prices by vehicle type against the current average fuel price.</p>
+            </div>
+            <div className="flex items-center gap-4 text-sm font-bold bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-primary"></div>
+                <span className="text-gray-600">Transport Price</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                <span className="text-gray-600">Average Fuel Price</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="h-[400px] w-full">
+            {prices.length > 0 ? (() => {
+              // Calculate average transport prices by vehicle type
+              const vehicleTypesSet = Array.from(new Set(prices.map(p => p.vehicleType)));
+              const chartData = vehicleTypesSet.map(vt => {
+                const vtPrices = prices.filter(p => p.vehicleType === vt);
+                const avgPrice = vtPrices.length > 0 
+                  ? Math.round(vtPrices.reduce((sum, p) => sum + p.price, 0) / vtPrices.length) 
+                  : 0;
+                
+                return {
+                  name: vt,
+                  'Avg Transport Price': avgPrice
+                };
+              });
+
+              // Calculate average fuel price across all stations
+              let totalFuelPrice = 0;
+              let fuelPriceCount = 0;
+              stations.forEach(s => {
+                if (s.prices.Petrol) { totalFuelPrice += s.prices.Petrol; fuelPriceCount++; }
+                if (s.prices.Diesel) { totalFuelPrice += s.prices.Diesel; fuelPriceCount++; }
+              });
+              const avgFuelPrice = fuelPriceCount > 0 ? Math.round(totalFuelPrice / fuelPriceCount) : 30000;
+
+              return (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 600 }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 600 }} dx={-10} tickFormatter={(value) => `Le ${value.toLocaleString()}`} />
+                    <Tooltip 
+                      cursor={{ fill: '#F3F4F6' }}
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', fontWeight: 'bold' }}
+                      formatter={(value: number) => [`Le ${value.toLocaleString()}`, 'Price']}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                    <Bar dataKey="Avg Transport Price" fill="#0EA5E9" radius={[6, 6, 0, 0]} maxBarSize={60} />
+                    <ReferenceLine y={avgFuelPrice} stroke="#10B981" strokeDasharray="3 3" label={{ position: 'top', value: `Avg Fuel: Le ${avgFuelPrice.toLocaleString()}`, fill: '#10B981', fontSize: 12, fontWeight: 'bold' }} />
+                  </BarChart>
+                </ResponsiveContainer>
+              );
+            })() : (
+              <div className="flex h-full items-center justify-center text-gray-400 font-bold">Not enough data to display</div>
+            )}
+          </div>
+        </div>
+      ) : viewMode === 'list' ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-100">

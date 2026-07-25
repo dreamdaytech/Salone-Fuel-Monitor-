@@ -81,7 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (userDoc.exists()) {
             const data = userDoc.data() as UserProfile;
             console.log("Profile found:", data.role);
-            const isDefaultAdmin = currentUser.email?.toLowerCase() === 'kharifakumara16@gmail.com' || currentUser.email?.toLowerCase() === 'kharifaabdulaikumara1@gmail.com';
+            const isDefaultAdmin = currentUser.email?.toLowerCase() === 'kharifakumara16@gmail.com' || currentUser.email?.toLowerCase() === 'kharifaabdulaikumara1@gmail.com' || currentUser.email?.toLowerCase() === 'slfuelmonitor@gmail.com';
             
             if (isDefaultAdmin && data.role !== 'admin') {
               console.log("Upgrading default admin to admin role...");
@@ -94,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             console.log("No profile found in Firestore.");
             // Check if this is the default admin
-            const isDefaultAdmin = currentUser.email?.toLowerCase() === 'kharifakumara16@gmail.com' || currentUser.email?.toLowerCase() === 'kharifaabdulaikumara1@gmail.com';
+            const isDefaultAdmin = currentUser.email?.toLowerCase() === 'kharifakumara16@gmail.com' || currentUser.email?.toLowerCase() === 'kharifaabdulaikumara1@gmail.com' || currentUser.email?.toLowerCase() === 'slfuelmonitor@gmail.com';
             if (isDefaultAdmin) {
               console.log("Creating default admin profile...");
               const newProfile: UserProfile = {

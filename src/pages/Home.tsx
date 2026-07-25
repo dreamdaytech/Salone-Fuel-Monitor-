@@ -108,7 +108,7 @@ export default function Home() {
           });
         },
         (error) => {
-          console.error("Error getting location:", error);
+          console.warn("Location permission or detection not available:", error.message || error);
         }
       );
     }

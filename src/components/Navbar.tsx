@@ -72,6 +72,14 @@ export default function Navbar() {
                 <Bus className="h-4 w-4" />
                 <span>Transport Prices</span>
               </Link>
+              
+              <Link
+                to="/price-trends"
+                className="text-gray-600 hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+              >
+                <Activity className="h-4 w-4" />
+                <span>Price Trends</span>
+              </Link>
 
               <Link
                 to="/about"
@@ -232,6 +240,15 @@ export default function Navbar() {
             >
               <Bus className="h-5 w-5" />
               <span>Transport Prices</span>
+            </Link>
+            
+            <Link
+              to="/price-trends"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-emerald-50 hover:text-primary font-medium transition-colors"
+            >
+              <Activity className="h-5 w-5" />
+              <span>Price Trends</span>
             </Link>
             <Link
               to="/about"

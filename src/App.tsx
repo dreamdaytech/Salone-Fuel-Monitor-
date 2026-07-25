@@ -14,6 +14,7 @@ import PageTransition from './components/PageTransition';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import TransportPrices from './pages/TransportPrices';
+import PriceTrends from './pages/PriceTrends';
 import StationDashboard from './pages/StationDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminReviews from './pages/AdminReviews';
@@ -74,6 +75,7 @@ function AppContent() {
               <Routes location={location} key={location.pathname}>
                 <Route path="/" element={<PageTransition><Home /></PageTransition>} />
                 <Route path="/transport-prices" element={<PageTransition><TransportPrices /></PageTransition>} />
+                <Route path="/price-trends" element={<PageTransition><PriceTrends /></PageTransition>} />
                 <Route path="/login" element={!user ? <PageTransition><Auth /></PageTransition> : <Navigate to="/" />} />
                 <Route path="/signup" element={!user ? <PageTransition><Auth /></PageTransition> : <Navigate to="/" />} />
                 <Route path="/profile" element={user ? <PageTransition><Profile /></PageTransition> : <Navigate to="/login" />} />
