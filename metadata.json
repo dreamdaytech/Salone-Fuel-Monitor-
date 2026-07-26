@@ -1,7 +1,10 @@
 {
-  "name": "Remix:  Remix: Salone Fuel Monitor",
-  "description": "A location input feature for Sierra Leone using Google Maps and Places API.",
+  "name": "Salone Fuel Monitor",
+  "description": "Fuel monitoring and transportation price tracking platform for Sierra Leone.",
   "requestFramePermissions": [
     "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }

@@ -71,30 +71,28 @@ function AppContent() {
           <Toaster position="top-center" richColors />
           <Navbar />
           <main>
-            <AnimatePresence mode="wait">
-              <Routes location={location} key={location.pathname}>
-                <Route path="/" element={<PageTransition><Home /></PageTransition>} />
-                <Route path="/transport-prices" element={<PageTransition><TransportPrices /></PageTransition>} />
-                <Route path="/price-trends" element={<PageTransition><PriceTrends /></PageTransition>} />
-                <Route path="/login" element={!user ? <PageTransition><Auth /></PageTransition> : <Navigate to="/" />} />
-                <Route path="/signup" element={!user ? <PageTransition><Auth /></PageTransition> : <Navigate to="/" />} />
-                <Route path="/profile" element={user ? <PageTransition><Profile /></PageTransition> : <Navigate to="/login" />} />
-                <Route path="/polls" element={user ? <PageTransition><Polls /></PageTransition> : <Navigate to="/login" />} />
-                <Route path="/surveys" element={user ? <PageTransition><Surveys /></PageTransition> : <Navigate to="/login" />} />
-                <Route path="/petitions" element={user ? <PageTransition><Petitions /></PageTransition> : <Navigate to="/login" />} />
-                <Route path="/decision" element={user ? <PageTransition><Decision /></PageTransition> : <Navigate to="/login" />} />
-                <Route path="/about" element={<PageTransition><About /></PageTransition>} />
-                <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
-                <Route path="/terms" element={<PageTransition><TermsOfService /></PageTransition>} />
-                <Route path="/privacy" element={<PageTransition><PrivacyPolicy /></PageTransition>} />
-                <Route path="/cookies" element={<PageTransition><CookiePolicy /></PageTransition>} />
-                <Route path="/onboarding" element={user && profile && !profile.onboardingCompleted ? <PageTransition><Onboarding /></PageTransition> : <Navigate to="/" />} />
-                <Route path="/location-picker" element={<PageTransition><LocationPickerPage /></PageTransition>} />
-                <Route path="/dashboard" element={user && (profile?.role === 'station_owner' || profile?.role === 'admin') ? <PageTransition><StationDashboard /></PageTransition> : <Navigate to={user ? "/" : "/login"} />} />
-                <Route path="/admin" element={user && profile?.role === 'admin' ? <PageTransition><AdminDashboard /></PageTransition> : <Navigate to={user ? "/" : "/login"} />} />
-                <Route path="*" element={<Navigate to="/" />} />
-              </Routes>
-            </AnimatePresence>
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<Home />} />
+              <Route path="/transport-prices" element={<TransportPrices />} />
+              <Route path="/price-trends" element={<PriceTrends />} />
+              <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
+              <Route path="/signup" element={!user ? <Auth /> : <Navigate to="/" />} />
+              <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+              <Route path="/polls" element={user ? <Polls /> : <Navigate to="/login" />} />
+              <Route path="/surveys" element={user ? <Surveys /> : <Navigate to="/login" />} />
+              <Route path="/petitions" element={user ? <Petitions /> : <Navigate to="/login" />} />
+              <Route path="/decision" element={user ? <Decision /> : <Navigate to="/login" />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/onboarding" element={user && profile && !profile.onboardingCompleted ? <Onboarding /> : <Navigate to="/" />} />
+              <Route path="/location-picker" element={<LocationPickerPage />} />
+              <Route path="/dashboard" element={user && (profile?.role === 'station_owner' || profile?.role === 'admin') ? <StationDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
+              <Route path="/admin" element={user && profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
           </main>
           {isPublicRoute && <Footer />}
         </div>

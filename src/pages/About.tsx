@@ -9,7 +9,7 @@ export default function About() {
       <div className="bg-surface-900 py-24 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
           <h1 className="text-4xl font-extrabold text-white sm:text-5xl md:text-6xl tracking-tight">
-            About <span className="text-primary">SL Fuel Monitor</span>
+            About <span className="text-primary">Salone Fuel Monitor</span>
           </h1>
           <p className="mt-6 max-w-2xl mx-auto text-xl text-slate-400 leading-relaxed">
             Empowering citizens and businesses in Sierra Leone with real-time fuel price transparency and station monitoring.
@@ -78,7 +78,7 @@ export default function About() {
                 <h2 className="text-3xl font-extrabold text-surface-900 mb-8 tracking-tight">Our Story</h2>
                 <div className="space-y-6 text-gray-600 leading-relaxed text-lg">
                   <p>
-                    SL Fuel Monitor was born out of a simple observation: finding fuel and knowing the current price shouldn't be a guessing game. In a rapidly changing economy, information is power.
+                    Salone Fuel Monitor was born out of a simple observation: finding fuel and knowing the current price shouldn't be a guessing game. In a rapidly changing economy, information is power.
                   </p>
                   <p>
                     Our team of dedicated developers and industry experts came together to build a solution that bridges the gap between fuel stations and consumers. We started with a small pilot in Freetown and are now expanding to cover the entire country.

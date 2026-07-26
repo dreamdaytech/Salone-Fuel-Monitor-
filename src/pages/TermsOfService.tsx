@@ -11,14 +11,14 @@ export default function TermsOfService() {
             <section>
               <h2 className="text-xl font-bold text-surface-900 mb-4">1. Acceptance of Terms</h2>
               <p>
-                By accessing and using SL Fuel Monitor ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
+                By accessing and using Salone Fuel Monitor ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
               </p>
             </section>
 
             <section>
               <h2 className="text-xl font-bold text-surface-900 mb-4">2. Description of Service</h2>
               <p>
-                SL Fuel Monitor provides real-time information regarding fuel prices, station availability, and transport costs in Sierra Leone. While we strive for accuracy, the information provided is for general guidance and we do not guarantee its absolute real-time accuracy.
+                Salone Fuel Monitor provides real-time information regarding fuel prices, station availability, and transport costs in Sierra Leone. While we strive for accuracy, the information provided is for general guidance and we do not guarantee its absolute real-time accuracy.
               </p>
             </section>
 
@@ -46,7 +46,7 @@ export default function TermsOfService() {
             <section>
               <h2 className="text-xl font-bold text-surface-900 mb-4">5. Data Accuracy and Liability</h2>
               <p>
-                The fuel prices and availability statuses are crowd-sourced and provided by station owners. SL Fuel Monitor acts as an aggregator and is not liable for any discrepancies between the prices listed on the platform and the actual prices at the physical stations. Users rely on this information at their own risk.
+                The fuel prices and availability statuses are crowd-sourced and provided by station owners. Salone Fuel Monitor acts as an aggregator and is not liable for any discrepancies between the prices listed on the platform and the actual prices at the physical stations. Users rely on this information at their own risk.
               </p>
             </section>
 

@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
             <section>
               <h2 className="text-xl font-bold text-surface-900 mb-4">1. Introduction</h2>
               <p>
-                At SL Fuel Monitor, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services.
+                At Salone Fuel Monitor, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website and use our services.
               </p>
             </section>
 

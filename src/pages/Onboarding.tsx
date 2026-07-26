@@ -161,7 +161,7 @@ export default function Onboarding() {
 
       await updateProfile(profileUpdates);
 
-      toast.success('Onboarding completed! Welcome to SL Fuel Monitor.');
+      toast.success('Onboarding completed! Welcome to Salone Fuel Monitor.');
       navigate('/');
     } catch (error: any) {
       console.error('Onboarding failed:', error);
@@ -453,7 +453,7 @@ export default function Onboarding() {
             </div>
             <h2 className="text-3xl font-extrabold text-surface-900 tracking-tight">Admin Command</h2>
             <p className="text-gray-500 leading-relaxed">
-              Welcome to the SL Fuel Monitor administration panel. As an admin, you have full control over:
+              Welcome to the Salone Fuel Monitor administration panel. As an admin, you have full control over:
             </p>
             <ul className="space-y-3 pt-4">
               {[

@@ -146,7 +146,7 @@ export default function Auth() {
               </div>
             </div>
             <h2 className="text-center text-3xl font-bold text-gray-900 tracking-tight">
-              {isLogin ? 'Welcome Back' : 'Join SL Fuel Monitor'}
+              {isLogin ? 'Welcome Back' : 'Join Salone Fuel Monitor'}
             </h2>
             <p className="mt-2 text-center text-base text-gray-500">
               {isLogin ? 'Monitor fuel prices in real-time.' : 'Start tracking fuel prices today.'}
@@ -323,7 +323,7 @@ export default function Auth() {
             <p className="text-sm text-gray-500">
               {isLogin ? (
                 <>
-                  New to SL Fuel Monitor?{' '}
+                  New to Salone Fuel Monitor?{' '}
                   <button 
                     onClick={() => navigate('/signup')}
                     className="font-bold text-emerald-600 hover:text-emerald-700 transition-colors"

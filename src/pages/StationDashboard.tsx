@@ -372,6 +372,25 @@ export default function StationDashboard() {
 
   const handleSavePromo = async () => {
     if (!user) return;
+    
+    // Client-side validation
+    if (!promoFormData.stationIds || promoFormData.stationIds.length === 0) {
+      alert("Please select at least one station.");
+      return;
+    }
+    if (!promoFormData.fuelTypes || promoFormData.fuelTypes.length === 0) {
+      alert("Please select at least one fuel type.");
+      return;
+    }
+    if (!promoFormData.discountAmount || promoFormData.discountAmount <= 0) {
+      alert("Please enter a valid discount amount greater than 0.");
+      return;
+    }
+    if (!promoFormData.startTime || !promoFormData.endTime) {
+      alert("Please select both start and end times.");
+      return;
+    }
+
     try {
       // Remove id from data to avoid firestore rules error (hasOnlyAllowedFields)
       const { id, ...rest } = promoFormData;

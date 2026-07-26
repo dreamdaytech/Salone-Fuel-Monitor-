@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
@@ -17,6 +17,9 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -50,7 +53,7 @@ export default function Navbar() {
                 <Fuel className="h-6 w-6 text-primary" />
               </div>
               <span className="text-xl font-bold text-surface-900 hidden sm:block">
-                SL Fuel Monitor
+                Salone Fuel Monitor
               </span>
             </Link>
           </div>
@@ -59,7 +62,7 @@ export default function Navbar() {
             <div className="hidden sm:flex items-center gap-4 md:gap-6 mr-2 sm:mr-4">
               <Link
                 to="/"
-                className="text-gray-600 hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
               >
                 <MapPin className="h-4 w-4" />
                 <span>Fuel Stations</span>
@@ -67,7 +70,7 @@ export default function Navbar() {
 
               <Link
                 to="/transport-prices"
-                className="text-gray-600 hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/transport-prices') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
               >
                 <Bus className="h-4 w-4" />
                 <span>Transport Prices</span>
@@ -75,7 +78,7 @@ export default function Navbar() {
               
               <Link
                 to="/price-trends"
-                className="text-gray-600 hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/price-trends') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
               >
                 <Activity className="h-4 w-4" />
                 <span>Price Trends</span>
@@ -83,7 +86,7 @@ export default function Navbar() {
 
               <Link
                 to="/about"
-                className="text-gray-600 hover:text-primary flex items-center gap-1.5 text-sm font-medium transition-colors"
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/about') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
               >
                 <Info className="h-4 w-4" />
                 <span>About</span>
@@ -228,7 +231,7 @@ export default function Navbar() {
             <Link
               to="/"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-emerald-50 hover:text-primary font-medium transition-colors"
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
             >
               <MapPin className="h-5 w-5" />
               <span>Fuel Stations</span>
@@ -236,7 +239,7 @@ export default function Navbar() {
             <Link
               to="/transport-prices"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-emerald-50 hover:text-primary font-medium transition-colors"
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/transport-prices') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
             >
               <Bus className="h-5 w-5" />
               <span>Transport Prices</span>
@@ -245,7 +248,7 @@ export default function Navbar() {
             <Link
               to="/price-trends"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-emerald-50 hover:text-primary font-medium transition-colors"
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/price-trends') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
             >
               <Activity className="h-5 w-5" />
               <span>Price Trends</span>
@@ -253,7 +256,7 @@ export default function Navbar() {
             <Link
               to="/about"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl text-gray-700 hover:bg-emerald-50 hover:text-primary font-medium transition-colors"
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/about') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
             >
               <Info className="h-5 w-5" />
               <span>About</span>

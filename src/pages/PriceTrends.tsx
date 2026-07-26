@@ -10,6 +10,7 @@ import {
   Minus, Fuel, DollarSign, Table as TableIcon, LineChart as LineChartIcon, BarChart3, RefreshCw
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
 export default function PriceTrends() {
@@ -19,7 +20,7 @@ export default function PriceTrends() {
   // Search, Filter & Sort States
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFuel, setSelectedFuel] = useState<string>('All');
-  const [selectedTimeframe, setSelectedTimeframe] = useState<string>('30');
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string>('365');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [minPrice, setMinPrice] = useState<string>('');
@@ -32,23 +33,214 @@ export default function PriceTrends() {
   const chartRef = useRef<HTMLDivElement>(null);
 
   const handleExportPDF = async () => {
-    if (!chartRef.current) return;
-    
     try {
       setIsExporting(true);
-      const canvas = await html2canvas(chartRef.current, { 
-        scale: 2,
-        backgroundColor: '#ffffff'
+      
+      const pdf = new jsPDF('p', 'mm', 'a4'); 
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 14;
+      
+      let currentY = 0;
+
+      const getTrendText = (current?: number, previous?: number) => {
+        if (!current || !previous || current === previous) return '';
+        const diff = current - previous;
+        const percent = (diff / previous) * 100;
+        return ` (${diff > 0 ? '+' : ''}${percent.toFixed(1)}%)`;
+      };
+
+      // --- Brand Header Banner ---
+      pdf.setFillColor(0, 114, 198); // Sierra Leone Blue
+      pdf.rect(0, 0, pageWidth, 28, 'F');
+      
+      // Green Accent line at the bottom of the header
+      pdf.setFillColor(30, 181, 58); // Sierra Leone Green
+      pdf.rect(0, 28, pageWidth, 2, 'F');
+      
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('Salone Fuel Monitor', margin, 18);
+      
+      // Subtitle / Label in header
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(255, 255, 255); // White
+      pdf.text('OFFICIAL PRICE TRENDS REPORT', pageWidth - margin, 18, { align: 'right' });
+
+      currentY = 42;
+
+      // --- Report Title & Meta ---
+      pdf.setFontSize(22);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 114, 198); // Sierra Leone Blue
+      pdf.text('Fuel Price Trends Analysis', margin, currentY);
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 116, 139); // slate-500
+      currentY += 8;
+      pdf.text(`Generated on: ${new Date().toLocaleString()}`, margin, currentY);
+
+      // Accent Line
+      currentY += 6;
+      pdf.setDrawColor(226, 232, 240); // slate-200
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, currentY, pageWidth - margin, currentY);
+
+      // --- Analysis Parameters ---
+      currentY += 12;
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(0, 114, 198); // Sierra Leone Blue
+      pdf.text('Analysis Parameters', margin, currentY);
+      
+      currentY += 6;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(71, 85, 105);
+      
+      const filters = [
+        `Fuel Type: ${selectedFuel}`,
+        `Timeframe: ${selectedTimeframe === 'custom' ? `${startDate || 'N/A'} to ${endDate || 'N/A'}` : selectedTimeframe === 'all' ? 'All Time' : `Last ${selectedTimeframe} Days`}`,
+        `Sort By: ${sortBy}`
+      ];
+      
+      if (minPrice || maxPrice) {
+        filters.push(`Price Range: NLe ${minPrice || '0'} - ${maxPrice || 'Any'}`);
+      }
+      if (searchQuery) {
+        filters.push(`Search: "${searchQuery}"`);
+      }
+
+      filters.forEach(filter => {
+        pdf.text(`• ${filter}`, margin + 2, currentY);
+        currentY += 5;
       });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape for charts
+
+      // --- Statistics ---
+      if (stats) {
+        currentY += 8;
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 114, 198); // Sierra Leone Blue
+        pdf.text('Summary Statistics', margin, currentY);
+        
+        currentY += 6;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(71, 85, 105);
+        
+        // Add Latest Prices
+        if (stats.latest) {
+          let latestText = `Latest Recorded Prices (${stats.latest.date}):`;
+          pdf.text(latestText, margin + 2, currentY);
+          currentY += 5;
+          
+          if (selectedFuel === 'All' || selectedFuel === 'Petrol') {
+            const trend = getTrendText(stats.latest.Petrol, stats.previous?.Petrol);
+            pdf.text(`  • Petrol: ${formatPrice(stats.latest.Petrol)}${trend}`, margin + 2, currentY);
+            currentY += 5;
+          }
+          if (selectedFuel === 'All' || selectedFuel === 'Diesel') {
+            const trend = getTrendText(stats.latest.Diesel, stats.previous?.Diesel);
+            pdf.text(`  • Diesel: ${formatPrice(stats.latest.Diesel)}${trend}`, margin + 2, currentY);
+            currentY += 5;
+          }
+          if (selectedFuel === 'All' || selectedFuel === 'Kerosene') {
+            const trend = getTrendText(stats.latest.Kerosene, stats.previous?.Kerosene);
+            pdf.text(`  • Kerosene: ${formatPrice(stats.latest.Kerosene)}${trend}`, margin + 2, currentY);
+            currentY += 5;
+          }
+          currentY += 3; // Extra spacing after latest prices
+        }
+
+        pdf.text(`Average Price: ${formatPrice(stats.avgActive)}`, margin + 2, currentY);
+        currentY += 5;
+        pdf.text(`Price Range: ${formatPrice(stats.minActive)} - ${formatPrice(stats.maxActive)}`, margin + 2, currentY);
+        currentY += 5;
+        pdf.text(`Total Records: ${filteredData.length}`, margin + 2, currentY);
+        currentY += 8;
+      }
+
+      // --- Chart ---
+      if (chartRef.current && chartType !== 'table') {
+        const canvas = await html2canvas(chartRef.current, { 
+          scale: 2,
+          backgroundColor: '#ffffff'
+        });
+        const imgData = canvas.toDataURL('image/png');
+        
+        const chartWidth = pageWidth - (margin * 2);
+        const chartHeight = (canvas.height * chartWidth) / canvas.width;
+        
+        // If chart doesn't fit on this page, add a new page
+        if (currentY + chartHeight > pageHeight - margin - 20) {
+          pdf.addPage();
+          currentY = margin + 10;
+        } else {
+          currentY += 5;
+        }
+        
+        pdf.addImage(imgData, 'PNG', margin, currentY, chartWidth, chartHeight);
+        currentY += chartHeight + 15;
+      }
+
+      // --- Table data ---
+      if (filteredData.length > 0) {
+        const tableColumns = ['Date / Period'];
+        if (selectedFuel === 'All' || selectedFuel === 'Petrol') tableColumns.push('Petrol');
+        if (selectedFuel === 'All' || selectedFuel === 'Diesel') tableColumns.push('Diesel');
+        if (selectedFuel === 'All' || selectedFuel === 'Kerosene') tableColumns.push('Kerosene');
+
+        const tableRows = filteredData.map((row: any) => {
+          const rowData = [row.date];
+          if (selectedFuel === 'All' || selectedFuel === 'Petrol') {
+            const trend = getTrendText(row.Petrol, row.prevPetrol);
+            rowData.push(`${formatPrice(row.Petrol)}${trend}`);
+          }
+          if (selectedFuel === 'All' || selectedFuel === 'Diesel') {
+            const trend = getTrendText(row.Diesel, row.prevDiesel);
+            rowData.push(`${formatPrice(row.Diesel)}${trend}`);
+          }
+          if (selectedFuel === 'All' || selectedFuel === 'Kerosene') {
+            const trend = getTrendText(row.Kerosene, row.prevKerosene);
+            rowData.push(`${formatPrice(row.Kerosene)}${trend}`);
+          }
+          return rowData;
+        });
+
+        autoTable(pdf, {
+          startY: currentY,
+          head: [tableColumns],
+          body: tableRows,
+          theme: 'grid',
+          headStyles: { fillColor: [30, 181, 58], textColor: 255, fontStyle: 'bold' }, // Sierra Leone Green
+          styles: { fontSize: 9, cellPadding: 4 },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          margin: { top: margin, right: margin, bottom: margin + 15, left: margin }
+        });
+      }
       
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      pdf.text('Fuel Price Trends Export', 14, 10);
-      pdf.addImage(imgData, 'PNG', 0, 15, pdfWidth, pdfHeight);
-      pdf.save(`fuel-price-trends-${new Date().toISOString().split('T')[0]}.pdf`);
+      // --- Footer for all pages ---
+      const pageCount = (pdf as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(148, 163, 184); // slate-400
+        
+        // Footer line
+        pdf.setDrawColor(226, 232, 240);
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+
+        pdf.text('Powered by Salone Fuel Monitor', margin, pageHeight - 10);
+        pdf.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+      }
+
+      pdf.save(`Salone_Fuel_Monitor_Price_Trends_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Error generating PDF:', error);
     } finally {
@@ -57,6 +249,18 @@ export default function PriceTrends() {
   };
 
   useEffect(() => {
+    const calculateTrends = (data: any[]) => {
+      return data.map((item, index) => {
+        const prev = index > 0 ? data[index - 1] : null;
+        return {
+          ...item,
+          prevPetrol: prev?.Petrol,
+          prevDiesel: prev?.Diesel,
+          prevKerosene: prev?.Kerosene,
+        };
+      });
+    };
+
     // 1. Subscribe to the official price_trends collection managed in the Admin Dashboard
     const unsubscribeTrends = onSnapshot(
       collection(db, 'price_trends'),
@@ -94,7 +298,7 @@ export default function PriceTrends() {
           // Default sort ascending for store
           formatted.sort((a, b) => a.timestamp - b.timestamp);
 
-          setGlobalPriceHistory(formatted);
+          setGlobalPriceHistory(calculateTrends(formatted));
           setGlobalHistoryLoading(false);
         } else {
           // Fallback: If price_trends collection is empty, load from price_history
@@ -137,7 +341,7 @@ export default function PriceTrends() {
 
               result.sort((a, b) => a.timestamp - b.timestamp);
 
-              setGlobalPriceHistory(result);
+              setGlobalPriceHistory(calculateTrends(result));
               setGlobalHistoryLoading(false);
             },
             (err) => {
@@ -283,7 +487,7 @@ export default function PriceTrends() {
     let count = 0;
     if (searchQuery.trim()) count++;
     if (selectedFuel !== 'All') count++;
-    if (selectedTimeframe !== 'all') count++;
+    if (selectedTimeframe !== '365') count++;
     if (startDate || endDate) count++;
     if (minPrice || maxPrice) count++;
     if (sortBy !== 'date-desc') count++;
@@ -293,7 +497,7 @@ export default function PriceTrends() {
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedFuel('All');
-    setSelectedTimeframe('30');
+    setSelectedTimeframe('365');
     setStartDate('');
     setEndDate('');
     setMinPrice('');
@@ -304,6 +508,21 @@ export default function PriceTrends() {
   const formatPrice = (val: number) => {
     if (!val) return '-';
     return val >= 1000 ? `${val.toLocaleString()} SLL` : `NLe ${Number(val).toFixed(2)}`;
+  };
+
+  const renderTrend = (current?: number, previous?: number) => {
+    if (!current || !previous || current === previous) {
+      return <span className="text-xs text-gray-400 font-medium ml-2 inline-flex items-center"><Minus className="w-3 h-3 mr-1" /> 0%</span>;
+    }
+    const diff = current - previous;
+    const percent = (diff / previous) * 100;
+    const isUp = diff > 0;
+    return (
+      <span className={`text-xs font-bold ml-2 inline-flex items-center ${isUp ? 'text-rose-500' : 'text-emerald-500'}`}>
+        {isUp ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+        {Math.abs(percent).toFixed(1)}%
+      </span>
+    );
   };
 
   return (
@@ -340,7 +559,10 @@ export default function PriceTrends() {
               <div className="text-xl font-extrabold text-surface-900">
                 {formatPrice(stats.latest?.Petrol)}
               </div>
-              <span className="text-xs text-gray-500 font-medium">{stats.latest?.date || 'Latest Entry'}</span>
+              <span className="text-xs text-gray-500 font-medium">
+                {stats.latest?.date || 'Latest Entry'}
+                {renderTrend(stats.latest?.Petrol, stats.previous?.Petrol)}
+              </span>
             </div>
             <div className="p-3 bg-primary/10 text-primary rounded-2xl">
               <Fuel className="w-6 h-6" />
@@ -353,7 +575,10 @@ export default function PriceTrends() {
               <div className="text-xl font-extrabold text-surface-900">
                 {formatPrice(stats.latest?.Diesel)}
               </div>
-              <span className="text-xs text-gray-500 font-medium">{stats.latest?.date || 'Latest Entry'}</span>
+              <span className="text-xs text-gray-500 font-medium">
+                {stats.latest?.date || 'Latest Entry'}
+                {renderTrend(stats.latest?.Diesel, stats.previous?.Diesel)}
+              </span>
             </div>
             <div className="p-3 bg-surface-900/10 text-surface-900 rounded-2xl">
               <Fuel className="w-6 h-6" />
@@ -366,9 +591,12 @@ export default function PriceTrends() {
               <div className="text-xl font-extrabold text-surface-900">
                 {formatPrice(stats.latest?.Kerosene)}
               </div>
-              <span className="text-xs text-gray-500 font-medium">{stats.latest?.date || 'Latest Entry'}</span>
+              <span className="text-xs text-gray-500 font-medium">
+                {stats.latest?.date || 'Latest Entry'}
+                {renderTrend(stats.latest?.Kerosene, stats.previous?.Kerosene)}
+              </span>
             </div>
-            <div className="p-3 bg-fuchsia-100 text-fuchsia-600 rounded-2xl">
+            <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl">
               <Fuel className="w-6 h-6" />
             </div>
           </div>
@@ -632,7 +860,7 @@ export default function PriceTrends() {
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }}
-                        tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : `NLe ${value}`}
+                        tickFormatter={(value) => value >= 1000 ? `NLe ${(value / 1000).toFixed(0)}` : `NLe ${value}`}
                         dx={-10}
                         domain={[0, 'auto']}
                         tickCount={5}
@@ -658,7 +886,7 @@ export default function PriceTrends() {
                         <Line name="Diesel" type="monotone" dataKey="Diesel" stroke="var(--color-surface-900)" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                       )}
                       {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
-                        <Line name="Kerosene" type="monotone" dataKey="Kerosene" stroke="#D946EF" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                        <Line name="Kerosene" type="monotone" dataKey="Kerosene" stroke="#2563EB" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                       )}
                       {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
                         <Line name="Petrol" type="monotone" dataKey="Petrol" stroke="var(--color-primary)" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
@@ -672,7 +900,7 @@ export default function PriceTrends() {
                     <BarChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                       <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} dy={10} minTickGap={30} />
-                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : `NLe ${value}`} dx={-10} domain={[0, 'auto']} tickCount={5} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} tickFormatter={(value) => value >= 1000 ? `NLe ${(value / 1000).toFixed(0)}` : `NLe ${value}`} dx={-10} domain={[0, 'auto']} tickCount={5} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', padding: '12px' }}
                         itemStyle={{ fontSize: '12px', fontWeight: 700, padding: '2px 0' }}
@@ -684,7 +912,7 @@ export default function PriceTrends() {
                         <Bar name="Diesel" dataKey="Diesel" fill="var(--color-surface-900)" radius={[4, 4, 0, 0]} maxBarSize={8} />
                       )}
                       {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
-                        <Bar name="Kerosene" dataKey="Kerosene" fill="#D946EF" radius={[4, 4, 0, 0]} maxBarSize={8} />
+                        <Bar name="Kerosene" dataKey="Kerosene" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={8} />
                       )}
                       {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
                         <Bar name="Petrol" dataKey="Petrol" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={8} />
@@ -717,16 +945,19 @@ export default function PriceTrends() {
                             {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-primary">
                                 {formatPrice(row.Petrol)}
+                                {renderTrend(row.Petrol, row.prevPetrol)}
                               </td>
                             )}
                             {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-surface-900">
                                 {formatPrice(row.Diesel)}
+                                {renderTrend(row.Diesel, row.prevDiesel)}
                               </td>
                             )}
                             {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-fuchsia-600">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
                                 {formatPrice(row.Kerosene)}
+                                {renderTrend(row.Kerosene, row.prevKerosene)}
                               </td>
                             )}
                           </tr>
@@ -786,16 +1017,19 @@ export default function PriceTrends() {
                         {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
                           <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-primary">
                             {formatPrice(row.Petrol)}
+                            {renderTrend(row.Petrol, row.prevPetrol)}
                           </td>
                         )}
                         {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
                           <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-surface-900">
                             {formatPrice(row.Diesel)}
+                            {renderTrend(row.Diesel, row.prevDiesel)}
                           </td>
                         )}
                         {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
-                          <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-fuchsia-600">
+                          <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-blue-600">
                             {formatPrice(row.Kerosene)}
+                            {renderTrend(row.Kerosene, row.prevKerosene)}
                           </td>
                         )}
                       </tr>

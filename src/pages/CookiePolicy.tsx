@@ -17,7 +17,7 @@ export default function CookiePolicy() {
 
             <section>
               <h2 className="text-xl font-bold text-surface-900 mb-4">2. How We Use Cookies</h2>
-              <p className="mb-2">SL Fuel Monitor uses cookies for the following purposes:</p>
+              <p className="mb-2">Salone Fuel Monitor uses cookies for the following purposes:</p>
               <ul className="list-disc pl-5 space-y-4">
                 <li>
                   <strong>Essential Cookies:</strong> These are required for the operation of our platform. They include, for example, cookies that enable you to log into secure areas of our website (such as Firebase Authentication cookies).

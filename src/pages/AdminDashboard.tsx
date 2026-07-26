@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, where, limit } from '../firebase';
-import { Shield, Save, Users, Building2, TrendingUp, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Shield, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AdminPriceTrends } from '../components/AdminPriceTrends';
 import AdminTransportPrices from '../components/AdminTransportPrices';
 import AdminMessages from '../components/AdminMessages';
@@ -33,10 +33,41 @@ export default function AdminDashboard() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyLimit, setHistoryLimit] = useState(30);
   const [hasMoreHistory, setHasMoreHistory] = useState(true);
-  const [historyViewMode, setHistoryViewMode] = useState<'chart' | 'table'>('chart');
-  const [historySortField, setHistorySortField] = useState<'timestamp' | 'price' | 'fuelType'>('timestamp');
-  const [historySortDirection, setHistorySortDirection] = useState<'asc' | 'desc'>('desc');
+  const [historyViewMode, setHistoryViewMode] = useState<'line' | 'bar' | 'table'>('line');
   const [historyFuelFilter, setHistoryFuelFilter] = useState<string>('All');
+  const [historySearchTerm, setHistorySearchTerm] = useState('');
+  const [historySortOrder, setHistorySortOrder] = useState<'desc' | 'asc'>('desc');
+  const [historyDateFrom, setHistoryDateFrom] = useState('');
+  const [historyDateTo, setHistoryDateTo] = useState('');
+
+  const filteredPriceHistory = useMemo(() => {
+    let result = [...priceHistory];
+    
+    if (historySearchTerm) {
+      const lower = historySearchTerm.toLowerCase();
+      result = result.filter(row => row.date.toLowerCase().includes(lower));
+    }
+    
+    if (historyDateFrom) {
+      const fromTime = new Date(historyDateFrom).getTime();
+      result = result.filter(row => row.timestamp >= fromTime);
+    }
+    
+    if (historyDateTo) {
+      const toTime = new Date(historyDateTo).getTime() + 86400000;
+      result = result.filter(row => row.timestamp <= toTime);
+    }
+    
+    return result;
+  }, [priceHistory, historySearchTerm, historyDateFrom, historyDateTo]);
+
+  const sortedTableHistory = useMemo(() => {
+    let result = [...filteredPriceHistory];
+    if (historySortOrder === 'desc') {
+      result.reverse();
+    }
+    return result;
+  }, [filteredPriceHistory, historySortOrder]);
   const [sortField, setSortField] = useState<'name' | 'district' | 'isVerified'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'settings'>('overview');
@@ -68,6 +99,26 @@ export default function AdminDashboard() {
     newValue: boolean;
   } | null>(null);
   
+  const formatPrice = (val?: number) => {
+    if (!val) return '-';
+    return val >= 1000 ? `${val.toLocaleString()} SLL` : `NLe ${Number(val).toFixed(2)}`;
+  };
+
+  const renderTrend = (current?: number, previous?: number) => {
+    if (!current || !previous || current === previous) {
+      return <span className="text-[10px] text-gray-400 font-medium ml-1.5 inline-flex items-center"><Minus className="w-3 h-3 mr-0.5" /> 0%</span>;
+    }
+    const diff = current - previous;
+    const percent = (diff / previous) * 100;
+    const isUp = diff > 0;
+    return (
+      <span className={`text-[10px] font-bold ml-1.5 inline-flex items-center ${isUp ? 'text-rose-500' : 'text-emerald-500'}`}>
+        {isUp ? <TrendingUp className="w-3 h-3 mr-0.5" /> : <TrendingDown className="w-3 h-3 mr-0.5" />}
+        {Math.abs(percent).toFixed(1)}%
+      </span>
+    );
+  };
+
   const cancelEditStation = () => {
     setIsEditingStation(false);
     setEditFormData(null);
@@ -207,13 +258,24 @@ export default function AdminDashboard() {
           if (!entry.timestamp) return;
           const date = entry.timestamp.toDate().toLocaleDateString();
           if (!groupedData[date]) {
-            groupedData[date] = { date };
+            groupedData[date] = { date, timestamp: entry.timestamp.toMillis() };
           }
           groupedData[date][entry.fuelType] = entry.price;
         });
 
         // Convert grouped object to array
-        const chartData = Object.values(groupedData);
+        let chartData = Object.values(groupedData);
+        chartData.sort((a, b) => a.timestamp - b.timestamp);
+        chartData = chartData.map((item, index) => {
+          const prev = index > 0 ? chartData[index - 1] : null;
+          return {
+            ...item,
+            prevPetrol: prev?.Petrol,
+            prevDiesel: prev?.Diesel,
+            prevKerosene: prev?.Kerosene,
+          };
+        });
+
         setPriceHistory(chartData);
         setHistoryLoading(false);
       },
@@ -235,10 +297,21 @@ export default function AdminDashboard() {
               [...historyData].reverse().forEach((entry: any) => {
                 if (!entry.timestamp) return;
                 const date = entry.timestamp.toDate().toLocaleDateString();
-                if (!groupedData[date]) groupedData[date] = { date };
+                if (!groupedData[date]) groupedData[date] = { date, timestamp: entry.timestamp.toMillis() };
                 groupedData[date][entry.fuelType] = entry.price;
               });
-              setPriceHistory(Object.values(groupedData));
+              let chartData = Object.values(groupedData);
+              chartData.sort((a, b) => a.timestamp - b.timestamp);
+              chartData = chartData.map((item, index) => {
+                const prev = index > 0 ? chartData[index - 1] : null;
+                return {
+                  ...item,
+                  prevPetrol: prev?.Petrol,
+                  prevDiesel: prev?.Diesel,
+                  prevKerosene: prev?.Kerosene,
+                };
+              });
+              setPriceHistory(chartData);
               setHistoryLoading(false);
             }
           );
@@ -689,26 +762,7 @@ export default function AdminDashboard() {
       return 0;
     });
 
-    const filteredAndSortedHistory = React.useMemo(() => {
-    let result = [...rawPriceHistory];
-    if (historyFuelFilter !== 'All') {
-      result = result.filter(h => h.fuelType === historyFuelFilter);
-    }
-    result.sort((a, b) => {
-      let comparison = 0;
-      if (historySortField === 'timestamp') {
-        const timeA = a.timestamp?.seconds || 0;
-        const timeB = b.timestamp?.seconds || 0;
-        comparison = timeA - timeB;
-      } else if (historySortField === 'price') {
-        comparison = (a.price || 0) - (b.price || 0);
-      } else if (historySortField === 'fuelType') {
-        comparison = (a.fuelType || '').localeCompare(b.fuelType || '');
-      }
-      return historySortDirection === 'asc' ? comparison : -comparison;
-    });
-    return result;
-  }, [rawPriceHistory, historyFuelFilter, historySortField, historySortDirection]);
+  
 
   if (profile?.role !== 'admin') {
       return <div className="p-8 text-center text-red-600">Access Denied. Admin privileges required.</div>;
@@ -745,7 +799,7 @@ export default function AdminDashboard() {
                 <div className="bg-primary p-1.5 rounded-lg">
                   <Fuel className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-white font-bold text-lg tracking-tight">SL Fuel Monitor</span>
+                <span className="text-white font-bold text-lg tracking-tight">Salone Fuel Monitor</span>
               </div>
             )}
             <Button
@@ -1087,10 +1141,16 @@ export default function AdminDashboard() {
                       <div className="flex items-center gap-4">
                         <div className="flex bg-gray-100 rounded-lg p-1">
                           <button
-                            onClick={() => setHistoryViewMode('chart')}
-                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${historyViewMode === 'chart' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            onClick={() => setHistoryViewMode('line')}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${historyViewMode === 'line' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                           >
-                            Chart
+                            Line
+                          </button>
+                          <button
+                            onClick={() => setHistoryViewMode('bar')}
+                            className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${historyViewMode === 'bar' ? 'bg-white text-surface-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                          >
+                            Bar
                           </button>
                           <button
                             onClick={() => setHistoryViewMode('table')}
@@ -1113,6 +1173,32 @@ export default function AdminDashboard() {
                     {historyViewMode === 'table' && (
                       <div className="mb-4 flex flex-wrap gap-3 items-center bg-gray-50 p-3 rounded-2xl">
                         <div className="flex items-center gap-2">
+                          <Search className="w-4 h-4 text-gray-400" />
+                          <input 
+                            type="text"
+                            placeholder="Search date..."
+                            value={historySearchTerm}
+                            onChange={(e) => setHistorySearchTerm(e.target.value)}
+                            className="text-xs font-bold bg-white border-none rounded-lg shadow-sm focus:ring-0 py-1 px-3 w-32"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-gray-400" />
+                          <input 
+                            type="date"
+                            value={historyDateFrom}
+                            onChange={(e) => setHistoryDateFrom(e.target.value)}
+                            className="text-xs font-bold bg-white border-none rounded-lg shadow-sm focus:ring-0 py-1"
+                          />
+                          <span className="text-gray-400 text-xs">-</span>
+                          <input 
+                            type="date"
+                            value={historyDateTo}
+                            onChange={(e) => setHistoryDateTo(e.target.value)}
+                            className="text-xs font-bold bg-white border-none rounded-lg shadow-sm focus:ring-0 py-1"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
                           <Filter className="w-4 h-4 text-gray-400" />
                           <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Fuel:</span>
                           <select 
@@ -1126,114 +1212,149 @@ export default function AdminDashboard() {
                             <option value="Kerosene">Kerosene</option>
                           </select>
                         </div>
+                        <div className="flex items-center gap-2 ml-auto">
+                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Sort:</span>
+                          <select 
+                            value={historySortOrder}
+                            onChange={(e) => setHistorySortOrder(e.target.value as 'desc' | 'asc')}
+                            className="text-xs font-bold bg-white border-none rounded-lg shadow-sm focus:ring-0 py-1"
+                          >
+                            <option value="desc">Newest First</option>
+                            <option value="asc">Oldest First</option>
+                          </select>
+                        </div>
                       </div>
                     )}
 
-                    <div className={`bg-gray-50 rounded-3xl border border-gray-100 ${historyViewMode === 'chart' ? 'p-6 h-80' : 'overflow-hidden max-h-96 overflow-y-auto'}`}>
+                    <div className={`bg-gray-50 rounded-3xl border border-gray-100 ${historyViewMode !== 'table' ? 'p-6 h-80' : 'overflow-hidden max-h-96 overflow-y-auto'}`}>
                       {historyLoading && rawPriceHistory.length === 0 ? (
                         <div className="flex justify-center items-center h-full p-12">
                           <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                         </div>
                       ) : rawPriceHistory.length > 0 ? (
-                        historyViewMode === 'chart' ? (
+                        historyViewMode === 'line' || historyViewMode === 'bar' ? (
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={priceHistory}>
-                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                              <XAxis 
-                                dataKey="date" 
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
-                                dy={10}
-                              />
-                              <YAxis 
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
-                                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                                dx={-10}
-                              />
-                              <Tooltip 
-                                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
-                                itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                                labelStyle={{ fontSize: '10px', color: '#9CA3AF', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}
-                              />
-                              <Legend 
-                                verticalAlign="top" 
-                                align="right" 
-                                iconType="circle"
-                                wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
-                              />
-                              <Line name="Petrol" type="monotone" dataKey="Petrol" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
-                              <Line name="Diesel" type="monotone" dataKey="Diesel" stroke="var(--color-surface-900)" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
-                              <Line name="Kerosene" type="monotone" dataKey="Kerosene" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 6 }} />
-                            </LineChart>
+                            {historyViewMode === 'line' ? (
+                              <LineChart data={filteredPriceHistory}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis 
+                                  dataKey="date" 
+                                  axisLine={false}
+                                  tickLine={false}
+                                  tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
+                                  dy={10}
+                                />
+                                <YAxis 
+                                  axisLine={false}
+                                  tickLine={false}
+                                  tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
+                                  tickFormatter={(value) => `NLe ${(value / 1000).toFixed(0)}`}
+                                  dx={-10}
+                                />
+                                <Tooltip 
+                                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
+                                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                  labelStyle={{ fontSize: '10px', color: '#9CA3AF', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}
+                                />
+                                <Legend 
+                                  verticalAlign="top" 
+                                  align="right" 
+                                  iconType="circle"
+                                  wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                />
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Diesel') && (
+                                  <Line name="Diesel" type="monotone" dataKey="Diesel" stroke="var(--color-surface-900)" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                                )}
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Kerosene') && (
+                                  <Line name="Kerosene" type="monotone" dataKey="Kerosene" stroke="#2563EB" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                                )}
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Petrol') && (
+                                  <Line name="Petrol" type="monotone" dataKey="Petrol" stroke="var(--color-primary)" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                                )}
+                              </LineChart>
+                            ) : (
+                              <BarChart data={filteredPriceHistory}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis 
+                                  dataKey="date" 
+                                  axisLine={false}
+                                  tickLine={false}
+                                  tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
+                                  dy={10}
+                                />
+                                <YAxis 
+                                  axisLine={false}
+                                  tickLine={false}
+                                  tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 600 }}
+                                  tickFormatter={(value) => `NLe ${(value / 1000).toFixed(0)}`}
+                                  dx={-10}
+                                />
+                                <Tooltip 
+                                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', padding: '12px' }}
+                                  itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                                  labelStyle={{ fontSize: '10px', color: '#9CA3AF', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}
+                                />
+                                <Legend 
+                                  verticalAlign="top" 
+                                  align="right" 
+                                  iconType="circle"
+                                  wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
+                                />
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Diesel') && (
+                                  <Bar name="Diesel" dataKey="Diesel" fill="var(--color-surface-900)" radius={[4, 4, 0, 0]} maxBarSize={8} />
+                                )}
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Kerosene') && (
+                                  <Bar name="Kerosene" dataKey="Kerosene" fill="#2563EB" radius={[4, 4, 0, 0]} maxBarSize={8} />
+                                )}
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Petrol') && (
+                                  <Bar name="Petrol" dataKey="Petrol" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={8} />
+                                )}
+                              </BarChart>
+                            )}
                           </ResponsiveContainer>
                         ) : (
-                          <table className="w-full text-left border-collapse">
+                          <table className="w-full text-left border-collapse min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-100 sticky top-0 z-10">
                               <tr>
-                                <th 
-                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
-                                  onClick={() => {
-                                    setHistorySortField('timestamp');
-                                    setHistorySortDirection(prev => historySortField === 'timestamp' && prev === 'desc' ? 'asc' : 'desc');
-                                  }}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    Date
-                                    {historySortField === 'timestamp' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                                  </div>
-                                </th>
-                                <th 
-                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
-                                  onClick={() => {
-                                    setHistorySortField('fuelType');
-                                    setHistorySortDirection(prev => historySortField === 'fuelType' && prev === 'asc' ? 'desc' : 'asc');
-                                  }}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    Fuel Type
-                                    {historySortField === 'fuelType' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                                  </div>
-                                </th>
-                                <th 
-                                  className="p-4 text-[10px] font-bold text-gray-500 uppercase tracking-widest cursor-pointer hover:bg-gray-200 transition-colors"
-                                  onClick={() => {
-                                    setHistorySortField('price');
-                                    setHistorySortDirection(prev => historySortField === 'price' && prev === 'desc' ? 'asc' : 'desc');
-                                  }}
-                                >
-                                  <div className="flex items-center gap-1">
-                                    Price (SLL)
-                                    {historySortField === 'price' && (historySortDirection === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                                  </div>
-                                </th>
+                                <th scope="col" className="p-4 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest">Date / Period</th>
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Petrol') && (
+                                  <th scope="col" className="p-4 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest">Petrol</th>
+                                )}
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Diesel') && (
+                                  <th scope="col" className="p-4 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest">Diesel</th>
+                                )}
+                                {(historyFuelFilter === 'All' || historyFuelFilter === 'Kerosene') && (
+                                  <th scope="col" className="p-4 text-left text-[10px] font-bold text-gray-500 uppercase tracking-widest">Kerosene</th>
+                                )}
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 bg-white">
-                              {filteredAndSortedHistory.map((item, index) => (
-                                <tr key={item.id || index} className="hover:bg-gray-50 transition-colors">
-                                  <td className="p-4 text-sm font-medium text-gray-900">
-                                    {item.timestamp?.seconds ? new Date(item.timestamp.seconds * 1000).toLocaleDateString() : 'Unknown Date'}
-                                  </td>
-                                  <td className="p-4">
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${
-                                      item.fuelType === 'Petrol' ? 'bg-primary/10 text-primary' : 
-                                      item.fuelType === 'Diesel' ? 'bg-surface-900/10 text-surface-900' : 
-                                      'bg-fuchsia-100 text-fuchsia-700'
-                                    }`}>
-                                      {item.fuelType}
-                                    </span>
-                                  </td>
-                                  <td className="p-4 text-sm font-bold text-gray-900">
-                                    Le {item.price?.toLocaleString()}
-                                  </td>
+                              {sortedTableHistory.map((row, idx) => (
+                                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                  <td className="p-4 whitespace-nowrap text-sm font-semibold text-gray-900">{row.date}</td>
+                                  {(historyFuelFilter === 'All' || historyFuelFilter === 'Petrol') && (
+                                    <td className="p-4 whitespace-nowrap text-sm font-bold text-primary">
+                                      {formatPrice(row.Petrol)}
+                                      {renderTrend(row.Petrol, row.prevPetrol)}
+                                    </td>
+                                  )}
+                                  {(historyFuelFilter === 'All' || historyFuelFilter === 'Diesel') && (
+                                    <td className="p-4 whitespace-nowrap text-sm font-bold text-surface-900">
+                                      {formatPrice(row.Diesel)}
+                                      {renderTrend(row.Diesel, row.prevDiesel)}
+                                    </td>
+                                  )}
+                                  {(historyFuelFilter === 'All' || historyFuelFilter === 'Kerosene') && (
+                                    <td className="p-4 whitespace-nowrap text-sm font-bold text-blue-600">
+                                      {formatPrice(row.Kerosene)}
+                                      {renderTrend(row.Kerosene, row.prevKerosene)}
+                                    </td>
+                                  )}
                                 </tr>
                               ))}
-                              {filteredAndSortedHistory.length === 0 && (
+                              {sortedTableHistory.length === 0 && (
                                 <tr>
-                                  <td colSpan={3} className="p-8 text-center text-sm font-medium text-gray-500">
+                                  <td colSpan={4} className="p-8 text-center text-sm font-medium text-gray-500">
                                     No history matches the selected filters.
                                   </td>
                                 </tr>
@@ -1480,7 +1601,7 @@ export default function AdminDashboard() {
                     <div>
                       <h2 className="text-3xl font-bold mb-2 tracking-tight">Welcome back, {profile?.name?.split(' ')[0]}! 👋</h2>
                       <p className="text-slate-400 max-w-md leading-relaxed">
-                        Here's what's happening with the SL Fuel Monitor platform today. You have {stations.filter(s => !s.isVerified).length} stations waiting for verification.
+                        Here's what's happening with the Salone Fuel Monitor platform today. You have {stations.filter(s => !s.isVerified).length} stations waiting for verification.
                       </p>
                     </div>
                     <div className="flex items-center gap-4">

@@ -95,7 +95,7 @@ export default function Contact() {
             Contact Support
           </h1>
           <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Have a question or need assistance? Our team is here to help you with any inquiries about SL Fuel Monitor.
+            Have a question or need assistance? Our team is here to help you with any inquiries about Salone Fuel Monitor.
           </p>
         </div>
 

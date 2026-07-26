@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
         <h2 className="text-3xl font-extrabold text-white mb-6 tracking-tight">Have questions or feedback?</h2>
         <p className="text-slate-400 mb-10 max-w-2xl mx-auto text-lg leading-relaxed">
-          We're always looking for ways to improve SL Fuel Monitor. Reach out to us if you have suggestions or need support.
+          We're always looking for ways to improve Salone Fuel Monitor. Reach out to us if you have suggestions or need support.
         </p>
         <Link 
           to="/contact"
@@ -18,7 +18,7 @@ export default function Footer() {
 
         <div className="mt-20 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-400">
           <div className="flex flex-col items-center md:items-start gap-1">
-            <p>&copy; {new Date().getFullYear()} SL Fuel Monitor. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Salone Fuel Monitor. All rights reserved.</p>
             <p className="text-xs text-slate-500 mt-1">Designed with ❤️ by DreamDay Technology</p>
           </div>
           <div className="flex flex-wrap justify-center gap-6">
