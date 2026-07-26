@@ -10,9 +10,28 @@ export interface Notification {
   createdAt: any;
   type: 'price_update' | 'gov_update' | 'system';
   link?: string;
+  stationId?: string;
+  isFavorite?: boolean;
 }
 
 export const NotificationService = {
+  // Helper to send Email via our backend API
+  sendEmail: async (to: string, subject: string, body: string, stationName?: string, prices?: Record<string, number>) => {
+    try {
+      const response = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, subject, body, stationName, prices })
+      });
+      if (!response.ok) {
+        throw new Error(`Email API error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to send Email:', error);
+    }
+  },
+
   // Helper to send SMS via our backend API
   sendSms: async (to: string, message: string) => {
     try {
@@ -75,6 +94,18 @@ export const NotificationService = {
         });
         count++;
 
+        // Send Email if available
+        if (userData.email && (userData.optInEmail !== false)) {
+          NotificationService.sendEmail(
+            userData.email,
+            'Official Government Fuel Prices Updated',
+            `Hello ${userData.name || 'Station Owner'},\n\n` + message + '\n\nNew Prices:\n' +
+            Object.entries(newPrices).map(([fuel, price]) => `• ${fuel}: Le ${price.toLocaleString()}`).join('\n'),
+            'Government Prices',
+            newPrices
+          );
+        }
+
         // Send SMS if opted in
         if (userData.optInSms && userData.phoneNumber) {
           NotificationService.sendSms(userData.phoneNumber, `FuelPrice SL: ${message}`);
@@ -94,15 +125,22 @@ export const NotificationService = {
     }
   },
 
-  // Notify users when a station updates prices in their district or for their fuel type
+  // Notify users when a station updates prices in their favorite stations, subscribed target, or district
   notifyStationPriceUpdate: async (stationId: string, stationName: string, district: string, changedFuels: string[], currentPrices: Record<string, number>, allStationsInDistrict: any[]) => {
     try {
-      // 1. Get users who opted in for general alerts (district/fuel type)
+      // 1. Get users who opted in for general alerts
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('optInAlerts', '==', true));
       const snapshot = await getDocs(q);
       
-      // 2. Get users who specifically subscribed to this station or district
+      // 2. Get users who favorited this station
+      const favsRef = collection(db, 'favorites');
+      const favsQ = query(favsRef, where('stationId', '==', stationId));
+      const favsSnap = await getDocs(favsQ);
+      const favoriteUserIds = new Set<string>();
+      favsSnap.forEach(doc => favoriteUserIds.add(doc.data().userId));
+
+      // 3. Get users who explicitly subscribed to this station or district
       const subsRef = collection(db, 'subscriptions');
       const stationSubsQ = query(subsRef, where('type', '==', 'station'), where('targetId', '==', stationId));
       const districtSubsQ = query(subsRef, where('type', '==', 'district'), where('targetId', '==', district));
@@ -115,6 +153,13 @@ export const NotificationService = {
       const subscriberIds = new Set<string>();
       stationSubs.forEach(doc => subscriberIds.add(doc.data().userId));
       districtSubs.forEach(doc => subscriberIds.add(doc.data().userId));
+
+      // Combined set of all candidate user IDs
+      const allTargetUserIds = new Set<string>([
+        ...Array.from(favoriteUserIds),
+        ...Array.from(subscriberIds),
+        ...snapshot.docs.map(d => d.id)
+      ]);
 
       const batch = writeBatch(db);
       const notificationsRef = collection(db, 'notifications');
@@ -133,45 +178,43 @@ export const NotificationService = {
       let count = 0;
       const notifiedUserIds = new Set<string>();
 
-      const processUser = async (userDoc: any, isSpecificSubscriber: boolean) => {
-        const userId = userDoc.id;
+      const processUser = async (userId: string, userData: any) => {
         if (notifiedUserIds.has(userId)) return;
 
-        const userData = userDoc.data();
-        
-        let shouldNotify = isSpecificSubscriber;
+        const isFavoriteStation = favoriteUserIds.has(userId);
+        const isSpecificSubscriber = subscriberIds.has(userId);
+
+        let shouldNotify = isFavoriteStation || isSpecificSubscriber;
         let specialAlert = '';
 
         if (!shouldNotify) {
-          // Check if user is interested in this district
-          const interestedDistricts = userData.alertDistricts || [];
-          const isInterestedInDistrict = interestedDistricts.length === 0 || interestedDistricts.includes(district) || interestedDistricts.includes('All');
-          
-          // Check if user is interested in these fuel types
-          const interestedFuels = userData.alertFuelTypes || [];
-          const isInterestedInFuel = interestedFuels.length === 0 || changedFuels.some(f => interestedFuels.includes(f));
-          
-          if (isInterestedInDistrict && isInterestedInFuel) {
-            shouldNotify = true;
+          if (userData.optInAlerts) {
+            const interestedDistricts = userData.alertDistricts || [];
+            const isInterestedInDistrict = interestedDistricts.length === 0 || interestedDistricts.includes(district) || interestedDistricts.includes('All');
+            
+            const interestedFuels = userData.alertFuelTypes || [];
+            const isInterestedInFuel = interestedFuels.length === 0 || changedFuels.some((f: string) => interestedFuels.includes(f));
+            
+            if (isInterestedInDistrict && isInterestedInFuel) {
+              shouldNotify = true;
+            }
           }
         }
 
-        // Check for special conditions: price drop or significantly lower than average
+        // Check for special conditions: price threshold or significantly lower than average
         if (shouldNotify) {
           for (const fuel of changedFuels) {
             const price = currentPrices[fuel];
             const avg = districtAverages[fuel];
             
-            // Check user-defined threshold
             const threshold = userData.priceThresholds?.[fuel];
             if (threshold && price <= threshold) {
-              specialAlert = `🎯 THRESHOLD REACHED: ${fuel} at ${stationName} is now ${price.toLocaleString()} SLL, which is below your alert threshold of ${threshold.toLocaleString()} SLL!`;
+              specialAlert = `🎯 THRESHOLD REACHED: ${fuel} at ${stationName} is now Le ${price.toLocaleString()}, which is below your threshold of Le ${threshold.toLocaleString()}!`;
               break;
             }
 
-            // "Significantly lower" = 5% below average
             if (avg && price < avg * 0.95) {
-              specialAlert = `🔥 GREAT DEAL: ${fuel} at ${stationName} is significantly lower than the district average!`;
+              specialAlert = `🔥 GREAT DEAL: ${fuel} at ${stationName} is significantly lower than district average!`;
               break;
             }
           }
@@ -179,19 +222,49 @@ export const NotificationService = {
 
         if (shouldNotify) {
           const newNotifRef = doc(notificationsRef);
-          const message = specialAlert || `${stationName} in ${district} has updated prices for ${changedFuels.join(', ')}.`;
+          const priceDetails = changedFuels.map(f => `${f}: Le ${currentPrices[f] ? currentPrices[f].toLocaleString() : '-'}`).join(', ');
           
+          const title = isFavoriteStation 
+            ? `⭐ Price Alert: Favorite Station ${stationName}`
+            : (specialAlert ? 'Price Alert' : `Fuel Price Update: ${stationName}`);
+
+          const message = specialAlert 
+            ? specialAlert 
+            : (isFavoriteStation 
+                ? `Your favorite station "${stationName}" in ${district} updated fuel prices: ${priceDetails}.`
+                : `${stationName} in ${district} has updated fuel prices: ${priceDetails}.`);
+
           batch.set(newNotifRef, {
             userId: userId,
-            title: specialAlert ? 'Price Alert' : 'Fuel Price Update',
+            title: title,
             message: message,
             read: false,
             createdAt: serverTimestamp(),
             type: 'price_update',
+            stationId: stationId,
+            isFavorite: isFavoriteStation,
             link: `/?station=${stationId}`
           });
           count++;
           notifiedUserIds.add(userId);
+
+          // Email alert dispatch if user has email and email alerts are enabled
+          const userEmail = userData.email;
+          const sendEmail = userEmail && (userData.optInEmail !== false) && (userData.optInEmail || isFavoriteStation || userData.optInAlerts || userData.optInFavoriteAlerts !== false);
+          
+          if (sendEmail) {
+            const emailSubject = isFavoriteStation 
+              ? `⭐ Fuel Price Alert for Favorite Station: ${stationName}` 
+              : `Fuel Price Update: ${stationName} (${district})`;
+
+            const emailBody = `Hello ${userData.name || 'Valued User'},\n\n` +
+              `Fuel prices have changed for ${isFavoriteStation ? 'your favorite station' : 'a station you follow'} (${stationName} - ${district}):\n\n` +
+              changedFuels.map(f => `• ${f}: Le ${currentPrices[f] ? currentPrices[f].toLocaleString() : '-'}/L`).join('\n') +
+              `\n\nView details in Salone Fuel Monitor:\nhttps://salonefuelmonitor.com/?station=${stationId}\n\n` +
+              `Thank you for using Salone Fuel Monitor.`;
+
+            NotificationService.sendEmail(userEmail, emailSubject, emailBody, stationName, currentPrices);
+          }
 
           // Send SMS if opted in
           if (userData.optInSms && userData.phoneNumber) {
@@ -200,23 +273,16 @@ export const NotificationService = {
 
           // Send FCM if token exists
           if (userData.fcmToken) {
-            NotificationService.sendFcm(userData.fcmToken, specialAlert ? 'Price Alert' : 'Fuel Price Update', message, { link: `/?station=${stationId}` });
+            NotificationService.sendFcm(userData.fcmToken, title, message, { link: `/?station=${stationId}` });
           }
         }
       };
 
-      // Process general opt-in users
-      for (const userDoc of snapshot.docs) {
-        await processUser(userDoc, false);
-      }
-
-      // Process specific subscribers who might not have general opt-in
-      for (const subUserId of subscriberIds) {
-        if (!notifiedUserIds.has(subUserId)) {
-          const userDoc = await getDoc(doc(db, 'users', subUserId));
-          if (userDoc.exists()) {
-            await processUser(userDoc, true);
-          }
+      // Process all candidate users
+      for (const userId of allTargetUserIds) {
+        const userDoc = await getDoc(doc(db, 'users', userId));
+        if (userDoc.exists()) {
+          await processUser(userId, userDoc.data());
         }
       }
       
@@ -224,7 +290,6 @@ export const NotificationService = {
         await batch.commit();
       }
     } catch (error: any) {
-      // Ignore permission errors for station owners querying users
       if (error.code === 'permission-denied' || error.message?.includes('Missing or insufficient permissions')) {
         console.warn('Notification fan-out requires admin privileges or a backend service. Skipping client-side notifications.');
         return;

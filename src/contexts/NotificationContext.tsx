@@ -18,7 +18,10 @@ export interface Notification {
   message: string;
   read: boolean;
   createdAt: any;
+  type?: 'price_update' | 'gov_update' | 'system';
   link?: string;
+  stationId?: string;
+  isFavorite?: boolean;
 }
 
 interface NotificationContextType {

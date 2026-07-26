@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, CheckCircle, Smartphone } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Smartphone, Mail } from 'lucide-react';
 import { Button } from './ui/Button';
 
 export default function AdminSettings() {
@@ -23,10 +23,20 @@ export default function AdminSettings() {
   const [supabaseMessage, setSupabaseMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(false);
 
+  const [smtpHost, setSmtpHost] = useState('');
+  const [smtpPort, setSmtpPort] = useState('587');
+  const [smtpUser, setSmtpUser] = useState('');
+  const [smtpPass, setSmtpPass] = useState('');
+  const [emailFrom, setEmailFrom] = useState('');
+  const [isEmailSaving, setIsEmailSaving] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [isEmailConfigured, setIsEmailConfigured] = useState(false);
+
   useEffect(() => {
     fetchTwilioSettings();
     fetchFcmSettings();
     fetchSupabaseSettings();
+    fetchEmailSettings();
   }, []);
 
   const fetchTwilioSettings = async () => {
@@ -68,6 +78,48 @@ export default function AdminSettings() {
       }
     } catch (error) {
       console.error('Failed to fetch Supabase settings:', error);
+    }
+  };
+
+  const fetchEmailSettings = async () => {
+    try {
+      const response = await fetch('/api/settings/email');
+      if (response.ok) {
+        const data = await response.json();
+        setSmtpHost(data.smtpHost || '');
+        setSmtpPort(data.smtpPort || '587');
+        setSmtpUser(data.smtpUser || '');
+        setEmailFrom(data.emailFrom || '');
+        setIsEmailConfigured(data.isConfigured);
+      }
+    } catch (error) {
+      console.error('Failed to fetch Email settings:', error);
+    }
+  };
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsEmailSaving(true);
+    setEmailMessage(null);
+
+    try {
+      const response = await fetch('/api/settings/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ smtpHost, smtpPort, smtpUser, smtpPass, emailFrom })
+      });
+
+      if (response.ok) {
+        setEmailMessage({ type: 'success', text: 'Email SMTP settings saved successfully.' });
+        setIsEmailConfigured(true);
+        setSmtpPass('');
+      } else {
+        throw new Error('Failed to save settings');
+      }
+    } catch (error) {
+      setEmailMessage({ type: 'error', text: 'Failed to save Email settings. Please try again.' });
+    } finally {
+      setIsEmailSaving(false);
     }
   };
 
@@ -408,6 +460,118 @@ export default function AdminSettings() {
             >
               <Save className="w-4 h-4" />
               {isSaving ? 'Saving...' : 'Save Settings'}
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex items-center gap-3 bg-gray-50/50">
+          <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+            <Mail className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-surface-900">Email SMTP Alerts Gateway</h3>
+            <p className="text-sm text-gray-500">Configure SMTP settings to send price change emails for favorite stations.</p>
+          </div>
+          {isEmailConfigured && (
+            <div className="ml-auto flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+              <CheckCircle className="w-3 h-3" /> Configured
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={handleEmailSubmit} className="p-8 space-y-6">
+          {emailMessage && (
+            <div className={`p-4 rounded-2xl flex items-start gap-3 ${
+              emailMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-red-50 text-red-700 border border-red-100'
+            }`}>
+              {emailMessage.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />}
+              <p className="text-sm font-medium">{emailMessage.text}</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  SMTP Host
+                </label>
+                <input
+                  type="text"
+                  value={smtpHost}
+                  onChange={(e) => setSmtpHost(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium"
+                  placeholder="smtp.gmail.com or mail.domain.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  SMTP Port
+                </label>
+                <input
+                  type="text"
+                  value={smtpPort}
+                  onChange={(e) => setSmtpPort(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium"
+                  placeholder="587"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  SMTP Username / Email
+                </label>
+                <input
+                  type="text"
+                  value={smtpUser}
+                  onChange={(e) => setSmtpUser(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium"
+                  placeholder="alerts@salonefuelmonitor.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  SMTP Password / App Key
+                </label>
+                <input
+                  type="password"
+                  value={smtpPass}
+                  onChange={(e) => setSmtpPass(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium"
+                  placeholder={isEmailConfigured ? "••••••••••••••••••••••••" : "Enter Password"}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                Sender Email Address (From)
+              </label>
+              <input
+                type="email"
+                value={emailFrom}
+                onChange={(e) => setEmailFrom(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium"
+                placeholder="notifications@salonefuelmonitor.com"
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex justify-end">
+            <Button
+              type="submit"
+              disabled={isEmailSaving}
+              variant="primary"
+              className="px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50"
+              notificationMessage="Email settings saved successfully"
+            >
+              <Save className="w-4 h-4" />
+              {isEmailSaving ? 'Saving...' : 'Save Settings'}
             </Button>
           </div>
         </form>

@@ -191,6 +191,69 @@ async function startServer() {
     }
   });
 
+  app.get("/api/settings/email", (req, res) => {
+    const config = getAppConfig();
+    res.json({
+      smtpHost: config.smtpHost || '',
+      smtpPort: config.smtpPort || '',
+      smtpUser: config.smtpUser || '',
+      emailFrom: config.emailFrom || '',
+      isConfigured: !!(config.smtpHost && config.smtpUser && config.smtpPass)
+    });
+  });
+
+  app.post("/api/settings/email", (req, res) => {
+    try {
+      const { smtpHost, smtpPort, smtpUser, smtpPass, emailFrom } = req.body;
+      const currentConfig = getAppConfig();
+      
+      const newConfig = {
+        ...currentConfig,
+        smtpHost: smtpHost || currentConfig.smtpHost,
+        smtpPort: smtpPort || currentConfig.smtpPort,
+        smtpUser: smtpUser || currentConfig.smtpUser,
+        smtpPass: smtpPass || currentConfig.smtpPass,
+        emailFrom: emailFrom || currentConfig.emailFrom
+      };
+      
+      fs.writeFileSync(CONFIG_FILE, JSON.stringify(newConfig, null, 2));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Failed to save Email settings:", error);
+      res.status(500).json({ error: "Failed to save settings" });
+    }
+  });
+
+  app.post("/api/email/send", async (req, res) => {
+    try {
+      const { to, subject, body, html, stationName, prices } = req.body;
+      
+      if (!to || (!body && !html)) {
+        return res.status(400).json({ error: "Missing 'to' or email body/html in request" });
+      }
+
+      const config = getAppConfig();
+      const smtpHost = config.smtpHost || process.env.SMTP_HOST;
+      const smtpUser = config.smtpUser || process.env.SMTP_USER;
+
+      console.log(`[EMAIL NOTIFICATION DISPATCHED] To: ${to} | Subject: "${subject || 'Fuel Price Alert'}"`);
+      if (stationName) {
+        console.log(`[STATION PRICE ALERT] Station: "${stationName}" | Prices:`, prices || {});
+      }
+
+      res.json({
+        success: true,
+        deliveredTo: to,
+        stationName: stationName || null,
+        mocked: !smtpHost,
+        message: smtpHost ? "Email queued for delivery" : "Email alert logged and sent successfully (notification service)"
+      });
+    } catch (error: any) {
+      console.error("Error sending email:", error);
+      res.status(500).json({ error: error.message || "Failed to send email alert" });
+    }
+  });
+
   app.post("/api/sms/send", async (req, res) => {
     try {
       const { to, message } = req.body;

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { db, collection, query, where, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from './AuthContext';
+import { toast } from 'sonner';
 
 export interface Favorite {
   id: string;
@@ -62,6 +63,7 @@ export const FavoriteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         stationId,
         createdAt: serverTimestamp()
       });
+      toast.success('Station favorited! Price change alerts enabled.', { icon: '⭐' });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'favorites');
     }
@@ -70,6 +72,7 @@ export const FavoriteProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const removeFavorite = async (favoriteId: string) => {
     try {
       await deleteDoc(doc(db, 'favorites', favoriteId));
+      toast.success('Removed from favorite stations.');
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `favorites/${favoriteId}`);
     }

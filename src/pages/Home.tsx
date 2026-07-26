@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy, where, db, handleFirestoreError, OperationType, doc } from '../firebase';
-import { Search, MapPin, Filter, TrendingDown, TrendingUp, Minus, Shield, Fuel, Bell, BellOff, X, ShieldCheck, Building2, ArrowUpDown, History, Clock, Activity, ArrowLeft, CheckSquare, Square, Trophy, ChevronDown, Check, Navigation, Phone, ExternalLink, ShieldAlert, Slash, LayoutList, ChevronUp, Target, Percent, Heart } from 'lucide-react';
+import { Search, Download, MapPin, Filter, TrendingDown, TrendingUp, Minus, Shield, Fuel, Bell, BellOff, X, ShieldCheck, Building2, ArrowUpDown, History, Clock, Activity, ArrowLeft, CheckSquare, Square, Trophy, ChevronDown, Check, Navigation, Phone, ExternalLink, ShieldAlert, Slash, LayoutList, ChevronUp, Target, Percent, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -9,8 +9,12 @@ import { useFavorites } from '../contexts/FavoriteContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import StationReviews from '../components/StationReviews';
+import StationComparisonChart from "../components/StationComparisonChart";
 import AdminStationMap from '../components/AdminStationMap';
 import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { toCanvas } from 'html-to-image';
 
 interface Station {
   id: string;
@@ -116,6 +120,161 @@ export default function Home() {
     }
     return result;
   }, [filteredPriceHistory, historySortOrder]);
+
+  const exportHistoryToPDF = async () => {
+    if (!viewingStation) return;
+    
+    try {
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 14;
+      
+      let currentY = 0;
+
+      // --- Brand Header Banner ---
+      doc.setFillColor(0, 114, 198); // Sierra Leone Blue
+      doc.rect(0, 0, pageWidth, 28, 'F');
+      
+      // Green Accent line at the bottom of the header
+      doc.setFillColor(30, 181, 58); // Sierra Leone Green
+      doc.rect(0, 28, pageWidth, 2, 'F');
+      
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('Salone Fuel Monitor', margin, 18);
+      
+      // Subtitle / Label in header
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(255, 255, 255); // White
+      doc.text('STATION PRICE HISTORY', pageWidth - margin, 18, { align: 'right' });
+
+      currentY = 42;
+
+      // --- Report Title & Meta ---
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 114, 198); // Sierra Leone Blue
+      doc.text(`Price History - ${viewingStation.name}`, margin, currentY);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139); // slate-500
+      currentY += 8;
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, margin, currentY);
+
+      // Accent Line
+      currentY += 6;
+      doc.setDrawColor(226, 232, 240); // slate-200
+      doc.setLineWidth(0.5);
+      doc.line(margin, currentY, pageWidth - margin, currentY);
+
+      // --- Analysis Parameters ---
+      currentY += 12;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 114, 198); // Sierra Leone Blue
+      doc.text('Filters', margin, currentY);
+      
+      currentY += 6;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(71, 85, 105);
+      
+      const filters = [
+        `Fuel Type: ${historyFuelFilter}`
+      ];
+      if (historySearchTerm) filters.push(`Search: "${historySearchTerm}"`);
+      if (historyDateFrom || historyDateTo) filters.push(`Date Range: ${historyDateFrom || 'Any'} to ${historyDateTo || 'Any'}`);
+
+      filters.forEach(filter => {
+        doc.text(`• ${filter}`, margin + 2, currentY);
+        currentY += 5;
+      });
+
+      currentY += 5;
+
+      // --- Chart ---
+      if (historyChartRef.current && historyViewMode !== 'table') {
+        try {
+          const canvas = await Promise.race([
+            toCanvas(historyChartRef.current, { 
+              pixelRatio: 2,
+              backgroundColor: '#ffffff'
+            }),
+            new Promise<HTMLCanvasElement>((_, reject) => setTimeout(() => reject(new Error("Chart rendering timeout")), 5000))
+          ]);
+          const imgData = canvas.toDataURL('image/png');
+          
+          const chartWidth = pageWidth - (margin * 2);
+          const chartHeight = (canvas.height * chartWidth) / canvas.width;
+          
+          // If chart doesn't fit on this page, add a new page
+          if (currentY + chartHeight > pageHeight - margin - 20) {
+            doc.addPage();
+            currentY = margin + 10;
+          } else {
+            currentY += 5;
+          }
+          
+          doc.addImage(imgData, 'PNG', margin, currentY, chartWidth, chartHeight);
+          currentY += chartHeight + 15;
+        } catch (err) {
+          console.error("Error capturing chart", err);
+        }
+      }
+
+      const tableColumn = ["Date", "Petrol (NLe)", "Diesel (NLe)", "Kerosene (NLe)"];
+      const tableRows: any[] = [];
+
+      sortedTableHistory.forEach(row => {
+        const rowData = [
+          row.date,
+          row.Petrol || '-',
+          row.Diesel || '-',
+          row.Kerosene || '-'
+        ];
+        tableRows.push(rowData);
+      });
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [tableColumn],
+        body: tableRows,
+        theme: 'grid',
+        headStyles: { fillColor: [30, 181, 58], textColor: 255, fontStyle: 'bold' }, // Sierra Leone Green
+        styles: { fontSize: 9, cellPadding: 4 },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
+        margin: { top: margin, right: margin, bottom: margin + 15, left: margin }
+      });
+
+      // --- Footer for all pages ---
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(148, 163, 184); // slate-400
+        
+        // Footer line
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.5);
+        doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+
+        doc.text('Powered by Salone Fuel Monitor', margin, pageHeight - 10);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+      }
+
+      doc.save(`${viewingStation.name}_Price_History.pdf`);
+      alert('PDF exported successfully');
+    } catch (err: any) {
+      console.error(err);
+      alert(`Failed to export PDF: ${err.message || 'Unknown error'}`);
+    }
+  };
+
   const [selectedStations, setSelectedStations] = useState<string[]>([]);
   const [showComparison, setShowComparison] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
@@ -124,6 +283,7 @@ export default function Home() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const districtDropdownRef = useRef<HTMLDivElement>(null);
+  const historyChartRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -269,7 +429,7 @@ export default function Home() {
         const groupedData: Record<string, any> = {};
         
         historyData.forEach((entry: any) => {
-          if (!entry.timestamp) return;
+          if (!entry.timestamp || typeof entry.timestamp.toDate !== 'function') return;
           const date = entry.timestamp.toDate().toLocaleDateString();
           if (!groupedData[date]) {
             groupedData[date] = { date, timestamp: entry.timestamp.toMillis() };
@@ -834,7 +994,7 @@ export default function Home() {
                 const station = stations.find(s => s.id === id);
                 if (!station) return null;
                 return (
-                  <div key={station.id} className="w-80 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col relative">
+                  <div key={station.id} className="w-96 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col relative">
                     <Button 
                       onClick={() => setSelectedStations(prev => prev.filter(sId => sId !== id))}
                       notificationMessage="Removed from comparison"
@@ -871,6 +1031,10 @@ export default function Home() {
                           </div>
                         );
                       })}
+                    </div>
+                    
+                    <div className="mt-6 pt-6 border-t border-gray-100 w-full flex-shrink-0">
+                      <StationComparisonChart stationId={station.id} stationName={station.name} />
                     </div>
                   </div>
                 );
@@ -1494,10 +1658,17 @@ export default function Home() {
                         Table
                       </button>
                     </div>
+                    <button
+                      onClick={exportHistoryToPDF}
+                      className="ml-2 flex items-center gap-1 px-3 py-1 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                      title="Export as PDF"
+                    >
+                      <Download className="w-3 h-3" />
+                      Export
+                    </button>
                   </div>
                 </div>
 
-                {historyViewMode === 'table' && (
                   <div className="mb-4 flex flex-wrap gap-3 items-center bg-gray-50 p-3 rounded-2xl">
                     <div className="flex items-center gap-2">
                       <Search className="w-4 h-4 text-gray-400" />
@@ -1551,9 +1722,8 @@ export default function Home() {
                       </select>
                     </div>
                   </div>
-                )}
 
-                <div className={`bg-white rounded-3xl border border-gray-100 shadow-inner ${historyViewMode !== 'table' ? 'p-4 sm:p-6 h-64 sm:h-72' : 'overflow-hidden max-h-96 overflow-y-auto'}`}>
+                <div ref={historyChartRef} className={`bg-white rounded-3xl border border-gray-100 shadow-inner ${historyViewMode !== 'table' ? 'p-4 sm:p-6 h-64 sm:h-72' : 'overflow-hidden max-h-96 overflow-y-auto'}`}>
                   {historyLoading ? (
                     <div className="flex flex-col justify-center items-center h-full gap-3 py-12">
                       <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-4 border-primary/20 border-t-primary"></div>
@@ -1576,7 +1746,7 @@ export default function Home() {
                               axisLine={false}
                               tickLine={false}
                               tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }}
-                              tickFormatter={(value) => `NLe ${(value / 1000).toFixed(0)}`}
+                              tickFormatter={(value) => value >= 1000 ? `Le ${(value / 1000).toFixed(0)}k` : `NLe ${value.toFixed(0)}`}
                               dx={-10}
                             />
                             <Tooltip 
@@ -1620,7 +1790,7 @@ export default function Home() {
                               axisLine={false}
                               tickLine={false}
                               tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }}
-                              tickFormatter={(value) => `NLe ${(value / 1000).toFixed(0)}`}
+                              tickFormatter={(value) => value >= 1000 ? `Le ${(value / 1000).toFixed(0)}k` : `NLe ${value.toFixed(0)}`}
                               dx={-10}
                             />
                             <Tooltip 

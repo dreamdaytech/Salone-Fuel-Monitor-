@@ -18,7 +18,9 @@ export default function Profile() {
   const [stations, setStations] = useState<any[]>([]);
   const [name, setName] = useState(profile?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl || '');
-  const [optInAlerts, setOptInAlerts] = useState(profile?.optInAlerts || false);
+  const [optInAlerts, setOptInAlerts] = useState(profile?.optInAlerts ?? true);
+  const [optInEmail, setOptInEmail] = useState(profile?.optInEmail ?? true);
+  const [optInFavoriteAlerts, setOptInFavoriteAlerts] = useState(profile?.optInFavoriteAlerts ?? true);
   const [optInSms, setOptInSms] = useState(profile?.optInSms || false);
   const [phoneNumber, setPhoneNumber] = useState(profile?.phoneNumber || '');
   const [otp, setOtp] = useState('');
@@ -49,7 +51,9 @@ export default function Profile() {
     if (profile) {
       setName(profile.name || '');
       setAvatarUrl(profile.avatarUrl || '');
-      setOptInAlerts(profile.optInAlerts || false);
+      setOptInAlerts(profile.optInAlerts ?? true);
+      setOptInEmail(profile.optInEmail ?? true);
+      setOptInFavoriteAlerts(profile.optInFavoriteAlerts ?? true);
       setOptInSms(profile.optInSms || false);
       setPhoneNumber(profile.phoneNumber || '');
       setAlertDistricts(profile.alertDistricts || []);
@@ -164,6 +168,8 @@ export default function Profile() {
         name, 
         avatarUrl,
         optInAlerts,
+        optInEmail,
+        optInFavoriteAlerts,
         optInSms,
         phoneNumber,
         alertDistricts,
@@ -442,8 +448,48 @@ export default function Profile() {
                 </h3>
                 
                 <div className="space-y-4">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <div className="relative flex items-center">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <div className="relative flex items-center mt-0.5">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={optInFavoriteAlerts}
+                        onChange={(e) => setOptInFavoriteAlerts(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                        ⭐ Favorite Stations Price Alerts
+                      </span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">
+                        Get instant alerts via app and email whenever fuel prices change at your favorited stations.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <div className="relative flex items-center mt-0.5">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={optInEmail}
+                        onChange={(e) => setOptInEmail(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </div>
+                    <div>
+                      <span className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
+                        📧 Email Alerts
+                      </span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">
+                        Receive email summaries when prices change at favorite stations or tracked districts.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <div className="relative flex items-center mt-0.5">
                       <input 
                         type="checkbox" 
                         className="sr-only peer"
@@ -452,11 +498,14 @@ export default function Profile() {
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                     </div>
-                    <span className="text-sm font-bold text-gray-700">Receive In-App Price Update Alerts</span>
+                    <div>
+                      <span className="text-sm font-bold text-gray-800">Receive In-App Price Update Alerts</span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">In-app popups and notification bell badges</p>
+                    </div>
                   </label>
 
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <div className="relative flex items-center">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <div className="relative flex items-center mt-0.5">
                       <input 
                         type="checkbox" 
                         className="sr-only peer"
@@ -465,7 +514,10 @@ export default function Profile() {
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                     </div>
-                    <span className="text-sm font-bold text-gray-700">Receive SMS Alerts</span>
+                    <div>
+                      <span className="text-sm font-bold text-gray-800">Receive SMS Alerts</span>
+                      <p className="text-xs text-gray-500 font-medium mt-0.5">Direct SMS notifications to your verified phone number</p>
+                    </div>
                   </label>
 
                   {(optInAlerts || optInSms) && (
@@ -572,7 +624,9 @@ export default function Profile() {
                   disabled={isSaving || (
                     name === profile.name && 
                     avatarUrl === (profile.avatarUrl || '') &&
-                    optInAlerts === (profile.optInAlerts || false) &&
+                    optInAlerts === (profile.optInAlerts ?? true) &&
+                    optInEmail === (profile.optInEmail ?? true) &&
+                    optInFavoriteAlerts === (profile.optInFavoriteAlerts ?? true) &&
                     optInSms === (profile.optInSms || false) &&
                     phoneNumber === (profile.phoneNumber || '') &&
                     JSON.stringify(alertDistricts) === JSON.stringify(profile.alertDistricts || []) &&

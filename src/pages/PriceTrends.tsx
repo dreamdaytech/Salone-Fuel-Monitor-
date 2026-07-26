@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import html2canvas from 'html2canvas';
+import { toCanvas } from 'html-to-image';
 
 export default function PriceTrends() {
   const [globalPriceHistory, setGlobalPriceHistory] = useState<any[]>([]);
@@ -166,8 +166,8 @@ export default function PriceTrends() {
 
       // --- Chart ---
       if (chartRef.current && chartType !== 'table') {
-        const canvas = await html2canvas(chartRef.current, { 
-          scale: 2,
+        const canvas = await toCanvas(chartRef.current, { 
+          pixelRatio: 2,
           backgroundColor: '#ffffff'
         });
         const imgData = canvas.toDataURL('image/png');
@@ -309,7 +309,7 @@ export default function PriceTrends() {
               const groupedData: Record<string, any> = {};
 
               historyData.forEach((entry: any) => {
-                if (!entry.timestamp) return;
+                if (!entry.timestamp || typeof entry.timestamp.toDate !== 'function') return;
                 const dObj = entry.timestamp.toDate();
                 const date = dObj.toLocaleDateString();
                 if (!groupedData[date]) {

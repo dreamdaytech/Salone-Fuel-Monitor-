@@ -89,14 +89,21 @@ export default function NotificationBell() {
                 {notifications.map((notif) => (
                   <div
                     key={notif.id}
-                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${!notif.read ? 'bg-emerald-50/50' : ''}`}
+                    className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${!notif.read ? (notif.isFavorite ? 'bg-amber-50/60' : 'bg-emerald-50/50') : ''}`}
                     onClick={() => handleNotificationClick(notif)}
                   >
                     <div className="flex gap-3">
                       <div className="flex-1">
-                        <p className={`text-sm ${!notif.read ? 'font-semibold text-gray-900' : 'text-gray-800'}`}>
-                          {notif.title}
-                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {notif.isFavorite && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
+                              ⭐ Favorite
+                            </span>
+                          )}
+                          <p className={`text-sm ${!notif.read ? 'font-semibold text-gray-900' : 'text-gray-800'}`}>
+                            {notif.title}
+                          </p>
+                        </div>
                         <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
                         <p className="text-xs text-gray-400 mt-2">
                           {notif.createdAt?.toDate?.()?.toLocaleString() || 'Just now'}
@@ -104,7 +111,7 @@ export default function NotificationBell() {
                       </div>
                       {!notif.read && (
                         <div className="flex-shrink-0 pt-1">
-                          <div className="h-2 w-2 bg-emerald-600 rounded-full"></div>
+                          <div className={`h-2 w-2 rounded-full ${notif.isFavorite ? 'bg-amber-500' : 'bg-emerald-600'}`}></div>
                         </div>
                       )}
                     </div>

@@ -12,6 +12,8 @@ interface UserProfile {
   createdAt: any;
   avatarUrl?: string;
   optInAlerts?: boolean;
+  optInEmail?: boolean;
+  optInFavoriteAlerts?: boolean;
   optInSms?: boolean;
   phoneNumber?: string;
   alertDistricts?: string[];
