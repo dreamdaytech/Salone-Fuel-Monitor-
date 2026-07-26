@@ -2415,11 +2415,7 @@ export default function AdminDashboard() {
                                 </Button>
 
                                 {activeDropdownId === s.id && (
-                                  <div className={`absolute right-8 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 py-2 animate-in fade-in zoom-in-95 duration-200 ${
-                                    index > sortedStations.slice(0, visibleStationsCount).length - 3 && sortedStations.slice(0, visibleStationsCount).length > 3
-                                      ? 'bottom-full mb-2' 
-                                      : 'top-12'
-                                  }`}>
+                                  <div className="absolute right-8 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 py-2 animate-in fade-in zoom-in-95 duration-200 bottom-full mb-2">
                                     <Button
                                       onClick={(e) => {
                                         e.stopPropagation();
