@@ -43,6 +43,7 @@ export default function TransportPriceDetails() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [viewType, setViewType] = useState<'line' | 'bar' | 'table'>('line');
+  const [timeRange, setTimeRange] = useState<'30d' | '3m' | '6m' | '1y' | 'all' | 'custom'>('1y');
   const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
@@ -96,12 +97,28 @@ export default function TransportPriceDetails() {
     }
   };
 
+  const effectiveStartDate = useMemo(() => {
+    if (timeRange === 'custom') return startDate;
+    if (timeRange === 'all') return '';
+    const date = new Date();
+    if (timeRange === '30d') date.setDate(date.getDate() - 30);
+    else if (timeRange === '3m') date.setMonth(date.getMonth() - 3);
+    else if (timeRange === '6m') date.setMonth(date.getMonth() - 6);
+    else if (timeRange === '1y') date.setFullYear(date.getFullYear() - 1);
+    return date.toISOString().split('T')[0];
+  }, [timeRange, startDate]);
+
+  const effectiveEndDate = useMemo(() => {
+    if (timeRange === 'custom') return endDate;
+    return '';
+  }, [timeRange, endDate]);
+
   const filteredAndSortedHistory = useMemo(() => {
     return priceHistory
       .filter((history) => {
         const matchesSearch = history.price.toString().includes(searchTerm) || history.date.includes(searchTerm);
-        const matchesStartDate = startDate ? history.date >= startDate : true;
-        const matchesEndDate = endDate ? history.date <= endDate : true;
+        const matchesStartDate = effectiveStartDate ? history.date >= effectiveStartDate : true;
+        const matchesEndDate = effectiveEndDate ? history.date <= effectiveEndDate : true;
         return matchesSearch && matchesStartDate && matchesEndDate;
       })
       .sort((a, b) => {
@@ -113,7 +130,7 @@ export default function TransportPriceDetails() {
           return sortDirection === 'asc' ? a.price - b.price : b.price - a.price;
         }
       });
-  }, [priceHistory, searchTerm, startDate, endDate, sortField, sortDirection]);
+  }, [priceHistory, searchTerm, effectiveStartDate, effectiveEndDate, sortField, sortDirection]);
 
   const handleSort = (field: 'date' | 'price') => {
     if (sortField === field) {
@@ -392,8 +409,8 @@ export default function TransportPriceDetails() {
           </div>
           
           {/* Filters */}
-          <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1 w-full">
+          <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100 flex flex-col md:flex-row gap-4 items-start md:items-center">
+            <div className="relative flex-1 w-full min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
@@ -403,23 +420,61 @@ export default function TransportPriceDetails() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <input
-                type="date"
-                className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all w-full md:w-auto"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-              />
-              <span className="text-gray-400 text-sm">to</span>
-              <input
-                type="date"
-                className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all w-full md:w-auto"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
+            
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+              <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 shrink-0">
+                {(['30d', '3m', '6m', '1y', 'all'] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => {
+                      setTimeRange(range);
+                      setStartDate('');
+                      setEndDate('');
+                    }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
+                      timeRange === range
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {range === '30d' ? '30 Days' :
+                     range === '3m' ? '3 Months' :
+                     range === '6m' ? '6 Months' :
+                     range === '1y' ? '1 Year' : 'All Time'}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setTimeRange('custom')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${
+                    timeRange === 'custom'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Custom
+                </button>
+              </div>
+
+              {timeRange === 'custom' && (
+                <div className="flex items-center gap-2 shrink-0 animate-in fade-in zoom-in-95 duration-200">
+                  <input
+                    type="date"
+                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all w-[130px]"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                  <span className="text-gray-400 text-sm">to</span>
+                  <input
+                    type="date"
+                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all w-[130px]"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
           </div>
-          
+
           {viewType === 'table' ? (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
