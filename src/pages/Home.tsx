@@ -91,9 +91,22 @@ export default function Home() {
   const [historySortOrder, setHistorySortOrder] = useState<'desc' | 'asc'>('desc');
   const [historyDateFrom, setHistoryDateFrom] = useState('');
   const [historyDateTo, setHistoryDateTo] = useState('');
+  const [historyTimeframe, setHistoryTimeframe] = useState<string>('365');
 
   const filteredPriceHistory = useMemo(() => {
     let result = [...priceHistory];
+    
+    const now = new Date().getTime();
+    let timeframeMs: number | null = null;
+    
+    if (historyTimeframe === '30') timeframeMs = 30 * 24 * 60 * 60 * 1000;
+    else if (historyTimeframe === '90') timeframeMs = 90 * 24 * 60 * 60 * 1000;
+    else if (historyTimeframe === '180') timeframeMs = 180 * 24 * 60 * 60 * 1000;
+    else if (historyTimeframe === '365') timeframeMs = 365 * 24 * 60 * 60 * 1000;
+    
+    if (timeframeMs !== null) {
+      result = result.filter(row => row.timestamp >= now - timeframeMs);
+    }
     
     if (historySearchTerm) {
       const lower = historySearchTerm.toLowerCase();
@@ -111,7 +124,7 @@ export default function Home() {
     }
     
     return result;
-  }, [priceHistory, historySearchTerm, historyDateFrom, historyDateTo]);
+  }, [priceHistory, historySearchTerm, historyDateFrom, historyDateTo, historyTimeframe]);
 
   const sortedTableHistory = useMemo(() => {
     let result = [...filteredPriceHistory];
@@ -1682,6 +1695,20 @@ export default function Home() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-gray-400" />
+                      <select
+                        value={historyTimeframe}
+                        onChange={(e) => setHistoryTimeframe(e.target.value)}
+                        className="text-xs font-bold bg-white border-none rounded-lg shadow-sm focus:ring-0 py-1"
+                      >
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 3 Months</option>
+                        <option value="180">Last 6 Months</option>
+                        <option value="365">Last 1 Year</option>
+                        <option value="all">All Time</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4 text-gray-400" />
                       <input 
                         type="date"
                         value={historyDateFrom}
