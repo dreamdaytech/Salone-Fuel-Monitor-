@@ -217,7 +217,7 @@ export default function Navbar() {
             <Button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               showNotification={false}
-              className="sm:hidden p-2 -mr-2 text-gray-600 hover:text-primary rounded-lg hover:bg-gray-100 transition-colors"
+              className="sm:hidden p-2 -mr-2 text-white hover:text-white rounded-lg transition-colors"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>

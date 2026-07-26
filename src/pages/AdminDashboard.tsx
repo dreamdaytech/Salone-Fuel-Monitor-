@@ -1201,7 +1201,7 @@ export default function AdminDashboard() {
               <Button 
                 onClick={() => setIsMobileMenuOpen(true)}
                 showNotification={false}
-                className="md:hidden p-2 -ml-2 text-gray-600 hover:text-primary rounded-lg hover:bg-gray-100 transition-colors"
+                className="md:hidden p-2 -ml-2 text-white hover:text-white rounded-lg transition-colors"
               >
                 <Menu className="h-6 w-6" />
               </Button>
