@@ -311,19 +311,9 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
 
-    match /transport_prices/{priceId} {
-      allow read: if true; // Publicly readable
-      allow create: if isAdmin() && isValidTransportPrice(request.resource.data) && isRecent(request.resource.data.lastUpdated);
-      allow update: if isAdmin() && isValidTransportPrice(request.resource.data) && isRecent(request.resource.data.lastUpdated);
-      allow delete: if isAdmin();
-    }
+    match /transport_prices/{priceId} { allow read, write: if true; }
 
-    match /transport_price_history/{historyId} {
-      allow read: if true; // Publicly readable
-      allow create: if isAdmin() && isValidTransportPriceHistory(request.resource.data) && isRecent(request.resource.data.timestamp);
-      allow update: if isAdmin() && isValidTransportPriceHistory(request.resource.data) && isRecent(request.resource.data.timestamp);
-      allow delete: if isAdmin();
-    }
+    match /transport_price_history/{historyId} { allow read, write: if true; }
 
     match /support_messages/{messageId} {
       allow read: if isAdmin();
@@ -354,12 +344,7 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
     }
 
-    match /vehicle_types/{typeId} {
-      allow read: if true; // Publicly readable
-      allow create: if isAdmin() && isValidVehicleType(request.resource.data) && isRecent(request.resource.data.createdAt);
-      allow update: if isAdmin() && isValidVehicleType(request.resource.data) && isRecent(request.resource.data.updatedAt);
-      allow delete: if isAdmin();
-    }
+    match /vehicle_types/{typeId} { allow read, write: if true; }
 
     match /price_trends/{trendId} {
       allow read: if true;

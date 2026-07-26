@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, db, handleFirestoreError, OperationType } from '../firebase';
 import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -25,12 +26,14 @@ interface FuelStation {
 }
 
 export default function TransportPrices() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [prices, setPrices] = useState<TransportPrice[]>([]);
   const [stations, setStations] = useState<FuelStation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVehicleType, setSelectedVehicleType] = useState('All');
-  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>('cards');
+  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>((location.state as any)?.viewMode || 'cards');
   const [sortField, setSortField] = useState<'route' | 'price' | 'date' | 'lastUpdated'>('route');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -128,19 +131,6 @@ export default function TransportPrices() {
 
         <div className="flex items-center bg-gray-100/50 p-1 rounded-xl self-start md:self-auto">
           <Button
-            onClick={() => setViewMode('analytics')}
-            variant="unstyled"
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
-              viewMode === 'analytics'
-                ? 'bg-white text-primary shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            showNotification={false}
-          >
-            <TrendingUp className="w-4 h-4" />
-            Analytics
-          </Button>
-          <Button
             onClick={() => setViewMode('cards')}
             variant="unstyled"
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -165,6 +155,15 @@ export default function TransportPrices() {
           >
             <List className="w-4 h-4" />
             List
+          </Button>
+          <Button
+            onClick={() => navigate('/transport-trends')}
+            variant="unstyled"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all text-gray-500 hover:text-gray-700"
+            showNotification={false}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Transport Trends
           </Button>
         </div>
       </div>
@@ -329,7 +328,11 @@ export default function TransportPrices() {
               <tbody className="bg-white divide-y divide-gray-50">
                 {filteredPrices.length > 0 ? (
                   filteredPrices.map(price => (
-                    <tr key={price.id} className="hover:bg-surface-50/50 transition-colors group">
+                    <tr 
+                      key={price.id} 
+                      className="hover:bg-surface-50/50 transition-colors group cursor-pointer"
+                      onClick={() => navigate(`/transport-prices/${price.id}`)}
+                    >
                       <td className="px-8 py-5 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -383,7 +386,11 @@ export default function TransportPrices() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPrices.length > 0 ? (
             filteredPrices.map(price => (
-              <div key={price.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group">
+              <div 
+                key={price.id} 
+                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer"
+                onClick={() => navigate(`/transport-prices/${price.id}`)}
+              >
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                     <MapPin className="w-6 h-6" />

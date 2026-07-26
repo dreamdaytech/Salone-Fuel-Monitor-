@@ -14,7 +14,9 @@ import PageTransition from './components/PageTransition';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import TransportPrices from './pages/TransportPrices';
+import TransportPriceDetails from './pages/TransportPriceDetails';
 import PriceTrends from './pages/PriceTrends';
+import TransportTrends from './pages/TransportTrends';
 import StationDashboard from './pages/StationDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminReviews from './pages/AdminReviews';
@@ -39,7 +41,7 @@ function AppContent() {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
 
-  const publicRoutes = ['/', '/transport-prices', '/about', '/terms', '/privacy', '/cookies'];
+  const publicRoutes = ['/', '/transport-prices', '/price-trends', '/transport-trends', '/about', '/terms', '/privacy', '/cookies'];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   if (loading) {
@@ -74,7 +76,9 @@ function AppContent() {
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<Home />} />
               <Route path="/transport-prices" element={<TransportPrices />} />
+              <Route path="/transport-prices/:id" element={<TransportPriceDetails />} />
               <Route path="/price-trends" element={<PriceTrends />} />
+              <Route path="/transport-trends" element={<TransportTrends />} />
               <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
               <Route path="/signup" element={!user ? <Auth /> : <Navigate to="/" />} />
               <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />

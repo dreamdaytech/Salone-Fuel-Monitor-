@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, serverTimestamp, db, handleFirestoreError, OperationType, where, limit } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, History, Car, Bike, Ship, Truck, Zap, Info } from 'lucide-react';
@@ -42,6 +43,7 @@ const VehicleIcon = ({ name, className }: { name?: string, className?: string })
 
 export default function AdminTransportPrices() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [prices, setPrices] = useState<TransportPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -334,27 +336,64 @@ export default function AdminTransportPrices() {
     ];
 
     try {
-      const promises = demoData.flatMap(item => {
+      const promises: any[] = [];
+      
+      demoData.forEach(item => {
         const newDocRef = doc(collection(db, 'transport_prices'));
-        const historyDocRef = doc(collection(db, 'transport_price_history'));
-        const date = new Date().toISOString().split('T')[0];
+        const currentDate = new Date().toISOString().split('T')[0];
         
-        return [
-          setDoc(newDocRef, {
-            ...item,
-            date,
-            lastUpdated: serverTimestamp(),
-            updatedBy: user.uid
-          }),
-          setDoc(historyDocRef, {
+        // Add current price
+        promises.push(setDoc(newDocRef, {
+          ...item,
+          date: currentDate,
+          lastUpdated: serverTimestamp(),
+          updatedBy: user.uid
+        }));
+        
+        // Generate history from Jan 2020 to Jul 2026
+        const startYear = 2020;
+        const startMonth = 0; // Jan
+        const endYear = 2026;
+        const endMonth = 6; // Jul
+        
+        const totalMonths = (endYear - startYear) * 12 + (endMonth - startMonth);
+        
+        for (let m = 0; m <= totalMonths; m++) {
+          const currentYear = startYear + Math.floor((startMonth + m) / 12);
+          const currentM = (startMonth + m) % 12;
+          
+          const historyDate = new Date(currentYear, currentM, 15);
+          const dateStr = historyDate.toISOString().split('T')[0];
+          
+          // Calculate historical price (linear interpolation from 40% to 100% of current price)
+          const progress = m / totalMonths;
+          let historicalPrice = item.price * (0.4 + 0.6 * progress);
+          
+          // Add some noise (+/- 10%)
+          const noise = 1 + (Math.random() * 0.2 - 0.1);
+          historicalPrice = historicalPrice * noise;
+          
+          // Round to nearest 500
+          historicalPrice = Math.round(historicalPrice / 500) * 500;
+          
+          // Ensure it doesn't drop below a minimum sensible value (e.g., 1000)
+          if (historicalPrice < 1000) historicalPrice = 1000;
+          
+          const historyDocRef = doc(collection(db, 'transport_price_history'));
+          
+          promises.push(setDoc(historyDocRef, {
             priceId: newDocRef.id,
-            price: item.price,
-            date,
-            timestamp: serverTimestamp()
-          })
-        ];
+            price: historicalPrice,
+            date: dateStr,
+            timestamp: historyDate
+          }));
+        }
       });
-      await Promise.all(promises);
+
+      const chunkSize = 100;
+      for (let i = 0; i < promises.length; i += chunkSize) {
+        await Promise.all(promises.slice(i, i + chunkSize));
+      }
 
       // Seed vehicle types if empty
       if (vehicleTypes.length === 0) {
@@ -475,7 +514,7 @@ export default function AdminTransportPrices() {
                   <tr 
                     key={price.id} 
                     className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
-                    onClick={() => handleOpenViewModal(price)}
+                    onClick={() => navigate(`/transport-prices/${price.id}`)}
                   >
                     <td className="px-8 py-5">
                       <div className="font-bold text-gray-900">{price.route}</div>

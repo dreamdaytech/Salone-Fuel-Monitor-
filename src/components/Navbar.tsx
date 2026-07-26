@@ -5,7 +5,7 @@ import {
   Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
   ChevronDown, LayoutGrid, Activity, ClipboardList, 
   PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
-  Menu, X
+  Menu, X, TrendingUp
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { Button } from './ui/Button';
@@ -83,6 +83,7 @@ export default function Navbar() {
                 <Activity className="h-4 w-4" />
                 <span>Price Trends</span>
               </Link>
+
 
               <Link
                 to="/about"
@@ -253,6 +254,7 @@ export default function Navbar() {
               <Activity className="h-5 w-5" />
               <span>Price Trends</span>
             </Link>
+
             <Link
               to="/about"
               onClick={() => setIsMobileMenuOpen(false)}
