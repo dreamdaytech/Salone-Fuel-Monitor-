@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { FavoriteProvider } from './contexts/FavoriteContext';
 import { AnimatePresence } from 'motion/react';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import PageTransition from './components/PageTransition';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -32,6 +32,7 @@ import Contact from './pages/Contact';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import CookiePolicy from './pages/CookiePolicy';
+import CalculatorPage from './pages/Calculator';
 import Onboarding from './pages/Onboarding';
 import LocationPickerPage from './pages/LocationPickerPage';
 import Footer from './components/Footer';
@@ -40,8 +41,39 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 function AppContent() {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
-  const publicRoutes = ['/', '/transport-prices', '/price-trends', '/transport-trends', '/about', '/terms', '/privacy', '/cookies'];
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      toast.success('Back online!', {
+        id: 'offline-toast',
+      });
+    };
+
+    const handleOffline = () => {
+      setIsOffline(true);
+      toast.error('You are currently offline. Viewing cached data.', {
+        id: 'offline-toast',
+        duration: Infinity,
+      });
+    };
+
+    // Show initial offline state if started offline
+    if (!navigator.onLine) {
+      handleOffline();
+    }
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/about', '/terms', '/privacy', '/cookies'];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   if (loading) {
@@ -72,10 +104,19 @@ function AppContent() {
         <div className="min-h-screen bg-surface-50">
           <Toaster position="top-center" richColors />
           <Navbar />
+          {isOffline && (
+            <div className="bg-amber-100 border-b border-amber-200 text-amber-900 px-4 py-2 text-center text-sm flex items-center justify-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+              </span>
+              You are offline. Some features may not be available.
+            </div>
+          )}
           <main>
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<Home />} />
               <Route path="/transport-prices" element={<TransportPrices />} />
+              <Route path="/calculator" element={<CalculatorPage />} />
               <Route path="/transport-prices/:id" element={<TransportPriceDetails />} />
               <Route path="/price-trends" element={<PriceTrends />} />
               <Route path="/transport-trends" element={<TransportTrends />} />

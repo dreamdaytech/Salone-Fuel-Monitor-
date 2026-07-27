@@ -5,7 +5,7 @@ import {
   Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
   ChevronDown, LayoutGrid, Activity, ClipboardList, 
   PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
-  Menu, X, TrendingUp
+  Menu, X, TrendingUp, Calculator
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { Button } from './ui/Button';
@@ -74,6 +74,14 @@ export default function Navbar() {
               >
                 <Bus className="h-4 w-4" />
                 <span>Transport Prices</span>
+              </Link>
+              
+              <Link
+                to="/calculator"
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/calculator') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
+              >
+                <Calculator className="h-4 w-4" />
+                <span>Calculator</span>
               </Link>
               
               <Link
@@ -217,7 +225,8 @@ export default function Navbar() {
             <Button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               showNotification={false}
-              className="sm:hidden p-2 -mr-2 text-white hover:text-white rounded-lg transition-colors"
+              variant="ghost"
+              className="sm:hidden p-2 -mr-2 text-gray-600 hover:text-primary rounded-lg transition-colors"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -244,6 +253,14 @@ export default function Navbar() {
             >
               <Bus className="h-5 w-5" />
               <span>Transport Prices</span>
+            </Link>
+            <Link
+              to="/calculator"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/calculator') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+            >
+              <Calculator className="h-5 w-5" />
+              <span>Fuel Calculator</span>
             </Link>
             
             <Link

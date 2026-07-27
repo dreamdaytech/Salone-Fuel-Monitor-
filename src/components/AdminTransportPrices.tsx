@@ -54,6 +54,7 @@ export default function AdminTransportPrices() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyUnsubscribe, setHistoryUnsubscribe] = useState<(() => void) | null>(null);
   const [priceToDelete, setPriceToDelete] = useState<string | null>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showConfirmSeed, setShowConfirmSeed] = useState(false);
@@ -256,13 +257,18 @@ export default function AdminTransportPrices() {
     }
   };
 
-  const handleVehicleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this vehicle type?')) return;
+  const handleVehicleDelete = (id: string) => {
+    setVehicleToDelete(id);
+  };
+
+  const confirmVehicleDelete = async () => {
+    if (!vehicleToDelete) return;
     try {
-      await deleteDoc(doc(db, 'vehicle_types', id));
+      await deleteDoc(doc(db, 'vehicle_types', vehicleToDelete));
       setSuccessMessage('Vehicle type deleted successfully!');
+      setVehicleToDelete(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `vehicle_types/${id}`);
+      handleFirestoreError(error, OperationType.DELETE, `vehicle_types/${vehicleToDelete}`);
     }
   };
 
@@ -543,7 +549,7 @@ export default function AdminTransportPrices() {
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-2 ">
                         <Button
                           onClick={() => handleOpenModal(price)}
                           variant="ghost"
@@ -642,7 +648,7 @@ export default function AdminTransportPrices() {
                       <div className="text-sm text-gray-500">{type.description || 'No description'}</div>
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-2 ">
                         <Button
                           onClick={() => handleOpenVehicleModal(type)}
                           variant="ghost"
@@ -667,7 +673,7 @@ export default function AdminTransportPrices() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-8 py-10 text-center">
+                  <td colSpan={4} className="px-8 py-10 text-center">
                     <p className="text-gray-500 font-medium">No vehicle types defined.</p>
                   </td>
                 </tr>
@@ -1048,6 +1054,36 @@ export default function AdminTransportPrices() {
                 variant="danger"
                 className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 order-1 sm:order-2"
                 notificationMessage="Deleting transport price..."
+              >
+                Confirm Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {vehicleToDelete && (
+        <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-300" onClick={() => setVehicleToDelete(null)}>
+          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-6 sm:p-8 animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-6">
+              <Trash2 className="w-6 h-6 sm:w-8 sm:h-8" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Delete Vehicle Type?</h3>
+            <p className="text-sm sm:text-base text-gray-500 mb-8">Are you sure you want to delete this vehicle type? This action cannot be undone.</p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <Button
+                onClick={() => setVehicleToDelete(null)}
+                variant="secondary"
+                className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all order-2 sm:order-1"
+                showNotification={false}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmVehicleDelete}
+                variant="danger"
+                className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 order-1 sm:order-2"
+                notificationMessage="Deleting vehicle type..."
               >
                 Confirm Delete
               </Button>

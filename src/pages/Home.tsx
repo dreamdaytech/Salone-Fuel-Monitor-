@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy, where, db, handleFirestoreError, OperationType, doc } from '../firebase';
-import { Search, Download, MapPin, Filter, TrendingDown, TrendingUp, Minus, Shield, Fuel, Bell, BellOff, X, ShieldCheck, Building2, ArrowUpDown, History, Clock, Activity, ArrowLeft, CheckSquare, Square, Trophy, ChevronDown, Check, Navigation, Phone, ExternalLink, ShieldAlert, Slash, LayoutList, ChevronUp, Target, Percent, Heart } from 'lucide-react';
+import { collection, onSnapshot, query, orderBy, where, db, handleFirestoreError, OperationType, doc, addDoc, serverTimestamp } from '../firebase';
+import { Search, Download, MapPin, Filter, TrendingDown, TrendingUp, Minus, Shield, Fuel, Bell, BellOff, X, ShieldCheck, Building2, ArrowUpDown, History, Clock, Activity, ArrowLeft, CheckSquare, Square, Trophy, ChevronDown, Check, Navigation, Phone, ExternalLink, ShieldAlert, Slash, LayoutList, ChevronUp, Target, Percent, Heart, CloudOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -81,6 +81,7 @@ export default function Home() {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [sortBy, setSortBy] = useState<'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'updated' | 'proximity'>('updated');
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
   const [viewingStation, setViewingStation] = useState<Station | null>(null);
   const [priceHistory, setPriceHistory] = useState<any[]>([]);
   const [rawPriceHistory, setRawPriceHistory] = useState<any[]>([]);
@@ -92,6 +93,36 @@ export default function Home() {
   const [historyDateFrom, setHistoryDateFrom] = useState('');
   const [historyDateTo, setHistoryDateTo] = useState('');
   const [historyTimeframe, setHistoryTimeframe] = useState<string>('365');
+
+  const [reportStatus, setReportStatus] = useState<Record<string, 'idle' | 'reporting' | 'success' | 'error'>>({});
+
+  const handleReportDiscrepancy = async (station: Station, fuelType: string, listedPrice: number) => {
+    const key = `${station.id}-${fuelType}`;
+    if (!user) {
+      setReportStatus(prev => ({ ...prev, [key]: 'error' }));
+      setTimeout(() => setReportStatus(prev => ({ ...prev, [key]: 'idle' })), 3000);
+      return;
+    }
+    
+    setReportStatus(prev => ({ ...prev, [key]: 'reporting' }));
+    try {
+      await addDoc(collection(db, 'price_reports'), {
+        stationId: station.id,
+        stationName: station.name,
+        fuelType,
+        listedPrice,
+        userId: user.uid,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      setReportStatus(prev => ({ ...prev, [key]: 'success' }));
+      setTimeout(() => setReportStatus(prev => ({ ...prev, [key]: 'idle' })), 3000);
+    } catch (err: any) {
+      console.error('Failed to submit report:', err);
+      setReportStatus(prev => ({ ...prev, [key]: 'error' }));
+      setTimeout(() => setReportStatus(prev => ({ ...prev, [key]: 'idle' })), 3000);
+    }
+  };
 
   const filteredPriceHistory = useMemo(() => {
     let result = [...priceHistory];
@@ -331,7 +362,9 @@ export default function Home() {
   useEffect(() => {
     const unsubscribeStations = onSnapshot(
       query(collection(db, 'stations'), orderBy('name')),
+      { includeMetadataChanges: true },
       (snapshot) => {
+        setIsOffline(snapshot.metadata.fromCache);
         const stationData = snapshot.docs
           .map(doc => ({
             id: doc.id,
@@ -910,6 +943,12 @@ export default function Home() {
                           <p className="text-sm text-gray-500 font-medium">
                             Showing <span className="text-surface-900 font-bold">{filteredStations.length}</span> stations
                           </p>
+                          {isOffline && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-600 rounded-lg text-xs font-bold shadow-sm border border-amber-100 ml-2">
+                              <CloudOff className="w-3.5 h-3.5" />
+                              Offline
+                            </div>
+                          )}
                         </div>
 
                         <Button
@@ -1267,6 +1306,12 @@ export default function Home() {
                       Promo
                     </span>
                   )}
+                  {isOffline && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest bg-amber-100 text-amber-800 shadow-sm border border-amber-200">
+                      <CloudOff className="w-3 h-3" />
+                      Offline
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1490,6 +1535,12 @@ export default function Home() {
                         In Stock
                       </span>
                     )}
+                    {isOffline && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800">
+                        <CloudOff className="w-2.5 h-2.5" />
+                        Offline
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1642,6 +1693,52 @@ export default function Home() {
                           </>
                         ) : 'Not set'}
                       </div>
+                      {price > 0 && (() => {
+                        const rStatus = reportStatus[`${viewingStation.id}-${fuel}`] || 'idle';
+                        return (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (rStatus === 'idle') {
+                              handleReportDiscrepancy(viewingStation, fuel, price);
+                            }
+                          }}
+                          disabled={rStatus !== 'idle'}
+                          className={`mt-2 relative z-10 pointer-events-auto cursor-pointer flex items-center justify-center gap-1.5 w-full text-[10px] font-bold py-1.5 px-2 rounded-lg transition-colors border disabled:opacity-80 ${
+                            rStatus === 'success' 
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
+                              : rStatus === 'error'
+                              ? 'bg-red-50 text-red-600 border-red-200'
+                              : 'bg-amber-50 text-amber-600 hover:text-amber-700 hover:bg-amber-100 border-amber-100'
+                          }`}
+                          title="Report price discrepancy"
+                        >
+                          {rStatus === 'success' ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              Reported!
+                            </>
+                          ) : rStatus === 'error' ? (
+                            <>
+                              <X className="w-3 h-3" />
+                              {user ? 'Error submitting' : 'Login required'}
+                            </>
+                          ) : rStatus === 'reporting' ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+                              Reporting...
+                            </>
+                          ) : (
+                            <>
+                              <ShieldAlert className="w-3 h-3" />
+                              Report Discrepancy
+                            </>
+                          )}
+                        </button>
+                        );
+                      })()}
                     </div>
                   )})}
                 </div>

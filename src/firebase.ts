@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber } from 'firebase/auth';
-import { initializeFirestore, doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, orderBy, limit, getDocFromServer, terminate } from 'firebase/firestore';
+import { initializeFirestore, enableIndexedDbPersistence, doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, orderBy, limit, getDocFromServer, terminate } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -14,6 +14,21 @@ export const db = initializeFirestore(app, {
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Enable offline persistence
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db)
+    .then(() => {
+      console.log('Firebase offline persistence enabled');
+    })
+    .catch((err) => {
+      if (err.code == 'failed-precondition') {
+        console.warn('Firebase offline persistence failed: Multiple tabs open');
+      } else if (err.code == 'unimplemented') {
+        console.warn('Firebase offline persistence failed: Browser not supported');
+      }
+    });
+}
 
 // Initialize Messaging conditionally (only in browser)
 export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;

@@ -234,6 +234,19 @@ service cloud.firestore {
              (!('updatedAt' in data) || data.updatedAt is timestamp || data.updatedAt is string);
     }
 
+    function isValidPriceReport(data) {
+      return hasOnlyAllowedFields(['stationId', 'stationName', 'fuelType', 'listedPrice', 'userId', 'status', 'createdAt', 'resolvedAt', 'resolvedBy']) &&
+             data.stationId is string && data.stationId.size() > 0 && data.stationId.size() < 100 &&
+             data.stationName is string && data.stationName.size() > 0 && data.stationName.size() < 200 &&
+             data.fuelType is string && data.fuelType.size() > 0 && data.fuelType.size() < 100 &&
+             data.listedPrice is number && data.listedPrice >= 0 &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
+             data.status in ['pending', 'resolved', 'dismissed'] &&
+             (data.createdAt is timestamp || data.createdAt is string) &&
+             (!('resolvedAt' in data) || (data.resolvedAt is timestamp || data.resolvedAt is string)) &&
+             (!('resolvedBy' in data) || (data.resolvedBy is string && data.resolvedBy.size() < 100));
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -350,6 +363,15 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAdmin() && isValidPriceTrend(request.resource.data) && isRecent(request.resource.data.createdAt);
       allow update: if isAdmin() && isValidPriceTrend(request.resource.data) && isRecent(request.resource.data.updatedAt);
+      allow delete: if isAdmin();
+    }
+    match /price_reports/{reportId} {
+      allow read: if isAdmin(); // Only admins should see all reports.
+      allow create: if isAuthenticated() && isValidPriceReport(request.resource.data) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    isRecent(request.resource.data.createdAt);
+      allow update: if isAdmin() && isValidPriceReport(request.resource.data) &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'resolvedAt', 'resolvedBy']);
       allow delete: if isAdmin();
     }
   }

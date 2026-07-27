@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, where, limit } from '../firebase';
-import { Shield, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft } from 'lucide-react';
+import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { toast } from 'sonner';
 import { AdminPriceTrends } from '../components/AdminPriceTrends';
 import AdminTransportPrices from '../components/AdminTransportPrices';
 import AdminMessages from '../components/AdminMessages';
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
   const [govPrices, setGovPrices] = useState<Record<string, number>>({ Petrol: 0, Diesel: 0, Kerosene: 0 });
   const [users, setUsers] = useState<any[]>([]);
   const [stations, setStations] = useState<any[]>([]);
+  const [priceReports, setPriceReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSeeding, setIsSeeding] = useState(false);
   const historyChartRef = React.useRef<HTMLDivElement>(null);
@@ -242,7 +244,7 @@ export default function AdminDashboard() {
 
   const [sortField, setSortField] = useState<'name' | 'district' | 'isVerified'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings'>('overview');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -349,10 +351,19 @@ export default function AdminDashboard() {
       }
     );
 
+    const unsubscribeReports = onSnapshot(
+      collection(db, 'price_reports'),
+      (snapshot) => {
+        setPriceReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      },
+      (error) => handleFirestoreError(error, OperationType.LIST, 'price_reports')
+    );
+
     return () => {
       unsubscribeGov();
       unsubscribeUsers();
       unsubscribeStations();
+      unsubscribeReports();
     };
   }, [profile]);
 
@@ -961,6 +972,20 @@ export default function AdminDashboard() {
       return 0;
     });
 
+  const handleUpdateReportStatus = async (reportId: string, newStatus: 'resolved' | 'dismissed') => {
+    try {
+      await updateDoc(doc(db, 'price_reports', reportId), {
+        status: newStatus,
+        resolvedAt: serverTimestamp(),
+        resolvedBy: user?.uid
+      });
+      toast.success(`Report marked as ${newStatus}`);
+    } catch (error) {
+      console.error('Failed to update report status:', error);
+      toast.error('Failed to update report status');
+    }
+  };
+
   
 
   if (profile?.role !== 'admin') {
@@ -1148,6 +1173,29 @@ export default function AdminDashboard() {
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Messages</span>}
             </Button>
 
+            <Button 
+              onClick={() => { setActiveTab('reports'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'reports' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {activeTab === 'reports' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <ShieldAlert className={`w-5 h-5 shrink-0 ${activeTab === 'reports' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && (
+                <span className="font-semibold text-sm flex-1 text-left flex items-center justify-between">
+                  Reports
+                  {priceReports.filter(r => r.status === 'pending').length > 0 && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {priceReports.filter(r => r.status === 'pending').length}
+                    </span>
+                  )}
+                </span>
+              )}
+            </Button>
             <Button 
               onClick={() => { setActiveTab('reviews'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -1997,6 +2045,78 @@ export default function AdminDashboard() {
               </div>
             )}
 
+            {activeTab === 'reports' && (
+              <div className="space-y-6">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                  <div className="p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                      <h2 className="text-2xl font-bold text-surface-900">Price Discrepancy Reports</h2>
+                      <p className="text-gray-500 mt-1">Review and manage user reports about incorrect fuel prices</p>
+                    </div>
+                    <div className="bg-amber-50 text-amber-600 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4" />
+                      {priceReports.filter(r => r.status === 'pending').length} Pending
+                    </div>
+                  </div>
+                  <div className="p-8">
+                    {priceReports.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                          <CheckCircle className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-bold text-surface-900">No reports found</h3>
+                        <p className="text-gray-500 mt-1">All clear! There are no price discrepancy reports.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {priceReports.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).map((report) => (
+                          <div key={report.id} className={`p-6 rounded-2xl border ${report.status === 'pending' ? 'bg-amber-50/30 border-amber-100' : 'bg-gray-50 border-gray-100'}`}>
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                              <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${
+                                    report.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
+                                    report.status === 'resolved' ? 'bg-emerald-100 text-emerald-700' : 
+                                    'bg-gray-200 text-gray-700'
+                                  }`}>
+                                    {report.status}
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-500">
+                                    {report.createdAt?.toDate?.()?.toLocaleDateString() || 'Unknown date'}
+                                  </span>
+                                </div>
+                                <h4 className="text-lg font-bold text-surface-900">{report.stationName}</h4>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  Reported price for <span className="font-semibold">{report.fuelType}</span>: <span className="font-semibold">SLL {report.listedPrice?.toLocaleString()}</span>
+                                </p>
+                              </div>
+                              
+                              {report.status === 'pending' && (
+                                <div className="flex gap-2 w-full md:w-auto">
+                                  <button
+                                    onClick={() => handleUpdateReportStatus(report.id, 'dismissed')}
+                                    className="flex-1 md:flex-none px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                                  >
+                                    Dismiss
+                                  </button>
+                                  <button
+                                    onClick={() => handleUpdateReportStatus(report.id, 'resolved')}
+                                    className="flex-1 md:flex-none px-4 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl font-semibold hover:bg-emerald-100 transition-colors"
+                                  >
+                                    Mark Resolved
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'users' && (
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -2011,7 +2131,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                   
-                  <div className="overflow-x-auto">
+                  <div className="md:overflow-visible overflow-x-auto pb-32">
                     <table className="w-full">
                       <thead>
                         <tr className="bg-gray-50/50">
@@ -2297,7 +2417,7 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto">
+                  <div className="md:overflow-visible overflow-x-auto pb-32">
                     <table className="w-full">
                       <thead>
                         <tr className="bg-gray-50/50">
