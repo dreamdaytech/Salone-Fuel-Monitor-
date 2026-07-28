@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, serverTimestamp, db, handleFirestoreError, OperationType, where, limit } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, History, Car, Bike, Ship, Truck, Zap, Info } from 'lucide-react';
+import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Button } from './ui/Button';
 
@@ -53,6 +53,9 @@ export default function AdminTransportPrices() {
   const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyUnsubscribe, setHistoryUnsubscribe] = useState<(() => void) | null>(null);
+  const [isManageHistoryOpen, setIsManageHistoryOpen] = useState(false);
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
+  const [historyFormData, setHistoryFormData] = useState({ price: '', date: '' });
   const [priceToDelete, setPriceToDelete] = useState<string | null>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
@@ -75,6 +78,25 @@ export default function AdminTransportPrices() {
     price: '',
     date: new Date().toISOString().split('T')[0]
   });
+
+  const [isNewRoute, setIsNewRoute] = useState(false);
+  const [isRouteDropdownOpen, setIsRouteDropdownOpen] = useState(false);
+  const [routeSearchTerm, setRouteSearchTerm] = useState('');
+  const routeDropdownRef = useRef<HTMLDivElement>(null);
+  
+  const uniqueRoutes = Array.from(new Set(prices.map(p => p.route))).sort();
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (routeDropdownRef.current && !routeDropdownRef.current.contains(event.target as Node)) {
+        setIsRouteDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (successMessage) {
@@ -143,14 +165,16 @@ export default function AdminTransportPrices() {
         price: price.price.toString(),
         date: price.date || new Date().toISOString().split('T')[0]
       });
+      setIsNewRoute(false);
     } else {
       setEditingPrice(null);
       setFormData({
-        route: '',
-        vehicleType: 'Car',
+        route: uniqueRoutes.length > 0 ? uniqueRoutes[0] : '',
+        vehicleType: vehicleTypes.length > 0 ? vehicleTypes[0].name : 'Car',
         price: '',
         date: new Date().toISOString().split('T')[0]
       });
+      setIsNewRoute(uniqueRoutes.length === 0);
     }
     setIsModalOpen(true);
   };
@@ -197,6 +221,32 @@ export default function AdminTransportPrices() {
     }
     setViewingPrice(null);
     setPriceHistory([]);
+    setIsManageHistoryOpen(false);
+    setEditingHistoryId(null);
+  };
+
+  const handleDeleteHistory = async (historyId: string) => {
+    if (window.confirm('Are you sure you want to delete this price history record?')) {
+      try {
+        await deleteDoc(doc(db, 'transport_price_history', historyId));
+        setSuccessMessage('Price history deleted successfully');
+      } catch (error) {
+        console.error("Error deleting history:", error);
+      }
+    }
+  };
+
+  const handleSaveHistory = async (historyId: string) => {
+    try {
+      await setDoc(doc(db, 'transport_price_history', historyId), {
+        price: parseFloat(historyFormData.price),
+        date: historyFormData.date
+      }, { merge: true });
+      setEditingHistoryId(null);
+      setSuccessMessage('Price history updated successfully');
+    } catch (error) {
+      console.error("Error updating history:", error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -520,7 +570,7 @@ export default function AdminTransportPrices() {
                   <tr 
                     key={price.id} 
                     className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
-                    onClick={() => navigate(`/transport-prices/${price.id}`)}
+                    onClick={() => navigate(`/admin/transport-prices/${price.id}`)}
                   >
                     <td className="px-8 py-5">
                       <div className="font-bold text-gray-900">{price.route}</div>
@@ -701,14 +751,90 @@ export default function AdminTransportPrices() {
               <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-4 sm:space-y-6">
                 <div className="space-y-2">
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Route Name</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                    placeholder="e.g., Lumley to PZ"
-                    value={formData.route}
-                    onChange={(e) => setFormData({ ...formData, route: e.target.value })}
-                  />
+                  {!isNewRoute && uniqueRoutes.length > 0 ? (
+                    <div className="relative" ref={routeDropdownRef}>
+                      <div 
+                        className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold flex justify-between items-center cursor-pointer focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all"
+                        onClick={() => setIsRouteDropdownOpen(!isRouteDropdownOpen)}
+                      >
+                        <span className={formData.route ? 'text-gray-900' : 'text-gray-500'}>
+                          {formData.route || 'Select a route'}
+                        </span>
+                        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isRouteDropdownOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                      
+                      {isRouteDropdownOpen && (
+                        <div className="absolute z-[100] top-full mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                          <div className="p-2 border-b border-gray-100">
+                            <input 
+                              type="text"
+                              placeholder="Search routes..."
+                              className="w-full px-4 py-2.5 bg-gray-50 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500/20"
+                              value={routeSearchTerm}
+                              onChange={(e) => setRouteSearchTerm(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                            />
+                          </div>
+                          <ul className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
+                            {uniqueRoutes.filter(route => route.toLowerCase().includes(routeSearchTerm.toLowerCase())).map(route => (
+                              <li 
+                                key={route}
+                                className={`px-4 py-3 rounded-xl text-sm cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between ${formData.route === route ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700'}`}
+                                onClick={() => {
+                                  setFormData({ ...formData, route });
+                                  setIsRouteDropdownOpen(false);
+                                  setRouteSearchTerm('');
+                                }}
+                              >
+                                {route}
+                                {formData.route === route && <CheckCircle className="w-4 h-4" />}
+                              </li>
+                            ))}
+                            {uniqueRoutes.filter(route => route.toLowerCase().includes(routeSearchTerm.toLowerCase())).length === 0 && (
+                              <li className="px-4 py-4 text-sm text-gray-500 text-center font-medium">No routes found</li>
+                            )}
+                            <li 
+                              className="px-4 py-3 rounded-xl text-sm cursor-pointer hover:bg-emerald-50 text-emerald-600 font-bold mt-1 border-t border-gray-50 flex items-center gap-2"
+                              onClick={() => {
+                                setIsNewRoute(true);
+                                setFormData({ ...formData, route: '' });
+                                setIsRouteDropdownOpen(false);
+                                setRouteSearchTerm('');
+                              }}
+                            >
+                              <Plus className="w-4 h-4" /> Add New Route
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        required
+                        className="flex-1 px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        placeholder="e.g., Lumley to PZ"
+                        value={formData.route}
+                        onChange={(e) => setFormData({ ...formData, route: e.target.value })}
+                        autoFocus
+                      />
+                      {uniqueRoutes.length > 0 && (
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          onClick={() => {
+                            setIsNewRoute(false);
+                            setFormData({ ...formData, route: uniqueRoutes[0] || '' });
+                          }}
+                          className="px-4 shrink-0 rounded-2xl"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -915,11 +1041,78 @@ export default function AdminTransportPrices() {
                       <TrendingUp className="w-4 h-4 text-emerald-500" />
                       Price History
                     </h4>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Last 20 changes</span>
+                    <div className="flex items-center gap-3">
+                      {!isManageHistoryOpen && priceHistory.length > 0 && (
+                        <button
+                          onClick={() => setIsManageHistoryOpen(true)}
+                          className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest hover:text-emerald-700 transition-colors flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3 h-3" /> Manage
+                        </button>
+                      )}
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Last 20 changes</span>
+                    </div>
                   </div>
                   
-                  <div className="h-40 sm:h-48 w-full bg-gray-50 rounded-2xl p-4 border border-gray-100">
-                    {historyLoading ? (
+                  {isManageHistoryOpen ? (
+                    <div className="h-40 sm:h-48 overflow-y-auto w-full bg-gray-50 rounded-2xl p-2 border border-gray-100 custom-scrollbar space-y-2">
+                      {priceHistory.map((history) => (
+                        <div key={history.id} className="bg-white rounded-xl p-3 shadow-sm border border-gray-100 flex items-center justify-between">
+                          {editingHistoryId === history.id ? (
+                            <div className="flex-1 flex flex-col sm:flex-row gap-2">
+                              <input
+                                type="date"
+                                className="px-3 py-1.5 bg-gray-50 border-none rounded-lg text-xs font-bold focus:ring-2 focus:ring-emerald-500/20"
+                                value={historyFormData.date}
+                                onChange={(e) => setHistoryFormData({ ...historyFormData, date: e.target.value })}
+                              />
+                              <input
+                                type="number"
+                                className="px-3 py-1.5 bg-gray-50 border-none rounded-lg text-xs font-bold focus:ring-2 focus:ring-emerald-500/20 w-24"
+                                value={historyFormData.price}
+                                onChange={(e) => setHistoryFormData({ ...historyFormData, price: e.target.value })}
+                                placeholder="Price"
+                              />
+                              <div className="flex gap-1 ml-auto">
+                                <button onClick={() => handleSaveHistory(history.id)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg">
+                                  <Save className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => setEditingHistoryId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg">
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div>
+                                <p className="text-xs font-bold text-gray-900">SLL {history.price.toLocaleString()}</p>
+                                <p className="text-[10px] text-gray-500">{new Date(history.date).toLocaleDateString()}</p>
+                              </div>
+                              <div className="flex gap-1">
+                                <button 
+                                  onClick={() => {
+                                    setEditingHistoryId(history.id);
+                                    setHistoryFormData({ price: history.price.toString(), date: history.date });
+                                  }} 
+                                  className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteHistory(history.id)} 
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-40 sm:h-48 w-full bg-gray-50 rounded-2xl p-4 border border-gray-100">
+                      {historyLoading ? (
                       <div className="h-full flex items-center justify-center text-xs text-gray-400 font-medium">
                         Loading history...
                       </div>
@@ -970,6 +1163,7 @@ export default function AdminTransportPrices() {
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
                 
                 <div className="pt-4 sm:pt-6 flex flex-col sm:flex-row gap-3 border-t border-gray-100">

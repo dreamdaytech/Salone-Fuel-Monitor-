@@ -15,6 +15,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import TransportPrices from './pages/TransportPrices';
 import TransportPriceDetails from './pages/TransportPriceDetails';
+import AdminTransportPriceDetails from './pages/AdminTransportPriceDetails';
 import PriceTrends from './pages/PriceTrends';
 import TransportTrends from './pages/TransportTrends';
 import StationDashboard from './pages/StationDashboard';
@@ -136,6 +137,7 @@ function AppContent() {
               <Route path="/location-picker" element={<LocationPickerPage />} />
               <Route path="/dashboard" element={user && (profile?.role === 'station_owner' || profile?.role === 'admin') ? <StationDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
               <Route path="/admin" element={user && profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
+              <Route path="/admin/transport-prices/:id" element={user && profile?.role === 'admin' ? <AdminTransportPriceDetails /> : <Navigate to={user ? "/" : "/login"} />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
