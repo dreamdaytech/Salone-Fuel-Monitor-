@@ -7,6 +7,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { toast } from 'sonner';
 import { AdminPriceTrends } from '../components/AdminPriceTrends';
 import AdminTransportPrices from '../components/AdminTransportPrices';
+import AdminTransportPriceDetails from './AdminTransportPriceDetails';
 import AdminMessages from '../components/AdminMessages';
 import AdminStationMap from '../components/AdminStationMap';
 import AdminReviews from './AdminReviews';
@@ -1733,7 +1734,14 @@ export default function AdminDashboard() {
     <div className="flex-1 overflow-y-auto p-4 sm:p-8">
 
             {activeTab === 'transport' && (
-              <AdminTransportPrices />
+              searchParams.get('id') ? (
+                <AdminTransportPriceDetails 
+                  priceId={searchParams.get('id') || undefined} 
+                  onBack={() => setSearchParams({ tab: 'transport' })}
+                />
+              ) : (
+                <AdminTransportPrices />
+              )
             )}
 
             {activeTab === 'messages' && (

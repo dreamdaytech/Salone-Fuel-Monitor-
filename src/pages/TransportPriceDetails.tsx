@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, orderBy, onSnapshot, db } from '../firebase';
 import { 
@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { toCanvas } from 'html-to-image';
 
 interface TransportPrice {
   id: string;
@@ -33,6 +34,7 @@ interface PriceHistory {
 export default function TransportPriceDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const chartRef = useRef<HTMLDivElement>(null);
   const [priceDetails, setPriceDetails] = useState<TransportPrice | null>(null);
   const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,6 +147,19 @@ export default function TransportPriceDetails() {
     try {
       setIsExporting(true);
       
+      let chartImgData = null;
+      if (viewType !== 'table' && chartRef.current) {
+        try {
+          const canvas = await toCanvas(chartRef.current, {
+            backgroundColor: '#ffffff',
+            pixelRatio: 2
+          });
+          chartImgData = canvas.toDataURL('image/png');
+        } catch (e) {
+          console.error('Failed to capture chart image', e);
+        }
+      }
+
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const margin = 14;
@@ -206,6 +221,19 @@ export default function TransportPriceDetails() {
       pdf.text(`Current Price: Le ${priceDetails?.price.toLocaleString() || 'N/A'}`, margin, currentY);
       
       currentY += 12;
+
+      if (chartImgData) {
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(15, 23, 42);
+        pdf.text('Price Trend Graph', margin, currentY);
+        
+        currentY += 6;
+        const chartWidth = pageWidth - (margin * 2);
+        const chartHeight = 75;
+        pdf.addImage(chartImgData, 'PNG', margin, currentY, chartWidth, chartHeight);
+        currentY += chartHeight + 12;
+      }
 
       // --- Table ---
       pdf.setFontSize(14);
@@ -533,7 +561,7 @@ export default function TransportPriceDetails() {
               </div>
             </div>
           ) : chartData.length > 1 ? (
-            <div className="h-[400px] w-full bg-gray-50/30 rounded-2xl p-4 border border-gray-50">
+            <div ref={chartRef} className="h-[400px] w-full bg-white rounded-2xl p-4 border border-gray-50">
               <ResponsiveContainer width="100%" height="100%">
                 {viewType === 'line' ? (
                   <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, db, handleFirestoreError, OperationType } from '../firebase';
-import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote, TrendingUp } from 'lucide-react';
+import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote, TrendingUp, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ReferenceLine } from 'recharts';
 
@@ -36,6 +36,13 @@ export default function TransportPrices() {
   const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>((location.state as any)?.viewMode || 'cards');
   const [sortField, setSortField] = useState<'route' | 'price' | 'date' | 'lastUpdated'>('route');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  // Advanced filter states
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     const unsubscribeTransport = onSnapshot(
@@ -82,10 +89,38 @@ export default function TransportPrices() {
     }
   };
 
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setSelectedVehicleType('All');
+    setMinPrice('');
+    setMaxPrice('');
+    setStartDate('');
+    setEndDate('');
+    setSortField('route');
+    setSortDirection('asc');
+  };
+
   const filteredPrices = prices.filter(price => {
     const matchesSearch = price.route.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesVehicleType = selectedVehicleType === 'All' || price.vehicleType === selectedVehicleType;
-    return matchesSearch && matchesVehicleType;
+    
+    // Price Range filter
+    const matchesMinPrice = minPrice === '' || price.price >= parseFloat(minPrice);
+    const matchesMaxPrice = maxPrice === '' || price.price <= parseFloat(maxPrice);
+
+    // Date Range filter
+    let matchesDate = true;
+    if (startDate || endDate) {
+      const recordDate = price.date;
+      if (recordDate) {
+        if (startDate && recordDate < startDate) matchesDate = false;
+        if (endDate && recordDate > endDate) matchesDate = false;
+      } else {
+        matchesDate = false;
+      }
+    }
+
+    return matchesSearch && matchesVehicleType && matchesMinPrice && matchesMaxPrice && matchesDate;
   }).sort((a, b) => {
     let aValue: any = a[sortField];
     let bValue: any = b[sortField];
@@ -169,9 +204,9 @@ export default function TransportPrices() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="relative group">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 space-y-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+          <div className="relative group flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-primary transition-colors" />
             <input
               type="text"
@@ -182,17 +217,108 @@ export default function TransportPrices() {
             />
           </div>
           
-          <div className="relative group">
-            <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-primary transition-colors" />
-            <select
-              className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm font-bold text-surface-900 appearance-none cursor-pointer"
-              value={selectedVehicleType}
-              onChange={(e) => setSelectedVehicleType(e.target.value)}
-            >
-              {vehicleTypes.map(v => <option key={v} value={v}>{v === 'All' ? 'All Vehicle Types' : v}</option>)}
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:w-[600px]">
+            <div className="relative group">
+              <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-primary transition-colors pointer-events-none" />
+              <select
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm font-bold text-surface-900 appearance-none cursor-pointer"
+                value={selectedVehicleType}
+                onChange={(e) => setSelectedVehicleType(e.target.value)}
+              >
+                {vehicleTypes.map(v => <option key={v} value={v}>{v === 'All' ? 'All Vehicles' : v}</option>)}
+              </select>
+            </div>
+
+            <div className="relative group">
+              <ArrowUpDown className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-primary transition-colors pointer-events-none" />
+              <select
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm font-bold text-surface-900 appearance-none cursor-pointer"
+                value={`${sortField}-${sortDirection}`}
+                onChange={(e) => {
+                  const [field, direction] = e.target.value.split('-') as [any, any];
+                  setSortField(field);
+                  setSortDirection(direction);
+                }}
+              >
+                <option value="route-asc">Route (A-Z)</option>
+                <option value="route-desc">Route (Z-A)</option>
+                <option value="price-asc">Price (Low to High)</option>
+                <option value="price-desc">Price (High to Low)</option>
+                <option value="date-desc">Date (Newest)</option>
+                <option value="date-asc">Date (Oldest)</option>
+                <option value="lastUpdated-desc">Recently Updated</option>
+              </select>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                variant="secondary"
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${showAdvanced ? 'bg-primary/10 text-primary border-primary/20' : ''}`}
+                showNotification={false}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+              </Button>
+
+              {(searchTerm || selectedVehicleType !== 'All' || minPrice || maxPrice || startDate || endDate) && (
+                <Button
+                  onClick={handleResetFilters}
+                  variant="ghost"
+                  className="px-3 rounded-xl border border-gray-200 text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-all"
+                  showNotification={false}
+                  title="Reset Filters"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Collapsible Advanced Filters Panel */}
+        {showAdvanced && (
+          <div className="pt-4 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-top-4 duration-200">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Min Price (SLL)</label>
+              <input
+                type="number"
+                placeholder="e.g. 5000"
+                className="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Max Price (SLL)</label>
+              <input
+                type="number"
+                placeholder="e.g. 50000"
+                className="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">From Date</label>
+              <input
+                type="date"
+                className="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium text-gray-600"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">To Date</label>
+              <input
+                type="date"
+                className="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm font-medium text-gray-600"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Results View */}

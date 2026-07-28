@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, serverTimestamp, db, handleFirestoreError, OperationType, where, limit } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown } from 'lucide-react';
+import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown, ChevronUp, ArrowUpDown, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Button } from './ui/Button';
 
@@ -44,9 +44,21 @@ const VehicleIcon = ({ name, className }: { name?: string, className?: string })
 export default function AdminTransportPrices() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [prices, setPrices] = useState<TransportPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedVehicleType, setSelectedVehicleType] = useState('All');
+  const [sortField, setSortField] = useState<'route' | 'vehicleType' | 'price' | 'date' | 'lastUpdated'>('route');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  
+  // Advanced filters
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<TransportPrice | null>(null);
   const [viewingPrice, setViewingPrice] = useState<TransportPrice | null>(null);
@@ -481,14 +493,75 @@ export default function AdminTransportPrices() {
     }
   };
 
-  const filteredPrices = prices.filter(price => 
-    price.route.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    price.vehicleType.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSort = (field: 'route' | 'vehicleType' | 'price' | 'date' | 'lastUpdated') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setSelectedVehicleType('All');
+    setMinPrice('');
+    setMaxPrice('');
+    setStartDate('');
+    setEndDate('');
+    setSortField('route');
+    setSortDirection('asc');
+  };
+
+  const filteredPrices = prices.filter(price => {
+    const matchesSearch = price.route.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          price.vehicleType.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesVehicleType = selectedVehicleType === 'All' || price.vehicleType === selectedVehicleType;
+    
+    // Price Range filter
+    const matchesMinPrice = minPrice === '' || price.price >= parseFloat(minPrice);
+    const matchesMaxPrice = maxPrice === '' || price.price <= parseFloat(maxPrice);
+
+    // Date Range filter
+    let matchesDate = true;
+    if (startDate || endDate) {
+      const recordDate = price.date;
+      if (recordDate) {
+        if (startDate && recordDate < startDate) matchesDate = false;
+        if (endDate && recordDate > endDate) matchesDate = false;
+      } else {
+        matchesDate = false;
+      }
+    }
+
+    return matchesSearch && matchesVehicleType && matchesMinPrice && matchesMaxPrice && matchesDate;
+  }).sort((a, b) => {
+    let aValue: any = a[sortField];
+    let bValue: any = b[sortField];
+
+    if (sortField === 'route') {
+      aValue = a.route.toLowerCase();
+      bValue = b.route.toLowerCase();
+    } else if (sortField === 'vehicleType') {
+      aValue = a.vehicleType.toLowerCase();
+      bValue = b.vehicleType.toLowerCase();
+    } else if (sortField === 'date') {
+      aValue = a.date || '';
+      bValue = b.date || '';
+    } else if (sortField === 'lastUpdated') {
+      aValue = a.lastUpdated?.toDate?.()?.getTime() || 0;
+      bValue = b.lastUpdated?.toDate?.()?.getTime() || 0;
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   useEffect(() => {
     setVisibleCount(8);
-  }, [searchTerm]);
+  }, [searchTerm, selectedVehicleType, minPrice, maxPrice, startDate, endDate]);
 
   if (loading) {
     return <div className="p-8 text-center">Loading transport prices...</div>;
@@ -539,28 +612,171 @@ export default function AdminTransportPrices() {
           </div>
         </div>
 
-        <div className="p-6 border-b border-gray-50 bg-gray-50/50">
-          <div className="relative max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search routes or vehicle types..."
-              className="w-full pl-12 pr-4 py-3 bg-white border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        <div className="p-6 border-b border-gray-50 bg-gray-50/50 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search routes or vehicle types..."
+                className="w-full pl-12 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <div className="flex flex-wrap sm:flex-nowrap gap-3 items-center">
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
+                <select
+                  className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm appearance-none cursor-pointer"
+                  value={selectedVehicleType}
+                  onChange={(e) => setSelectedVehicleType(e.target.value)}
+                >
+                  <option value="All">All Vehicles</option>
+                  {vehicleTypes.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+              </div>
+
+              <Button
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                variant="secondary"
+                className={`px-4 py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold shadow-sm transition-all border ${showAdvanced ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'border-gray-200'}`}
+                showNotification={false}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+              </Button>
+
+              {(searchTerm || selectedVehicleType !== 'All' || minPrice || maxPrice || startDate || endDate) && (
+                <Button
+                  onClick={handleResetFilters}
+                  variant="ghost"
+                  className="px-4 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:text-red-600 hover:bg-red-50 hover:border-red-100 transition-all flex items-center justify-center gap-2 text-sm font-bold"
+                  showNotification={false}
+                  title="Reset Filters"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Reset
+                </Button>
+              )}
+            </div>
           </div>
+
+          {/* Collapsible Advanced Filters */}
+          {showAdvanced && (
+            <div className="pt-4 border-t border-gray-200/50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-top-4 duration-200">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Min Price (SLL)</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 5000"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium shadow-sm"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Max Price (SLL)</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 50000"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium shadow-sm"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">From Date</label>
+                <input
+                  type="date"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium text-gray-600 shadow-sm"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">To Date</label>
+                <input
+                  type="date"
+                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium text-gray-600 shadow-sm"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50/50">
-                <th className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Route</th>
-                <th className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Vehicle Type</th>
-                <th className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Price (SLL)</th>
-                <th className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Date</th>
-                <th className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Last Updated</th>
+                <th 
+                  className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 cursor-pointer hover:text-emerald-600 transition-colors"
+                  onClick={() => handleSort('route')}
+                >
+                  <div className="flex items-center gap-2">
+                    Route
+                    {sortField === 'route' ? (
+                      sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" /> : <ChevronDown className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 opacity-30" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 cursor-pointer hover:text-emerald-600 transition-colors"
+                  onClick={() => handleSort('vehicleType')}
+                >
+                  <div className="flex items-center gap-2">
+                    Vehicle Type
+                    {sortField === 'vehicleType' ? (
+                      sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" /> : <ChevronDown className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 opacity-30" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 cursor-pointer hover:text-emerald-600 transition-colors"
+                  onClick={() => handleSort('price')}
+                >
+                  <div className="flex items-center gap-2">
+                    Price (SLL)
+                    {sortField === 'price' ? (
+                      sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" /> : <ChevronDown className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 opacity-30" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 cursor-pointer hover:text-emerald-600 transition-colors"
+                  onClick={() => handleSort('date')}
+                >
+                  <div className="flex items-center gap-2">
+                    Date
+                    {sortField === 'date' ? (
+                      sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" /> : <ChevronDown className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 opacity-30" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 cursor-pointer hover:text-emerald-600 transition-colors"
+                  onClick={() => handleSort('lastUpdated')}
+                >
+                  <div className="flex items-center gap-2">
+                    Last Updated
+                    {sortField === 'lastUpdated' ? (
+                      sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-emerald-600" /> : <ChevronDown className="w-3.5 h-3.5 text-emerald-600" />
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 opacity-30" />
+                    )}
+                  </div>
+                </th>
                 <th className="px-8 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">Actions</th>
               </tr>
             </thead>
@@ -570,7 +786,7 @@ export default function AdminTransportPrices() {
                   <tr 
                     key={price.id} 
                     className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
-                    onClick={() => navigate(`/admin/transport-prices/${price.id}`)}
+                    onClick={() => setSearchParams({ tab: 'transport', id: price.id })}
                   >
                     <td className="px-8 py-5">
                       <div className="font-bold text-gray-900">{price.route}</div>

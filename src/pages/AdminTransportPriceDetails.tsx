@@ -1,18 +1,21 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, orderBy, onSnapshot, db } from '../firebase';
+import { doc, getDoc, collection, query, where, orderBy, onSnapshot, db, setDoc, deleteDoc } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   ArrowLeft, MapPin, Banknote, Calendar, Clock, TrendingUp, History, 
   Car, Bus, Bike, Ship, Zap, Search, ArrowUpDown, ChevronUp, ChevronDown, ListFilter,
-  LineChart as LineChartIcon, BarChart3, Table as TableIcon, Download, RefreshCw, Settings
+  LineChart as LineChartIcon, BarChart3, Table as TableIcon, Download, RefreshCw, Settings,
+  Save, X, Trash2, Edit2
 } from 'lucide-react';
 import { 
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { toast } from 'sonner';
+import { toCanvas } from 'html-to-image';
 
 interface TransportPrice {
   id: string;
@@ -31,9 +34,16 @@ interface PriceHistory {
   timestamp: any;
 }
 
-export default function AdminTransportPriceDetails() {
-  const { id } = useParams<{ id: string }>();
+interface AdminTransportPriceDetailsProps {
+  priceId?: string;
+  onBack?: () => void;
+}
+
+export default function AdminTransportPriceDetails({ priceId, onBack }: AdminTransportPriceDetailsProps = {}) {
+  const { id: paramId } = useParams<{ id: string }>();
+  const id = priceId || paramId;
   const navigate = useNavigate();
+  const chartRef = useRef<HTMLDivElement>(null);
   const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin';
   const [priceDetails, setPriceDetails] = useState<TransportPrice | null>(null);
@@ -48,6 +58,36 @@ export default function AdminTransportPriceDetails() {
   const [viewType, setViewType] = useState<'line' | 'bar' | 'table'>('line');
   const [timeRange, setTimeRange] = useState<'30d' | '3m' | '6m' | '1y' | 'all' | 'custom'>('1y');
   const [isExporting, setIsExporting] = useState(false);
+
+  const [isManaging, setIsManaging] = useState(false);
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
+  const [historyFormData, setHistoryFormData] = useState({ price: '', date: '' });
+
+  const handleDeleteHistory = async (historyId: string) => {
+    if (window.confirm('Are you sure you want to delete this price history record?')) {
+      try {
+        await deleteDoc(doc(db, 'transport_price_history', historyId));
+        toast.success('Price history deleted successfully');
+      } catch (error) {
+        console.error("Error deleting history:", error);
+        toast.error('Failed to delete history');
+      }
+    }
+  };
+
+  const handleSaveHistory = async (historyId: string) => {
+    try {
+      await setDoc(doc(db, 'transport_price_history', historyId), {
+        price: parseFloat(historyFormData.price),
+        date: historyFormData.date
+      }, { merge: true });
+      setEditingHistoryId(null);
+      toast.success('Price history updated successfully');
+    } catch (error) {
+      console.error("Error updating history:", error);
+      toast.error('Failed to update history');
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -148,6 +188,19 @@ export default function AdminTransportPriceDetails() {
     try {
       setIsExporting(true);
       
+      let chartImgData = null;
+      if (viewType !== 'table' && chartRef.current) {
+        try {
+          const canvas = await toCanvas(chartRef.current, {
+            backgroundColor: '#ffffff',
+            pixelRatio: 2
+          });
+          chartImgData = canvas.toDataURL('image/png');
+        } catch (e) {
+          console.error('Failed to capture chart image', e);
+        }
+      }
+
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const margin = 14;
@@ -209,6 +262,19 @@ export default function AdminTransportPriceDetails() {
       pdf.text(`Current Price: Le ${priceDetails?.price.toLocaleString() || 'N/A'}`, margin, currentY);
       
       currentY += 12;
+
+      if (chartImgData) {
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(15, 23, 42);
+        pdf.text('Price Trend Graph', margin, currentY);
+        
+        currentY += 6;
+        const chartWidth = pageWidth - (margin * 2);
+        const chartHeight = 75;
+        pdf.addImage(chartImgData, 'PNG', margin, currentY, chartWidth, chartHeight);
+        currentY += chartHeight + 12;
+      }
 
       // --- Table ---
       pdf.setFontSize(14);
@@ -306,7 +372,7 @@ export default function AdminTransportPriceDetails() {
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Price Not Found</h2>
         <p className="text-gray-500 mb-8">The transport price details you are looking for do not exist or have been removed.</p>
         <button 
-          onClick={() => navigate('/admin?tab=transport')}
+          onClick={onBack || (() => navigate('/admin?tab=transport'))}
           className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors"
         >
           Back to Admin Dashboard
@@ -317,13 +383,23 @@ export default function AdminTransportPriceDetails() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-500">
-      <Link 
-        to="/admin?tab=transport"
-        className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-primary transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Admin Dashboard
-      </Link>
+      {onBack ? (
+        <button 
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-primary transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Admin Dashboard
+        </button>
+      ) : (
+        <Link 
+          to="/admin?tab=transport"
+          className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-primary transition-colors mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Admin Dashboard
+        </Link>
+      )}
 
       <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-gray-100">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-8 border-b border-gray-100">
@@ -371,13 +447,22 @@ export default function AdminTransportPriceDetails() {
             
             <div className="flex flex-wrap items-center gap-3">
               {isAdmin && (
-                <Link
-                  to="/admin?tab=transport"
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl font-bold text-sm hover:bg-emerald-100 transition-all shadow-sm"
+                <button
+                  onClick={() => {
+                    setIsManaging(!isManaging);
+                    if (!isManaging) {
+                      setViewType('table');
+                    }
+                  }}
+                  className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-xl font-bold text-sm transition-all shadow-sm ${
+                    isManaging 
+                      ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700' 
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  }`}
                 >
                   <Settings className="w-4 h-4" />
-                  Manage History
-                </Link>
+                  {isManaging ? 'Exit Manage' : 'Manage History'}
+                </button>
               )}
               <div className="flex items-center bg-gray-100/50 p-1 rounded-xl">
                 <button
@@ -519,6 +604,11 @@ export default function AdminTransportPriceDetails() {
                           Price (Le)
                         </div>
                       </th>
+                      {isManaging && (
+                        <th className="px-6 py-4 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-50">
@@ -526,16 +616,69 @@ export default function AdminTransportPriceDetails() {
                       filteredAndSortedHistory.map((history) => (
                         <tr key={history.id} className="hover:bg-gray-50/50 transition-colors">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-surface-900">
-                            {history.date}
+                            {editingHistoryId === history.id ? (
+                              <input
+                                type="date"
+                                className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-emerald-500/20"
+                                value={historyFormData.date}
+                                onChange={(e) => setHistoryFormData({ ...historyFormData, date: e.target.value })}
+                              />
+                            ) : (
+                              history.date
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-primary text-right">
-                            {history.price.toLocaleString()}
+                            {editingHistoryId === history.id ? (
+                              <input
+                                type="number"
+                                className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-emerald-500/20 w-32 text-right"
+                                value={historyFormData.price}
+                                onChange={(e) => setHistoryFormData({ ...historyFormData, price: e.target.value })}
+                                placeholder="Price"
+                              />
+                            ) : (
+                              history.price.toLocaleString()
+                            )}
                           </td>
+                          {isManaging && (
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                              <div className="flex justify-end gap-2">
+                                {editingHistoryId === history.id ? (
+                                  <>
+                                    <button onClick={() => handleSaveHistory(history.id)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                                      <Save className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => setEditingHistoryId(null)} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors">
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button 
+                                      onClick={() => {
+                                        setEditingHistoryId(history.id);
+                                        setHistoryFormData({ price: history.price.toString(), date: history.date });
+                                      }} 
+                                      className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                    >
+                                      <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDeleteHistory(history.id)} 
+                                      className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={2} className="px-6 py-8 text-center text-sm font-medium text-gray-400">
+                        <td colSpan={isManaging ? 3 : 2} className="px-6 py-8 text-center text-sm font-medium text-gray-400">
                           No price history matches your filters.
                         </td>
                       </tr>
@@ -545,7 +688,7 @@ export default function AdminTransportPriceDetails() {
               </div>
             </div>
           ) : chartData.length > 1 ? (
-            <div className="h-[400px] w-full bg-gray-50/30 rounded-2xl p-4 border border-gray-50">
+            <div ref={chartRef} className="h-[400px] w-full bg-white rounded-2xl p-4 border border-gray-50">
               <ResponsiveContainer width="100%" height="100%">
                 {viewType === 'line' ? (
                   <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
