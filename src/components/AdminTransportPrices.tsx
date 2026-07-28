@@ -45,6 +45,7 @@ export default function AdminTransportPrices() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'prices' | 'vehicles'>('prices');
   const [prices, setPrices] = useState<TransportPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -578,6 +579,33 @@ export default function AdminTransportPrices() {
         </div>
       )}
 
+      {/* Tabs */}
+      <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 w-fit">
+        <button
+          onClick={() => setActiveTab('prices')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'prices'
+              ? 'bg-emerald-50 text-emerald-700 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <Bus className="w-4 h-4" />
+          Transport Prices
+        </button>
+        <button
+          onClick={() => setActiveTab('vehicles')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'vehicles'
+              ? 'bg-emerald-50 text-emerald-700 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <Car className="w-4 h-4" />
+          Vehicle Types
+        </button>
+      </div>
+
+      {activeTab === 'prices' && (
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-8 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
@@ -865,8 +893,10 @@ export default function AdminTransportPrices() {
           </div>
         )}
       </div>
+      )}
 
       {/* Vehicle Types Section */}
+      {activeTab === 'vehicles' && (
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-8 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
@@ -948,6 +978,7 @@ export default function AdminTransportPrices() {
           </table>
         </div>
       </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-in fade-in duration-300" onClick={handleCloseModal}>
