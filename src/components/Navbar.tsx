@@ -5,7 +5,7 @@ import {
   Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
   ChevronDown, LayoutGrid, Activity, ClipboardList, 
   PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
-  Menu, X, TrendingUp, Calculator
+  Menu, X, TrendingUp, Calculator, Globe
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { Button } from './ui/Button';
@@ -92,13 +92,12 @@ export default function Navbar() {
                 <span>Price Trends</span>
               </Link>
 
-
               <Link
-                to="/about"
-                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/about') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
+                to="/regional-comparison"
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/regional-comparison') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
               >
-                <Info className="h-4 w-4" />
-                <span>About</span>
+                <Globe className="h-4 w-4" />
+                <span>Regional</span>
               </Link>
             </div>
 
@@ -273,12 +272,12 @@ export default function Navbar() {
             </Link>
 
             <Link
-              to="/about"
+              to="/regional-comparison"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/about') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/regional-comparison') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
             >
-              <Info className="h-5 w-5" />
-              <span>About</span>
+              <Globe className="h-5 w-5" />
+              <span>Regional Comparison</span>
             </Link>
           </div>
         </div>

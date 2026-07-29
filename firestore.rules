@@ -289,6 +289,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /world_average_prices/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /regional_fuel_prices/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /price_history/{historyId} {
       allow read: if true; // Publicly readable for trends
       allow create: if isAuthenticated() && isValidPriceHistory(request.resource.data) &&

@@ -12,6 +12,7 @@ import AdminMessages from '../components/AdminMessages';
 import AdminStationMap from '../components/AdminStationMap';
 import AdminReviews from './AdminReviews';
 import AdminSettings from '../components/AdminSettings';
+import AdminRegionalPrices from '../components/AdminRegionalPrices';
 import { Button } from '../components/ui/Button';
 import { NotificationService } from '../services/NotificationService';
 import { jsPDF } from 'jspdf';
@@ -248,7 +249,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional'>(initialTab);
 
   useEffect(() => {
     if (activeTab !== initialTab) {
@@ -1169,6 +1170,20 @@ export default function AdminDashboard() {
             </Button>
 
             <Button 
+              onClick={() => { setActiveTab('regional'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'regional' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {activeTab === 'regional' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <Globe className={`w-5 h-5 shrink-0 ${activeTab === 'regional' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Regional Prices</span>}
+            </Button>
+            <Button 
               onClick={() => { setActiveTab('messages'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
@@ -1750,6 +1765,12 @@ export default function AdminDashboard() {
 
             {activeTab === 'reviews' && (
               <AdminReviews />
+            )}
+
+            {activeTab === 'regional' && (
+              <div className="p-6 sm:p-8">
+                <AdminRegionalPrices />
+              </div>
             )}
 
             {activeTab === 'settings' && (

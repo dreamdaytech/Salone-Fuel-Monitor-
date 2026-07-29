@@ -22,6 +22,7 @@ export default function Footer() {
             <p className="text-xs text-slate-500 mt-1">Designed with ❤️ by DreamDay Technology</p>
           </div>
           <div className="flex flex-wrap justify-center gap-6">
+            <Link to="/about" className="hover:text-white transition-colors">About Us</Link>
             <Link to="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link to="/cookies" className="hover:text-white transition-colors">Cookie Policy</Link>
