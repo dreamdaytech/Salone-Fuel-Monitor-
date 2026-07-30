@@ -279,57 +279,6 @@ function CardView({
         );
       })}
 
-      {/* World Average reference card */}
-      {worldAvg && (worldAvg.petrol || worldAvg.diesel) && (
-        <div className="bg-white rounded-2xl border-2 border-dashed border-blue-300 shadow-sm overflow-hidden hover:shadow-md transition-all duration-200">
-          <div className="h-1.5 w-full bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400" />
-          <div className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-3xl">🌍</span>
-                <div>
-                  <p className="font-bold text-blue-800 text-sm leading-tight">World Average</p>
-                  <p className="text-xs text-blue-400">Global benchmark (USD/L)</p>
-                </div>
-              </div>
-              <span className="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">GLOBAL</span>
-            </div>
-
-            {/* Selected fuel world avg price */}
-            <div className="bg-blue-50 rounded-xl p-3 mb-3">
-              <p className="text-xs text-blue-400 font-medium uppercase tracking-wider mb-1 capitalize">{fuel}</p>
-              <p className="text-2xl font-black text-blue-800">
-                {fuel === 'petrol' && worldAvg.petrol ? `$${worldAvg.petrol.toFixed(3)}` :
-                 fuel === 'diesel' && worldAvg.diesel ? `$${worldAvg.diesel.toFixed(3)}` :
-                 fuel === 'kerosene' && worldAvg.kerosene ? `$${worldAvg.kerosene.toFixed(3)}` : '—'}
-              </p>
-              <p className="text-xs text-blue-400 mt-0.5">per litre</p>
-            </div>
-
-            {/* All 3 */}
-            <div className="grid grid-cols-3 gap-1.5 mb-3">
-              {FUEL_TYPES.map(ft => {
-                const val = ft.id === 'petrol' ? worldAvg.petrol : ft.id === 'diesel' ? worldAvg.diesel : worldAvg.kerosene;
-                return (
-                  <div key={ft.id} className={`rounded-lg p-2 text-center ${fuel === ft.id ? 'bg-blue-100 ring-1 ring-blue-300' : 'bg-blue-50/60'}`}>
-                    <p className="text-[9px] text-blue-400 font-bold uppercase tracking-wider">{ft.label}</p>
-                    <p className="text-xs font-bold text-blue-800">{val ? `$${val.toFixed(3)}` : '—'}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-blue-500 font-semibold italic">Reference only</span>
-              {worldAvg.asOfDate && (
-                <p className="text-[10px] text-blue-400">
-                  {new Date(worldAvg.asOfDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -531,7 +480,7 @@ function LineChartView({ data, fuel }: { data: ComputedCountry[]; fuel: FuelType
 
 // ─── Main Page ────────────────────────────────────────────────────
 export default function RegionalComparison() {
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>(window.innerWidth < 768 ? 'card' : 'table');
   const [fuel, setFuel] = useState<FuelType>('petrol');
   const [currency, setCurrency] = useState<CurrencyMode>('usd');
   const [sortField, setSortField] = useState<SortField>('rank');
@@ -974,7 +923,7 @@ export default function RegionalComparison() {
 
           {/* Stats row */}
           {!slLoading && sl && cheapest && (
-            <div className="mt-6 grid grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
                 <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">SL {fuel}</p>
                 <p className="text-xl font-black text-white">
@@ -1001,38 +950,6 @@ export default function RegionalComparison() {
                 <p className="text-xl font-black text-white">8</p>
                 <p className="text-xs text-gray-400">West Africa</p>
               </div>
-              
-              {/* World Average Card */}
-              {worldAvg && (worldAvg.petrol || worldAvg.diesel) ? (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 backdrop-blur-sm flex flex-col justify-between">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-blue-300 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                      <Globe className="w-3 h-3" /> World Average
-                    </p>
-                    <span className="text-[8px] text-gray-400 bg-white/5 px-1.5 py-0.5 rounded">
-                      {worldAvg.asOfDate ? new Date(worldAvg.asOfDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' }) : 'Ref'}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1">
-                    <div className="text-center bg-white/5 rounded-lg py-1">
-                      <p className="text-[8px] text-gray-400 uppercase tracking-widest">Pet</p>
-                      <p className="text-xs font-black text-emerald-300">{worldAvg.petrol ? `$${worldAvg.petrol.toFixed(3)}` : '—'}</p>
-                    </div>
-                    <div className="text-center bg-white/5 rounded-lg py-1">
-                      <p className="text-[8px] text-gray-400 uppercase tracking-widest">Die</p>
-                      <p className="text-xs font-black text-blue-300">{worldAvg.diesel ? `$${worldAvg.diesel.toFixed(3)}` : '—'}</p>
-                    </div>
-                    <div className="text-center bg-white/5 rounded-lg py-1">
-                      <p className="text-[8px] text-gray-400 uppercase tracking-widest">Ker</p>
-                      <p className="text-xs font-black text-amber-300">{worldAvg.kerosene ? `$${worldAvg.kerosene.toFixed(3)}` : '—'}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white/5 rounded-xl p-3 backdrop-blur-sm flex items-center justify-center border border-white/5 border-dashed">
-                   <p className="text-xs text-gray-500 font-medium">World Avg<br/>Pending</p>
-                </div>
-              )}
             </div>
           )}
         </div>
