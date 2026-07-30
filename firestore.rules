@@ -375,6 +375,11 @@ service cloud.firestore {
       allow update: if isAdmin() && isValidPriceTrend(request.resource.data) && isRecent(request.resource.data.updatedAt);
       allow delete: if isAdmin();
     }
+    match /market_intelligence/{docId} {
+      allow read: if true; // Publicly readable for Regional Comparison page
+      allow write: if isAdmin();
+    }
+
     match /price_reports/{reportId} {
       allow read: if isAdmin(); // Only admins should see all reports.
       allow create: if isAuthenticated() && isValidPriceReport(request.resource.data) &&

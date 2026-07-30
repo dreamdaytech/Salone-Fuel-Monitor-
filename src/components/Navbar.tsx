@@ -5,7 +5,7 @@ import {
   Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
   ChevronDown, LayoutGrid, Activity, ClipboardList, 
   PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
-  Menu, X, TrendingUp, Calculator, Globe
+  Menu, X, TrendingUp, Calculator, Globe, BarChart3
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { Button } from './ui/Button';
@@ -15,7 +15,9 @@ export default function Navbar() {
   const { user, profile, logOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const toolsMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,6 +27,9 @@ export default function Navbar() {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
+      }
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(event.target as Node)) {
+        setIsToolsMenuOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -77,14 +82,6 @@ export default function Navbar() {
               </Link>
               
               <Link
-                to="/calculator"
-                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/calculator') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
-              >
-                <Calculator className="h-4 w-4" />
-                <span>Calculator</span>
-              </Link>
-              
-              <Link
                 to="/price-trends"
                 className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/price-trends') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
               >
@@ -99,6 +96,40 @@ export default function Navbar() {
                 <Globe className="h-4 w-4" />
                 <span>Regional</span>
               </Link>
+              
+              <div className="relative" ref={toolsMenuRef}>
+                <button
+                  onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors py-2 ${(isActive('/calculator') || isActive('/market-intelligence')) ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  <span>Our Tools</span>
+                  <ChevronDown className={`h-3 w-3 opacity-50 transition-transform ${isToolsMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isToolsMenuOpen && (
+                  <div className="absolute top-full left-0 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="py-2">
+                      <Link
+                        to="/market-intelligence"
+                        onClick={() => setIsToolsMenuOpen(false)}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isActive('/market-intelligence') ? 'bg-emerald-50 text-primary font-bold' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        <span>Market Intel</span>
+                      </Link>
+                      <Link
+                        to="/calculator"
+                        onClick={() => setIsToolsMenuOpen(false)}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isActive('/calculator') ? 'bg-emerald-50 text-primary font-bold' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+                      >
+                        <Calculator className="h-4 w-4" />
+                        <span>Calculator</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {user ? (
@@ -254,15 +285,6 @@ export default function Navbar() {
               <span>Transport Prices</span>
             </Link>
             <Link
-              to="/calculator"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/calculator') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
-            >
-              <Calculator className="h-5 w-5" />
-              <span>Fuel Calculator</span>
-            </Link>
-            
-            <Link
               to="/price-trends"
               onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/price-trends') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
@@ -279,6 +301,26 @@ export default function Navbar() {
               <Globe className="h-5 w-5" />
               <span>Regional Comparison</span>
             </Link>
+            
+            <div className="pt-2 pb-1">
+              <p className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Our Tools</p>
+              <Link
+                to="/market-intelligence"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/market-intelligence') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+              >
+                <BarChart3 className="h-5 w-5" />
+                <span>Market Intelligence</span>
+              </Link>
+              <Link
+                to="/calculator"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/calculator') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+              >
+                <Calculator className="h-5 w-5" />
+                <span>Fuel Calculator</span>
+              </Link>
+            </div>
           </div>
         </div>
       )}

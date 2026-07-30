@@ -256,9 +256,15 @@ export function computeRegionalData(
     };
   });
 
-  // Rank by selected fuel (lowest USD = rank 1)
+  // Rank by selected fuel (lowest USD = rank 1, 0 is pushed to bottom)
   const fuelKey = `${fuelType}USD` as 'petrolUSD' | 'dieselUSD' | 'keroseneUSD';
-  const sorted = [...enriched].sort((a, b) => a[fuelKey] - b[fuelKey]);
+  const sorted = [...enriched].sort((a, b) => {
+    const valA = a[fuelKey];
+    const valB = b[fuelKey];
+    if (valA === 0 && valB !== 0) return 1;
+    if (valB === 0 && valA !== 0) return -1;
+    return valA - valB;
+  });
   sorted.forEach((c, i) => {
     const original = enriched.find(e => e.id === c.id);
     if (original) original.rank = i + 1;
