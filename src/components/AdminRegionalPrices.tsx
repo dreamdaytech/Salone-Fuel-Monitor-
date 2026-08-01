@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, doc, setDoc, onSnapshot, serverTimestamp } from '../firebase';
+import { db, collection, doc, setDoc, getDoc, onSnapshot, serverTimestamp } from '../firebase';
 import {
   Globe, Save, RefreshCw, CheckCircle, AlertTriangle, ExternalLink,
-  Edit2, X, Clock, Database, Zap, Info
+  Edit2, X, Clock, Database, Zap, Info, ShieldCheck, DollarSign
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   REGIONAL_COUNTRIES, RegionalCountry, FuelType, formatUSD, formatLocal
 } from '../lib/regionalData';
+import { fetchExchangeRatesFromOER } from '../lib/exchangeRateService';
 
 type AdminCountryEntry = RegionalCountry & {
   petrolInput: string;
@@ -366,6 +367,12 @@ export default function AdminRegionalPrices() {
   const [scrapeResults, setScrapeResults] = useState<Record<string, ScrapeResult>>({});
   const [slGovPrices, setSlGovPrices] = useState<Record<string, number> | null>(null);
 
+  // ── OER API State ──
+  const [oerApiKey, setOerApiKey] = useState('');
+  const [showOerApiKey, setShowOerApiKey] = useState(false);
+  const [sleOverride, setSleOverride] = useState('');
+  const [isSavingOer, setIsSavingOer] = useState(false);
+
   // World average prices state
   const [worldAvg, setWorldAvg] = useState({
     petrol:   '',
@@ -375,6 +382,17 @@ export default function AdminRegionalPrices() {
   });
   const [isSavingWorldAvg, setIsSavingWorldAvg] = useState(false);
   const [worldAvgSaved, setWorldAvgSaved] = useState(false);
+
+  // ── Load OER API Keys and SLE Override ──
+  useEffect(() => {
+    const unsubKeys = onSnapshot(doc(db, 'settings', 'api_keys'), (snap) => {
+      if (snap.exists()) setOerApiKey(snap.data().oerApiKey ?? '');
+    });
+    const unsubRates = onSnapshot(doc(db, 'exchange_rates', 'current'), (snap) => {
+      if (snap.exists()) setSleOverride(snap.data().overrides?.SLE?.toString() ?? '');
+    });
+    return () => { unsubKeys(); unsubRates(); };
+  }, []);
 
   // Load world average from Firestore
   useEffect(() => {
@@ -660,6 +678,56 @@ export default function AdminRegionalPrices() {
     if (failed > 0) toast.warning(`${failed} countries need manual entry`);
   };
 
+  // ── OER API Functions ──
+  const handleFetchOerRates = async () => {
+    if (!oerApiKey.trim()) {
+      toast.error('Please enter your OER API key and save it first.');
+      return;
+    }
+    const overrides: Record<string, number> = {};
+    if (sleOverride.trim()) {
+      const parsed = parseFloat(sleOverride);
+      if (!isNaN(parsed)) overrides.SLE = parsed;
+    }
+    try {
+      toast.loading('Fetching live rates from OER...', { id: 'oer-fetch' });
+      const cache = await fetchExchangeRatesFromOER(oerApiKey.trim(), overrides);
+      await setDoc(doc(db, 'exchange_rates', 'current'), cache);
+      toast.success('Exchange rates refreshed and cached successfully!', { id: 'oer-fetch' });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to fetch exchange rates.', { id: 'oer-fetch' });
+    }
+  };
+
+  const handleSaveOer = async () => {
+    setIsSavingOer(true);
+    try {
+      await setDoc(doc(db, 'settings', 'api_keys'), {
+        oerApiKey: oerApiKey.trim(),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+
+      const ratesSnap = await getDoc(doc(db, 'exchange_rates', 'current'));
+      const existingOverrides = ratesSnap.exists() ? (ratesSnap.data().overrides ?? {}) : {};
+      if (sleOverride.trim()) {
+        const parsed = parseFloat(sleOverride);
+        if (!isNaN(parsed)) existingOverrides.SLE = parsed;
+      } else {
+        delete existingOverrides.SLE;
+      }
+      if (ratesSnap.exists()) {
+        await setDoc(doc(db, 'exchange_rates', 'current'), { overrides: existingOverrides }, { merge: true });
+      }
+
+      toast.success('Exchange rate configuration saved!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save exchange rate configuration.');
+    } finally {
+      setIsSavingOer(false);
+    }
+  };
+
   const dirtyCount = entries.filter(e => e.isDirty).length;
 
   return (
@@ -673,6 +741,92 @@ export default function AdminRegionalPrices() {
           <div>
             <h2 className="text-xl font-bold text-surface-900">Regional Fuel Prices</h2>
             <p className="text-sm text-gray-500">Manage fuel price data for West African comparison engine</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Open Exchange Rates Configuration ────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <DollarSign className="w-4 h-4 text-emerald-500" />
+          <h3 className="font-semibold text-surface-900 text-sm">Exchange Rates Configuration (OER API)</h3>
+          <span className="flex items-center gap-1 text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5 font-bold">
+            <ShieldCheck className="w-3 h-3" /> Admin-Only
+          </span>
+          <a
+            href="https://openexchangerates.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto text-xs text-primary hover:underline"
+          >
+            Get OER key →
+          </a>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[10px] text-gray-500 uppercase font-medium mb-1">Open Exchange Rates App ID (API Key)</label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input
+                  type={showOerApiKey ? 'text' : 'password'}
+                  value={oerApiKey}
+                  onChange={e => setOerApiKey(e.target.value)}
+                  placeholder="Enter your OER App ID..."
+                  className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-gray-50"
+                />
+              </div>
+              <button
+                onClick={() => setShowOerApiKey(v => !v)}
+                className="px-3 py-2 text-xs text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50"
+              >
+                {showOerApiKey ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 mt-1">Free tier gives 1,000 requests/month (Base currency: USD). This powers the Regional Fuel Comparison conversions.</p>
+          </div>
+
+          <div className="pt-4 border-t border-gray-100">
+            <label className="block text-[10px] text-gray-500 uppercase font-medium mb-1">Official SLE Override Rate (USD to SLE)</label>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="relative w-48">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">Le</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={sleOverride}
+                  onChange={e => setSleOverride(e.target.value)}
+                  placeholder="e.g. 23.80"
+                  className="w-full border border-gray-200 rounded-xl pl-9 pr-4 py-2.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <p className="text-xs text-gray-500 max-w-sm">
+                If provided, this rate will override the API rate for Sierra Leonean Leone across the entire platform.
+              </p>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-gray-400 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                Rate data cached publicly. API key stored in admin-only doc.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleFetchOerRates}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Fetch &amp; Cache Rates
+                </button>
+                <button
+                  onClick={handleSaveOer}
+                  disabled={isSavingOer}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs bg-primary text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors shrink-0"
+                >
+                  {isSavingOer ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  Save Configuration
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
