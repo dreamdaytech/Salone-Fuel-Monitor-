@@ -12,6 +12,7 @@ import { AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
 import PageTransition from './components/PageTransition';
 import Navbar from './components/Navbar';
+import SystemUpdater from './components/SystemUpdater';
 import Home from './pages/Home';
 import TransportPrices from './pages/TransportPrices';
 import TransportPriceDetails from './pages/TransportPriceDetails';
@@ -107,6 +108,7 @@ function AppContent() {
       <NotificationProvider>
         <div className="min-h-screen bg-surface-50">
           <Toaster position="top-center" richColors />
+          <SystemUpdater />
           <Navbar />
           {isOffline && (
             <div className="bg-amber-100 border-b border-amber-200 text-amber-900 px-4 py-2 text-center text-sm flex items-center justify-center gap-2">

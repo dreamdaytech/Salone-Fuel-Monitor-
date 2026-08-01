@@ -375,6 +375,12 @@ service cloud.firestore {
       allow update: if isAdmin() && isValidPriceTrend(request.resource.data) && isRecent(request.resource.data.updatedAt);
       allow delete: if isAdmin();
     }
+    // System configuration and versioning
+    match /system/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
     // API keys stored here — admins only, never public
     match /settings/{docId} {
       allow read: if isAdmin();

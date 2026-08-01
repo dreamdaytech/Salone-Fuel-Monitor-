@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, CheckCircle, Smartphone, Mail } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Smartphone, Mail, RefreshCw, Server } from 'lucide-react';
 import { Button } from './ui/Button';
+import { db, doc, setDoc, serverTimestamp } from '../firebase';
+import { toast } from 'sonner';
 
 export default function AdminSettings() {
   const [accountSid, setAccountSid] = useState('');
@@ -31,6 +33,8 @@ export default function AdminSettings() {
   const [isEmailSaving, setIsEmailSaving] = useState(false);
   const [emailMessage, setEmailMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [isEmailConfigured, setIsEmailConfigured] = useState(false);
+
+  const [isPublishingUpdate, setIsPublishingUpdate] = useState(false);
 
   useEffect(() => {
     fetchTwilioSettings();
@@ -94,6 +98,22 @@ export default function AdminSettings() {
       }
     } catch (error) {
       console.error('Failed to fetch Email settings:', error);
+    }
+  };
+
+  const handlePublishUpdate = async () => {
+    setIsPublishingUpdate(true);
+    try {
+      await setDoc(doc(db, 'system', 'version'), {
+        updatedAt: serverTimestamp(),
+        publishedBy: 'admin',
+      });
+      toast.success('Update notification published to all active users!');
+    } catch (error) {
+      console.error('Failed to publish update:', error);
+      toast.error('Failed to publish update notification.');
+    } finally {
+      setIsPublishingUpdate(false);
     }
   };
 
@@ -575,6 +595,47 @@ export default function AdminSettings() {
             </Button>
           </div>
         </form>
+      </div>
+
+      {/* --- System Management --- */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mt-8">
+        <div className="border-b border-gray-100 bg-gray-50/50 p-6">
+          <div className="flex items-center gap-3">
+            <div className="bg-purple-100 p-2.5 rounded-xl">
+              <Server className="w-5 h-5 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-surface-900">System Management</h2>
+              <p className="text-sm text-gray-500 mt-1">Manage global app state and versioning</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-5 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="mt-1 bg-purple-100 p-2 rounded-full">
+                <RefreshCw className="w-4 h-4 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-purple-900 mb-1">Force App Update</h3>
+                <p className="text-sm text-purple-700 leading-relaxed mb-4">
+                  Clicking this button will send a real-time notification to all users currently using the app, prompting them to refresh their browser to receive the latest deployed updates.
+                </p>
+                <Button
+                  onClick={handlePublishUpdate}
+                  disabled={isPublishingUpdate}
+                  variant="primary"
+                  className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-purple-500/20 flex items-center gap-2 disabled:opacity-50"
+                  showNotification={false}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isPublishingUpdate ? 'animate-spin' : ''}`} />
+                  {isPublishingUpdate ? 'Publishing...' : 'Publish Update Notification'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
