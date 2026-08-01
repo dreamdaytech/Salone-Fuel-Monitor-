@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, where, limit } from '../firebase';
-import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft, BarChart2 } from 'lucide-react';
+import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft, BarChart2, DollarSign } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import { AdminPriceTrends } from '../components/AdminPriceTrends';
