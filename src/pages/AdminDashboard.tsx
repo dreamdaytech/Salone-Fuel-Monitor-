@@ -14,6 +14,7 @@ import AdminReviews from './AdminReviews';
 import AdminSettings from '../components/AdminSettings';
 import AdminRegionalPrices from '../components/AdminRegionalPrices';
 import AdminMarketIntelligence from '../components/AdminMarketIntelligence';
+import AdminExchangeRates from '../components/AdminExchangeRates';
 import { Button } from '../components/ui/Button';
 import { NotificationService } from '../services/NotificationService';
 import { jsPDF } from 'jspdf';
@@ -250,7 +251,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates'>(initialTab);
 
   useEffect(() => {
     if (activeTab !== initialTab) {
@@ -1199,6 +1200,20 @@ export default function AdminDashboard() {
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Market Intel</span>}
             </Button>
             <Button 
+              onClick={() => { setActiveTab('exchange_rates'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'exchange_rates' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {activeTab === 'exchange_rates' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <DollarSign className={`w-5 h-5 shrink-0 ${activeTab === 'exchange_rates' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Exchange Rates</span>}
+            </Button>
+            <Button 
               onClick={() => { setActiveTab('messages'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
@@ -1790,6 +1805,10 @@ export default function AdminDashboard() {
 
             {activeTab === 'market_intel' && (
               <AdminMarketIntelligence />
+            )}
+
+            {activeTab === 'exchange_rates' && (
+              <AdminExchangeRates />
             )}
 
             {activeTab === 'settings' && (

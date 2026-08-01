@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { db, doc, onSnapshot, setDoc, getDoc } from '../firebase';
+import { db, doc, onSnapshot, setDoc } from '../firebase';
 import {
   TrendingUp, TrendingDown, Minus, RefreshCw, Save, Key, Globe,
-  BarChart2, Fuel, AlertTriangle, CheckCircle, Info, Edit2, DollarSign,
+  BarChart2, Fuel, AlertTriangle, Info,
   Activity, ShieldCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,7 +14,6 @@ import {
   CrudeOilPrices,
   EconomicIndicators,
 } from '../lib/marketIntelligence';
-
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 function ChangeBadge({ change }: { change: number | null }) {
@@ -36,7 +35,6 @@ export default function AdminMarketIntelligence() {
   const [data, setData] = useState<MarketIntelligenceData | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
-
   const [isFetchingOil, setIsFetchingOil] = useState(false);
   const [isFetchingEcon, setIsFetchingEcon] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -81,7 +79,6 @@ export default function AdminMarketIntelligence() {
         if (snap.exists()) {
           const d = snap.data() as any;
           setApiKey(d.alphaVantageKey ?? '');
-
         }
       },
       (err) => console.warn('API keys load error:', err)
@@ -138,13 +135,33 @@ export default function AdminMarketIntelligence() {
     }
   };
 
+  // ── Fetch live OER exchange rates and store safely ──
+  const handleFetchOerRates = async () => {
+    if (!oerApiKey.trim()) {
+      toast.error('Please enter your OER API key and save it first.');
+      return;
+    }
+    const overrides: Record<string, number> = {};
+    if (sleOverride.trim()) {
+      const parsed = parseFloat(sleOverride);
+      if (!isNaN(parsed)) overrides.SLE = parsed;
+    }
+    try {
+      toast.loading('Fetching live rates from OER...', { id: 'oer-fetch' });
+      const cache = await fetchExchangeRatesFromOER(oerApiKey.trim(), overrides);
+      // Save ONLY the rate data (no API key) to the public document
+      await setDoc(doc(db, 'exchange_rates', 'current'), cache);
+      toast.success('Exchange rates refreshed and cached successfully!', { id: 'oer-fetch' });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to fetch exchange rates.', { id: 'oer-fetch' });
+    }
+  };
 
-
-  // ── Save API keys to secure admin-only doc, market data to MI doc ──
+  // ── Save API key and market data ──
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // 1. Save API keys to admin-only settings doc (NEVER in public docs)
+      // 1. Save Alpha Vantage key to admin-only settings doc
       await setDoc(doc(db, 'settings', 'api_keys'), {
         alphaVantageKey: apiKey.trim(),
         updatedAt: new Date().toISOString(),
@@ -171,8 +188,6 @@ export default function AdminMarketIntelligence() {
           fetchedAt: new Date().toISOString(),
         },
       });
-
-
 
       toast.success('Settings saved securely!');
     } catch (err) {
@@ -257,9 +272,6 @@ export default function AdminMarketIntelligence() {
           </button>
         </div>
       </div>
-
-
-
 
       {/* ── Crude Oil Prices ────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
