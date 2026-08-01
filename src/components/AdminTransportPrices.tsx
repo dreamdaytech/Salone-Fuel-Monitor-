@@ -71,9 +71,7 @@ export default function AdminTransportPrices() {
   const [historyFormData, setHistoryFormData] = useState({ price: '', date: '' });
   const [priceToDelete, setPriceToDelete] = useState<string | null>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
-  const [isSeeding, setIsSeeding] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [showConfirmSeed, setShowConfirmSeed] = useState(false);
   const [visibleCount, setVisibleCount] = useState(8);
   
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
@@ -618,16 +616,7 @@ export default function AdminTransportPrices() {
             <p className="text-gray-500 mt-1">Manage public transportation fares across different routes</p>
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
-            <Button
-              onClick={() => setShowConfirmSeed(true)}
-              disabled={isSeeding}
-              variant="secondary"
-              className="flex-1 sm:flex-none px-6 py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold shadow-sm disabled:opacity-50"
-              showNotification={false}
-            >
-              <Database className="w-4 h-4" /> 
-              {isSeeding ? 'Seeding...' : 'Seed Demo Data'}
-            </Button>
+
             <Button
               onClick={() => handleOpenModal()}
               variant="primary"
@@ -1443,35 +1432,7 @@ export default function AdminTransportPrices() {
         </div>
       )}
 
-      {showConfirmSeed && (
-        <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-300" onClick={() => setShowConfirmSeed(false)}>
-          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-6 sm:p-8 animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6">
-              <Database className="w-6 h-6 sm:w-8 sm:h-8" />
-            </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Seed Demo Data?</h3>
-            <p className="text-sm sm:text-base text-gray-500 mb-8">This will add 10 sample transport price entries to your database. This action is primarily for testing purposes.</p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <Button
-                onClick={() => setShowConfirmSeed(false)}
-                variant="secondary"
-                className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all order-2 sm:order-1"
-                showNotification={false}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={seedDemoData}
-                variant="primary"
-                className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-500/20 order-1 sm:order-2"
-                notificationMessage="Seeding demo data..."
-              >
-                Confirm
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {priceToDelete && (
         <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-300" onClick={() => setPriceToDelete(null)}>
