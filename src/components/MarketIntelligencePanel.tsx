@@ -28,7 +28,7 @@ function PriceChip({
   const isNeg = (change ?? 0) < 0;
 
   return (
-    <div title={explanation} className={`bg-gradient-to-br ${colorClass} rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 flex-1 min-w-[200px] group cursor-help`}>
+    <div title={explanation} className={`bg-gradient-to-br ${colorClass} rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 flex-1 min-w-[140px] sm:min-w-[200px] group cursor-help`}>
       <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
       <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
       
@@ -41,8 +41,8 @@ function PriceChip({
         </div>
         
         <div>
-          <p className="text-3xl font-black tracking-tight leading-none mb-2">
-            ${price.toFixed(2)}<span className="text-sm font-medium text-white/60 ml-1">/bbl</span>
+          <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none mb-1 sm:mb-2 truncate">
+            ${price.toFixed(2)}<span className="text-xs sm:text-sm font-medium text-white/60 ml-1">/bbl</span>
           </p>
           
           {change !== null && (
@@ -117,7 +117,7 @@ export default function MarketIntelligencePanel({ data }: Props) {
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
               🛢️ Global Oil Prices
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
               <PriceChip
                 label="Brent Crude"
                 price={crudeOil.brent}
