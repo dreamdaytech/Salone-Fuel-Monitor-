@@ -2047,77 +2047,7 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   </div>
-
-                  {/* Maintenance Card */}
-                  <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm flex flex-col justify-center items-center text-center">
-                    <div className="w-20 h-20 bg-purple-50 text-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
-                      <Database className="w-10 h-10" />
-                    </div>
-                    <h3 className="text-xl font-bold text-surface-900 mb-2">Maintenance</h3>
-                    <p className="text-sm text-gray-500 mb-8 max-w-xs">
-                      Need to test the platform with sample data? Seed the database with demo stations and members.
-                    </p>
-                    <Button
-                      onClick={() => setShowConfirmModal(true)}
-                      disabled={isSeeding}
-                      variant="primary"
-                      className="w-full py-4 bg-surface-900 text-white rounded-2xl font-bold hover:bg-surface-800 transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-xl shadow-slate-200"
-                      notificationMessage="Preparing to seed demo data..."
-                    >
-                      {isSeeding ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          <span>Seeding...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Database className="w-5 h-5" />
-                          <span>Seed Demo Data</span>
-                        </>
-                      )}
-                    </Button>
-                    
-                    {successMessage && (
-                      <div className="mt-6 p-4 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-2xl text-sm font-medium w-full animate-in zoom-in-95 duration-300">
-                        {successMessage}
-                      </div>
-                    )}
-                  </div>
                 </div>
-
-                {/* Confirm Modal */}
-                {showConfirmModal && (
-                  <div className="fixed inset-0 bg-surface-900/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300" onClick={() => setShowConfirmModal(false)}>
-                    <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-                      <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-6">
-                        <Clock className="w-8 h-8" />
-                      </div>
-                      <h3 className="text-2xl font-bold text-surface-900 mb-2">Confirm Seeding</h3>
-                      <p className="text-gray-600 mb-8 leading-relaxed">
-                        This action will populate the database with demo stations and members. This is intended for testing purposes. Do you want to continue?
-                      </p>
-                      <div className="flex gap-4">
-                        <Button
-                          onClick={() => setShowConfirmModal(false)}
-                          variant="ghost"
-                          className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold hover:bg-gray-200 transition-all"
-                          disableAfterClick={false}
-                          showNotification={false}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          onClick={seedDemoData}
-                          variant="primary"
-                          className="flex-1 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-500/20"
-                          notificationMessage="Seeding demo data..."
-                        >
-                          Yes, Seed Data
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
