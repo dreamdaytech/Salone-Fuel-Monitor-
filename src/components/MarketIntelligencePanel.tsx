@@ -14,6 +14,7 @@ function PriceChip({
   colorClass,
   badgeClass,
   explanation,
+  className = '',
 }: {
   label: string;
   price: number | null;
@@ -21,6 +22,7 @@ function PriceChip({
   colorClass: string;
   badgeClass: string;
   explanation: string;
+  className?: string;
 }) {
   if (!price) return null;
 
@@ -28,7 +30,7 @@ function PriceChip({
   const isNeg = (change ?? 0) < 0;
 
   return (
-    <div title={explanation} className={`bg-gradient-to-br ${colorClass} rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 flex-1 min-w-[140px] sm:min-w-[200px] group cursor-help`}>
+    <div title={explanation} className={`bg-gradient-to-br ${colorClass} rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 group cursor-help ${className}`}>
       <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
       <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
       
@@ -141,6 +143,7 @@ export default function MarketIntelligencePanel({ data }: Props) {
                 colorClass="from-amber-500 to-amber-700"
                 badgeClass="bg-amber-400/30 text-amber-100"
                 explanation="A weighted average of prices for petroleum blends produced by OPEC members."
+                className="col-span-2 md:col-span-1"
               />
             </div>
           </div>
