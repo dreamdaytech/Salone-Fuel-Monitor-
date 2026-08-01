@@ -135,27 +135,6 @@ export default function AdminMarketIntelligence() {
     }
   };
 
-  // ── Fetch live OER exchange rates and store safely ──
-  const handleFetchOerRates = async () => {
-    if (!oerApiKey.trim()) {
-      toast.error('Please enter your OER API key and save it first.');
-      return;
-    }
-    const overrides: Record<string, number> = {};
-    if (sleOverride.trim()) {
-      const parsed = parseFloat(sleOverride);
-      if (!isNaN(parsed)) overrides.SLE = parsed;
-    }
-    try {
-      toast.loading('Fetching live rates from OER...', { id: 'oer-fetch' });
-      const cache = await fetchExchangeRatesFromOER(oerApiKey.trim(), overrides);
-      // Save ONLY the rate data (no API key) to the public document
-      await setDoc(doc(db, 'exchange_rates', 'current'), cache);
-      toast.success('Exchange rates refreshed and cached successfully!', { id: 'oer-fetch' });
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to fetch exchange rates.', { id: 'oer-fetch' });
-    }
-  };
 
   // ── Save API key and market data ──
   const handleSave = async () => {
