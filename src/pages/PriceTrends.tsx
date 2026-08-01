@@ -556,26 +556,26 @@ export default function PriceTrends() {
 
       {/* Key Metric Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-8">
           {/* Petrol */}
-          <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+          <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
             <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
             <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
             
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-100 uppercase tracking-wider">
+                <span className="text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-100 uppercase tracking-wider">
                   Latest Petrol
                 </span>
                 <div className="p-2 bg-white/10 rounded-xl text-emerald-100">
-                  <Fuel className="w-5 h-5" />
+                  <Fuel className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-black tracking-tight leading-none mb-2">
+                <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none mb-1 truncate">
                   {formatPrice(stats.latest?.Petrol)}
                 </p>
-                <div className="flex items-center text-white/70 text-xs font-medium">
+                <div className="flex items-center text-white/70 text-[10px] sm:text-xs font-medium">
                   {stats.latest?.date || 'Latest Entry'}
                   {renderTrend(stats.latest?.Petrol, stats.previous?.Petrol, true)}
                 </div>
@@ -584,24 +584,24 @@ export default function PriceTrends() {
           </div>
 
           {/* Diesel */}
-          <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
             <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
             <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
             
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/30 text-blue-100 uppercase tracking-wider">
+                <span className="text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/30 text-blue-100 uppercase tracking-wider">
                   Latest Diesel
                 </span>
                 <div className="p-2 bg-white/10 rounded-xl text-blue-100">
-                  <Fuel className="w-5 h-5" />
+                  <Fuel className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-black tracking-tight leading-none mb-2">
+                <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none mb-1 truncate">
                   {formatPrice(stats.latest?.Diesel)}
                 </p>
-                <div className="flex items-center text-white/70 text-xs font-medium">
+                <div className="flex items-center text-white/70 text-[10px] sm:text-xs font-medium">
                   {stats.latest?.date || 'Latest Entry'}
                   {renderTrend(stats.latest?.Diesel, stats.previous?.Diesel, true)}
                 </div>
@@ -610,24 +610,24 @@ export default function PriceTrends() {
           </div>
 
           {/* Kerosene */}
-          <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+          <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
             <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
             <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
             
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-500/30 text-purple-100 uppercase tracking-wider">
+                <span className="text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-purple-500/30 text-purple-100 uppercase tracking-wider">
                   Latest Kerosene
                 </span>
                 <div className="p-2 bg-white/10 rounded-xl text-purple-100">
-                  <Fuel className="w-5 h-5" />
+                  <Fuel className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-black tracking-tight leading-none mb-2">
+                <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none mb-1 truncate">
                   {formatPrice(stats.latest?.Kerosene)}
                 </p>
-                <div className="flex items-center text-white/70 text-xs font-medium">
+                <div className="flex items-center text-white/70 text-[10px] sm:text-xs font-medium">
                   {stats.latest?.date || 'Latest Entry'}
                   {renderTrend(stats.latest?.Kerosene, stats.previous?.Kerosene, true)}
                 </div>
@@ -636,24 +636,24 @@ export default function PriceTrends() {
           </div>
 
           {/* Period Average */}
-          <div className="bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+          <div className="bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
             <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
             <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
             
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-400/30 text-amber-100 uppercase tracking-wider">
+                <span className="text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-amber-400/30 text-amber-100 uppercase tracking-wider">
                   Period Average
                 </span>
                 <div className="p-2 bg-white/10 rounded-xl text-amber-100">
-                  <TrendingUp className="w-5 h-5" />
+                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
               </div>
               <div>
-                <p className="text-3xl font-black tracking-tight leading-none mb-2">
+                <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none mb-1 truncate">
                   {formatPrice(Math.round(stats.avgActive))}
                 </p>
-                <p className="text-white/70 text-xs font-medium">
+                <p className="text-white/70 text-[10px] sm:text-xs font-medium">
                   Range: {formatPrice(stats.minActive)} - {formatPrice(stats.maxActive)}
                 </p>
               </div>

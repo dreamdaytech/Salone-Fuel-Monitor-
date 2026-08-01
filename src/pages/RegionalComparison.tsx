@@ -944,16 +944,16 @@ export default function RegionalComparison() {
 
           {/* Stats row */}
           {!slLoading && sl && cheapest && (
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
               {/* SL Fuel Price */}
-              <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+              <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
                 <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
                 <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
                 <div className="relative">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-100 uppercase tracking-wider mb-3 inline-block">
+                  <span className="text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-100 uppercase tracking-wider mb-3 inline-block">
                     SL {fuel}
                   </span>
-                  <p className="text-3xl font-black tracking-tight leading-none mb-1">
+                  <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none mb-1 truncate">
                     {formatUSD(fuel === 'petrol' ? sl.petrolUSD : fuel === 'diesel' ? sl.dieselUSD : sl.keroseneUSD)}
                   </p>
                   <p className="text-emerald-100/70 text-xs font-medium mt-2">
@@ -963,15 +963,15 @@ export default function RegionalComparison() {
               </div>
 
               {/* SL Rank */}
-              <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+              <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
                 <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
                 <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
                 <div className="relative">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/30 text-blue-100 uppercase tracking-wider mb-3 inline-block">
+                  <span className="text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/30 text-blue-100 uppercase tracking-wider mb-3 inline-block">
                     SL Rank
                   </span>
                   <div className="flex items-baseline gap-2 mb-1">
-                    <p className="text-3xl font-black tracking-tight leading-none">
+                    <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none">
                       #{sl.rank}
                     </p>
                     <span className="text-2xl">{getRankMedal(sl.rank)}</span>
@@ -983,16 +983,16 @@ export default function RegionalComparison() {
               </div>
 
               {/* Cheapest */}
-              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
                 <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
                 <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
                 <div className="relative">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-500/30 text-purple-100 uppercase tracking-wider mb-3 inline-block">
+                  <span className="text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-purple-500/30 text-purple-100 uppercase tracking-wider mb-3 inline-block">
                     Cheapest
                   </span>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">{cheapest.flag}</span>
-                    <p className="text-2xl font-black tracking-tight leading-none truncate">
+                  <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                    <span className="text-xl sm:text-2xl">{cheapest.flag}</span>
+                    <p className="text-xl sm:text-2xl font-black tracking-tight leading-none truncate">
                       {cheapest.name.split(' ')[0]}
                     </p>
                   </div>
@@ -1002,16 +1002,16 @@ export default function RegionalComparison() {
                 </div>
               </div>
 
-              {/* Countries */}
-              <div className="bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+              {/* Total Countries */}
+              <div className="bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl p-4 sm:p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
                 <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
                 <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
                 <div className="relative">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-400/30 text-amber-100 uppercase tracking-wider mb-3 inline-block">
+                  <span className="text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-amber-400/30 text-amber-100 uppercase tracking-wider mb-3 inline-block">
                     Countries
                   </span>
-                  <p className="text-3xl font-black tracking-tight leading-none mb-1">
-                    8
+                  <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none mb-1">
+                    {computed.length}
                   </p>
                   <p className="text-amber-100/70 text-xs font-medium mt-2">
                     West Africa
