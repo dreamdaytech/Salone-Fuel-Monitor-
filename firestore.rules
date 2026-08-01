@@ -393,9 +393,9 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Market intelligence data — admin-only (no longer publicly readable)
+    // Market intelligence data — publicly readable for users
     match /market_intelligence/{docId} {
-      allow read: if isAdmin();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
