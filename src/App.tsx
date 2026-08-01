@@ -38,6 +38,7 @@ import Onboarding from './pages/Onboarding';
 import LocationPickerPage from './pages/LocationPickerPage';
 import RegionalComparison from './pages/RegionalComparison';
 import MarketIntelligence from './pages/MarketIntelligence';
+import ExchangeRates from './pages/ExchangeRates';
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -76,7 +77,7 @@ function AppContent() {
     };
   }, []);
 
-  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/about', '/terms', '/privacy', '/cookies'];
+  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/about', '/terms', '/privacy', '/cookies'];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   if (loading) {
@@ -132,6 +133,7 @@ function AppContent() {
               <Route path="/decision" element={user ? <Decision /> : <Navigate to="/login" />} />
               <Route path="/regional-comparison" element={<RegionalComparison />} />
               <Route path="/market-intelligence" element={<MarketIntelligence />} />
+              <Route path="/exchange-rates" element={<ExchangeRates />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/terms" element={<TermsOfService />} />

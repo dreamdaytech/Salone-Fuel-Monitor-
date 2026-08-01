@@ -375,8 +375,21 @@ service cloud.firestore {
       allow update: if isAdmin() && isValidPriceTrend(request.resource.data) && isRecent(request.resource.data.updatedAt);
       allow delete: if isAdmin();
     }
+    // API keys stored here — admins only, never public
+    match /settings/{docId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Safe cached exchange rate data — public read, no secrets
+    match /exchange_rates/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Market intelligence data — admin-only (no longer publicly readable)
     match /market_intelligence/{docId} {
-      allow read: if true; // Publicly readable for Regional Comparison page
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
 

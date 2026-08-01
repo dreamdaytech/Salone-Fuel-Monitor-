@@ -23,7 +23,6 @@ export interface EconomicIndicators {
 export interface MarketIntelligenceData {
   crudeOil: CrudeOilPrices;
   economic: EconomicIndicators;
-  alphaVantageKey: string;         // Stored in Firebase, used for fetching
   lastUpdated: string;             // ISO date string
 }
 

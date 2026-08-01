@@ -5,7 +5,7 @@ import {
   Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
   ChevronDown, LayoutGrid, Activity, ClipboardList, 
   PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
-  Menu, X, TrendingUp, Calculator, Globe, BarChart3
+  Menu, X, TrendingUp, Calculator, Globe, BarChart3, DollarSign
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { Button } from './ui/Button';
@@ -100,7 +100,7 @@ export default function Navbar() {
               <div className="relative" ref={toolsMenuRef}>
                 <button
                   onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors py-2 ${(isActive('/calculator') || isActive('/market-intelligence')) ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors py-2 ${(isActive('/calculator') || isActive('/market-intelligence') || isActive('/exchange-rates')) ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                   <span>Our Tools</span>
@@ -117,6 +117,14 @@ export default function Navbar() {
                       >
                         <BarChart3 className="h-4 w-4" />
                         <span>Market Intel</span>
+                      </Link>
+                      <Link
+                        to="/exchange-rates"
+                        onClick={() => setIsToolsMenuOpen(false)}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isActive('/exchange-rates') ? 'bg-emerald-50 text-primary font-bold' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+                      >
+                        <DollarSign className="h-4 w-4" />
+                        <span>Exchange Rates</span>
                       </Link>
                       <Link
                         to="/calculator"
@@ -311,6 +319,14 @@ export default function Navbar() {
               >
                 <BarChart3 className="h-5 w-5" />
                 <span>Market Intelligence</span>
+              </Link>
+              <Link
+                to="/exchange-rates"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/exchange-rates') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+              >
+                <DollarSign className="h-5 w-5" />
+                <span>Exchange Rates</span>
               </Link>
               <Link
                 to="/calculator"
