@@ -501,7 +501,7 @@ export default function AdminMarketIntelligence() {
               <ChangeBadge change={crudeEdit.opecChange ?? null} />
             </div>
             <a
-              href="https://www.opec.org/basket/basketDayArchives.xml"
+              href="https://www.opec.org/opec-basket-price.html"
               target="_blank"
               rel="noopener noreferrer"
               className="block mt-2 text-[10px] text-amber-600 hover:underline"

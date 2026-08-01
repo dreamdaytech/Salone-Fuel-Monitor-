@@ -510,15 +510,19 @@ export default function PriceTrends() {
     return val >= 1000 ? `${val.toLocaleString()} SLL` : `NLe ${Number(val).toFixed(2)}`;
   };
 
-  const renderTrend = (current?: number, previous?: number) => {
+  const renderTrend = (current?: number, previous?: number, darkBg = false) => {
     if (!current || !previous || current === previous) {
-      return <span className="text-xs text-gray-400 font-medium ml-2 inline-flex items-center"><Minus className="w-3 h-3 mr-1" /> 0%</span>;
+      return <span className={`text-xs font-medium ml-2 inline-flex items-center ${darkBg ? 'text-white/50' : 'text-gray-400'}`}><Minus className="w-3 h-3 mr-1" /> 0%</span>;
     }
     const diff = current - previous;
     const percent = (diff / previous) * 100;
     const isUp = diff > 0;
     return (
-      <span className={`text-xs font-bold ml-2 inline-flex items-center ${isUp ? 'text-rose-500' : 'text-emerald-500'}`}>
+      <span className={`text-xs font-bold ml-2 inline-flex items-center ${
+        darkBg 
+          ? (isUp ? 'text-rose-200' : 'text-emerald-200')
+          : (isUp ? 'text-rose-500' : 'text-emerald-500')
+      }`}>
         {isUp ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
         {Math.abs(percent).toFixed(1)}%
       </span>
@@ -552,65 +556,107 @@ export default function PriceTrends() {
 
       {/* Key Metric Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Latest Petrol</span>
-              <div className="text-xl font-extrabold text-surface-900">
-                {formatPrice(stats.latest?.Petrol)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          {/* Petrol */}
+          <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+            <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+            <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+            
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-100 uppercase tracking-wider">
+                  Latest Petrol
+                </span>
+                <div className="p-2 bg-white/10 rounded-xl text-emerald-100">
+                  <Fuel className="w-5 h-5" />
+                </div>
               </div>
-              <span className="text-xs text-gray-500 font-medium">
-                {stats.latest?.date || 'Latest Entry'}
-                {renderTrend(stats.latest?.Petrol, stats.previous?.Petrol)}
-              </span>
-            </div>
-            <div className="p-3 bg-primary/10 text-primary rounded-2xl">
-              <Fuel className="w-6 h-6" />
+              <div>
+                <p className="text-3xl font-black tracking-tight leading-none mb-2">
+                  {formatPrice(stats.latest?.Petrol)}
+                </p>
+                <div className="flex items-center text-white/70 text-xs font-medium">
+                  {stats.latest?.date || 'Latest Entry'}
+                  {renderTrend(stats.latest?.Petrol, stats.previous?.Petrol, true)}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Latest Diesel</span>
-              <div className="text-xl font-extrabold text-surface-900">
-                {formatPrice(stats.latest?.Diesel)}
+          {/* Diesel */}
+          <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+            <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+            <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+            
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/30 text-blue-100 uppercase tracking-wider">
+                  Latest Diesel
+                </span>
+                <div className="p-2 bg-white/10 rounded-xl text-blue-100">
+                  <Fuel className="w-5 h-5" />
+                </div>
               </div>
-              <span className="text-xs text-gray-500 font-medium">
-                {stats.latest?.date || 'Latest Entry'}
-                {renderTrend(stats.latest?.Diesel, stats.previous?.Diesel)}
-              </span>
-            </div>
-            <div className="p-3 bg-surface-900/10 text-surface-900 rounded-2xl">
-              <Fuel className="w-6 h-6" />
+              <div>
+                <p className="text-3xl font-black tracking-tight leading-none mb-2">
+                  {formatPrice(stats.latest?.Diesel)}
+                </p>
+                <div className="flex items-center text-white/70 text-xs font-medium">
+                  {stats.latest?.date || 'Latest Entry'}
+                  {renderTrend(stats.latest?.Diesel, stats.previous?.Diesel, true)}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Latest Kerosene</span>
-              <div className="text-xl font-extrabold text-surface-900">
-                {formatPrice(stats.latest?.Kerosene)}
+          {/* Kerosene */}
+          <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+            <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+            <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+            
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-500/30 text-purple-100 uppercase tracking-wider">
+                  Latest Kerosene
+                </span>
+                <div className="p-2 bg-white/10 rounded-xl text-purple-100">
+                  <Fuel className="w-5 h-5" />
+                </div>
               </div>
-              <span className="text-xs text-gray-500 font-medium">
-                {stats.latest?.date || 'Latest Entry'}
-                {renderTrend(stats.latest?.Kerosene, stats.previous?.Kerosene)}
-              </span>
-            </div>
-            <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl">
-              <Fuel className="w-6 h-6" />
+              <div>
+                <p className="text-3xl font-black tracking-tight leading-none mb-2">
+                  {formatPrice(stats.latest?.Kerosene)}
+                </p>
+                <div className="flex items-center text-white/70 text-xs font-medium">
+                  {stats.latest?.date || 'Latest Entry'}
+                  {renderTrend(stats.latest?.Kerosene, stats.previous?.Kerosene, true)}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-center justify-between">
-            <div>
-              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Period Average</span>
-              <div className="text-xl font-extrabold text-emerald-600">
-                {formatPrice(Math.round(stats.avgActive))}
+          {/* Period Average */}
+          <div className="bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+            <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+            <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+            
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-400/30 text-amber-100 uppercase tracking-wider">
+                  Period Average
+                </span>
+                <div className="p-2 bg-white/10 rounded-xl text-amber-100">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
               </div>
-              <span className="text-xs text-gray-500 font-medium">Range: {formatPrice(stats.minActive)} - {formatPrice(stats.maxActive)}</span>
-            </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
-              <TrendingUp className="w-6 h-6" />
+              <div>
+                <p className="text-3xl font-black tracking-tight leading-none mb-2">
+                  {formatPrice(Math.round(stats.avgActive))}
+                </p>
+                <p className="text-white/70 text-xs font-medium">
+                  Range: {formatPrice(stats.minActive)} - {formatPrice(stats.maxActive)}
+                </p>
+              </div>
             </div>
           </div>
         </div>

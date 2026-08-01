@@ -198,6 +198,13 @@ function TableView({
 }
 
 // ─── Card View ────────────────────────────────────────────────────
+const CARD_COLORS = [
+  { bg: 'from-emerald-600 to-emerald-800', badge: 'bg-emerald-500/30 text-emerald-100' },
+  { bg: 'from-blue-600 to-blue-800', badge: 'bg-blue-500/30 text-blue-100' },
+  { bg: 'from-purple-600 to-purple-800', badge: 'bg-purple-500/30 text-purple-100' },
+  { bg: 'from-amber-500 to-amber-700', badge: 'bg-amber-400/30 text-amber-100' },
+];
+
 function CardView({
   data, fuel, currency, worldAvg
 }: {
@@ -208,59 +215,57 @@ function CardView({
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-      {data.map((c) => {
+      {data.map((c, index) => {
         const diffPct = fuel === 'petrol' ? c.petrolDiffPct : fuel === 'diesel' ? c.dieselDiffPct : c.keroseneDiffPct;
         const fuelUSD = fuel === 'petrol' ? c.petrolUSD : fuel === 'diesel' ? c.dieselUSD : c.keroseneUSD;
         const fuelLocal = fuel === 'petrol' ? c.prices.petrol : fuel === 'diesel' ? c.prices.diesel : c.prices.kerosene;
-        const color = getCountryColor(c.id);
+        const colors = CARD_COLORS[index % CARD_COLORS.length];
+        
         return (
           <div
             key={c.id}
-            className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${
-              c.isSierraLeone ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-gray-200'
+            className={`bg-gradient-to-br ${colors.bg} rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 ${
+              c.isSierraLeone ? 'ring-2 ring-white/50' : ''
             }`}
           >
-            {/* Top color band */}
-            <div className="h-1.5 w-full" style={{ backgroundColor: color }} />
-            <div className="p-5">
+            {/* Background decoration */}
+            <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+            <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+
+            <div className="relative">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-3xl">{c.flag}</span>
-                  <div>
-                    <p className="font-bold text-surface-900 text-sm leading-tight">{c.name}</p>
-                    <p className="text-xs text-gray-400">{c.currencyCode}</p>
-                  </div>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${colors.badge} flex items-center gap-1.5`}>
+                    <span className="text-sm">{c.flag}</span> {c.name}
+                  </span>
+                  {c.isSierraLeone && (
+                    <span className="text-[10px] font-bold bg-white/20 text-white px-1.5 py-0.5 rounded-full text-center">LIVE</span>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className="text-xl">{getRankMedal(c.rank)}</span>
-                  {c.isSierraLeone && (
-                    <div className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full text-center mt-1">LIVE</div>
-                  )}
                 </div>
               </div>
 
               {/* Primary fuel price */}
-              <div className="bg-gray-50 rounded-xl p-3 mb-3">
-                <p className="text-xs text-gray-400 font-medium uppercase tracking-wider mb-1 capitalize">{fuel}</p>
-                <p className="text-2xl font-black text-surface-900">
+              <div className="mb-4">
+                <p className="text-3xl font-black tracking-tight leading-none">
                   {currency === 'usd' ? formatUSD(fuelUSD) : formatLocal(fuelLocal, c.currencySymbol)}
                 </p>
-                {currency === 'usd' ? (
-                  <p className="text-xs text-gray-400 mt-0.5">{formatLocal(fuelLocal, c.currencySymbol)}</p>
-                ) : (
-                  <p className="text-xs text-gray-400 mt-0.5">{formatUSD(fuelUSD)}</p>
-                )}
+                <p className="text-white/70 text-xs mt-1.5">
+                  {currency === 'usd' ? formatLocal(fuelLocal, c.currencySymbol) : formatUSD(fuelUSD)} • {fuel.toUpperCase()}
+                </p>
               </div>
 
               {/* All 3 fuels in small grid */}
-              <div className="grid grid-cols-3 gap-1.5 mb-3">
+              <div className="grid grid-cols-3 gap-1.5 mb-4">
                 {FUEL_TYPES.map(ft => {
                   const usdVal = ft.id === 'petrol' ? c.petrolUSD : ft.id === 'diesel' ? c.dieselUSD : c.keroseneUSD;
                   const localVal = ft.id === 'petrol' ? c.prices.petrol : ft.id === 'diesel' ? c.prices.diesel : c.prices.kerosene;
                   return (
-                    <div key={ft.id} className={`rounded-lg p-2 text-center ${fuel === ft.id ? 'bg-emerald-50 ring-1 ring-emerald-200' : 'bg-gray-50'}`}>
-                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">{ft.label}</p>
-                      <p className="text-xs font-bold text-surface-900">
+                    <div key={ft.id} className={`rounded-lg p-2 text-center ${fuel === ft.id ? 'bg-white/20 ring-1 ring-white/30' : 'bg-white/5'}`}>
+                      <p className="text-[9px] text-white/70 font-bold uppercase tracking-wider">{ft.label}</p>
+                      <p className="text-xs font-bold text-white">
                         {currency === 'usd' ? formatUSD(usdVal) : formatLocal(localVal, c.currencySymbol)}
                       </p>
                     </div>
@@ -268,17 +273,27 @@ function CardView({
                 })}
               </div>
 
-              <div className="flex items-center justify-between">
-                <DiffBadge pct={diffPct} isBase={!!c.isSierraLeone} />
-                <p className="text-[10px] text-gray-400">
-                  Updated {new Date(c.lastUpdated).toLocaleDateString()}
+              <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                <div className="flex items-center gap-1.5">
+                  <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    c.isSierraLeone ? 'bg-white/20 text-white' : 
+                    diffPct < 0 ? 'bg-emerald-500/30 text-emerald-100' : 
+                    diffPct === 0 ? 'bg-white/20 text-white' : 'bg-rose-500/30 text-rose-100'
+                  }`}>
+                    {!c.isSierraLeone && (
+                      diffPct < 0 ? <ArrowDown className="w-3 h-3" /> : diffPct > 0 ? <ArrowUp className="w-3 h-3" /> : <Minus className="w-3 h-3" />
+                    )}
+                    {c.isSierraLeone ? 'Base' : `${Math.abs(diffPct).toFixed(1)}% vs SL`}
+                  </span>
+                </div>
+                <p className="text-[10px] text-white/50">
+                  {new Date(c.lastUpdated).toLocaleDateString()}
                 </p>
               </div>
             </div>
           </div>
         );
       })}
-
     </div>
   );
 }
@@ -929,32 +944,79 @@ export default function RegionalComparison() {
 
           {/* Stats row */}
           {!slLoading && sl && cheapest && (
-            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-                <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">SL {fuel}</p>
-                <p className="text-xl font-black text-white">
-                  {formatUSD(fuel === 'petrol' ? sl.petrolUSD : fuel === 'diesel' ? sl.dieselUSD : sl.keroseneUSD)}
-                </p>
-                <p className="text-xs text-gray-400">
-                  {formatLocal(fuel === 'petrol' ? sl.prices.petrol : fuel === 'diesel' ? sl.prices.diesel : sl.prices.kerosene, sl.currencySymbol)}
-                </p>
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* SL Fuel Price */}
+              <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+                <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+                <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+                <div className="relative">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-100 uppercase tracking-wider mb-3 inline-block">
+                    SL {fuel}
+                  </span>
+                  <p className="text-3xl font-black tracking-tight leading-none mb-1">
+                    {formatUSD(fuel === 'petrol' ? sl.petrolUSD : fuel === 'diesel' ? sl.dieselUSD : sl.keroseneUSD)}
+                  </p>
+                  <p className="text-emerald-100/70 text-xs font-medium mt-2">
+                    {formatLocal(fuel === 'petrol' ? sl.prices.petrol : fuel === 'diesel' ? sl.prices.diesel : sl.prices.kerosene, sl.currencySymbol)}
+                  </p>
+                </div>
               </div>
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-                <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">SL Rank</p>
-                <p className="text-xl font-black text-white">{getRankMedal(sl.rank)} {sl.rank <= 3 ? `#${sl.rank}` : ''}</p>
-                <p className="text-xs text-gray-400">out of {computed.length} countries</p>
+
+              {/* SL Rank */}
+              <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+                <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+                <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+                <div className="relative">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/30 text-blue-100 uppercase tracking-wider mb-3 inline-block">
+                    SL Rank
+                  </span>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <p className="text-3xl font-black tracking-tight leading-none">
+                      #{sl.rank}
+                    </p>
+                    <span className="text-2xl">{getRankMedal(sl.rank)}</span>
+                  </div>
+                  <p className="text-blue-100/70 text-xs font-medium mt-2">
+                    out of {computed.length} countries
+                  </p>
+                </div>
               </div>
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-                <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">Cheapest</p>
-                <p className="text-xl font-black text-white">{cheapest.flag} {cheapest.name.split(' ')[0]}</p>
-                <p className="text-xs text-gray-400">
-                  {formatUSD(fuel === 'petrol' ? cheapest.petrolUSD : fuel === 'diesel' ? cheapest.dieselUSD : cheapest.keroseneUSD)} {fuel}
-                </p>
+
+              {/* Cheapest */}
+              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+                <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+                <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+                <div className="relative">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-500/30 text-purple-100 uppercase tracking-wider mb-3 inline-block">
+                    Cheapest
+                  </span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-2xl">{cheapest.flag}</span>
+                    <p className="text-2xl font-black tracking-tight leading-none truncate">
+                      {cheapest.name.split(' ')[0]}
+                    </p>
+                  </div>
+                  <p className="text-purple-100/70 text-xs font-medium mt-2">
+                    {formatUSD(fuel === 'petrol' ? cheapest.petrolUSD : fuel === 'diesel' ? cheapest.dieselUSD : cheapest.keroseneUSD)} {fuel}
+                  </p>
+                </div>
               </div>
-              <div className="bg-white/10 rounded-xl p-3 backdrop-blur-sm">
-                <p className="text-emerald-400 text-xs font-bold uppercase tracking-wider">Countries</p>
-                <p className="text-xl font-black text-white">8</p>
-                <p className="text-xs text-gray-400">West Africa</p>
+
+              {/* Countries */}
+              <div className="bg-gradient-to-br from-amber-500 to-amber-700 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+                <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
+                <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+                <div className="relative">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-400/30 text-amber-100 uppercase tracking-wider mb-3 inline-block">
+                    Countries
+                  </span>
+                  <p className="text-3xl font-black tracking-tight leading-none mb-1">
+                    8
+                  </p>
+                  <p className="text-amber-100/70 text-xs font-medium mt-2">
+                    West Africa
+                  </p>
+                </div>
               </div>
             </div>
           )}
