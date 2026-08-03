@@ -85,7 +85,7 @@ export const NotificationService = {
         
         batch.set(newNotifRef, {
           userId: userDoc.id,
-          title: 'Official Prices Updated',
+          title: 'Price Trends Updated',
           message: message,
           read: false,
           createdAt: serverTimestamp(),
@@ -98,7 +98,7 @@ export const NotificationService = {
         if (userData.email && (userData.optInEmail !== false)) {
           NotificationService.sendEmail(
             userData.email,
-            'Official Government Fuel Prices Updated',
+            'Official Price Trends Updated',
             `Hello ${userData.name || 'Station Owner'},\n\n` + message + '\n\nNew Prices:\n' +
             Object.entries(newPrices).map(([fuel, price]) => `• ${fuel}: Le ${price.toLocaleString()}`).join('\n'),
             'Government Prices',
@@ -113,7 +113,7 @@ export const NotificationService = {
 
         // Send FCM if token exists
         if (userData.fcmToken) {
-          NotificationService.sendFcm(userData.fcmToken, 'Official Prices Updated', message, { link: '/dashboard' });
+          NotificationService.sendFcm(userData.fcmToken, 'Price Trends Updated', message, { link: '/dashboard' });
         }
       });
       

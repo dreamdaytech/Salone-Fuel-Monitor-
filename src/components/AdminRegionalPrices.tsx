@@ -459,10 +459,20 @@ export default function AdminRegionalPrices() {
         });
         setSavedData(data);
 
-        // Merge saved data into entries
+        // Merge saved data into entries — but NEVER overwrite Sierra Leone's
+        // fuel prices, which always come live from price_trends.
+        // We DO allow SL's saved exchange rate override to be loaded.
         setEntries(prev => prev.map(e => {
           const saved = data[e.id];
           if (!saved) return e;
+          if (e.isSierraLeone) {
+            // Only apply exchange rate override for SL — fuel prices stay from price_trends
+            return {
+              ...e,
+              exchangeRateInput: String(saved.exchangeRateToUSD ?? e.exchangeRateToUSD),
+              isDirty: false,
+            };
+          }
           return {
             ...e,
             prices: {
@@ -492,17 +502,29 @@ export default function AdminRegionalPrices() {
   const handleSaveCountry = async (entry: AdminCountryEntry) => {
     setIsSaving(true);
     try {
-      await setDoc(doc(db, 'regional_fuel_prices', entry.id), {
-        countryId: entry.id,
-        countryName: entry.name,
-        petrol: parseFloat(entry.petrolInput) || 0,
-        diesel: parseFloat(entry.dieselInput) || 0,
-        kerosene: parseFloat(entry.keroseneInput) || 0,
-        exchangeRateToUSD: parseFloat(entry.exchangeRateInput) || entry.exchangeRateToUSD,
-        currencyCode: entry.currencyCode,
-        currencySymbol: entry.currencySymbol,
-        updatedAt: serverTimestamp(),
-      });
+      if (entry.isSierraLeone) {
+        // For SL, only save the exchange rate override — fuel prices come from price_trends
+        await setDoc(doc(db, 'regional_fuel_prices', entry.id), {
+          countryId: entry.id,
+          countryName: entry.name,
+          exchangeRateToUSD: parseFloat(entry.exchangeRateInput) || entry.exchangeRateToUSD,
+          currencyCode: entry.currencyCode,
+          currencySymbol: entry.currencySymbol,
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
+      } else {
+        await setDoc(doc(db, 'regional_fuel_prices', entry.id), {
+          countryId: entry.id,
+          countryName: entry.name,
+          petrol: parseFloat(entry.petrolInput) || 0,
+          diesel: parseFloat(entry.dieselInput) || 0,
+          kerosene: parseFloat(entry.keroseneInput) || 0,
+          exchangeRateToUSD: parseFloat(entry.exchangeRateInput) || entry.exchangeRateToUSD,
+          currencyCode: entry.currencyCode,
+          currencySymbol: entry.currencySymbol,
+          updatedAt: serverTimestamp(),
+        });
+      }
       toast.success(`${entry.name} prices saved successfully`);
       setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, isDirty: false } : e));
       setEditingId(null);
@@ -514,6 +536,7 @@ export default function AdminRegionalPrices() {
     }
   };
 
+
   const handleSaveAll = async () => {
     const dirtyEntries = entries.filter(e => e.isDirty);
     if (dirtyEntries.length === 0) {
@@ -523,17 +546,27 @@ export default function AdminRegionalPrices() {
     setIsSaving(true);
     try {
       await Promise.all(dirtyEntries.map(entry =>
-        setDoc(doc(db, 'regional_fuel_prices', entry.id), {
-          countryId: entry.id,
-          countryName: entry.name,
-          petrol: parseFloat(entry.petrolInput) || 0,
-          diesel: parseFloat(entry.dieselInput) || 0,
-          kerosene: parseFloat(entry.keroseneInput) || 0,
-          exchangeRateToUSD: parseFloat(entry.exchangeRateInput) || entry.exchangeRateToUSD,
-          currencyCode: entry.currencyCode,
-          currencySymbol: entry.currencySymbol,
-          updatedAt: serverTimestamp(),
-        })
+        entry.isSierraLeone
+          // SL: only persist exchange rate override, not fuel prices
+          ? setDoc(doc(db, 'regional_fuel_prices', entry.id), {
+              countryId: entry.id,
+              countryName: entry.name,
+              exchangeRateToUSD: parseFloat(entry.exchangeRateInput) || entry.exchangeRateToUSD,
+              currencyCode: entry.currencyCode,
+              currencySymbol: entry.currencySymbol,
+              updatedAt: serverTimestamp(),
+            }, { merge: true })
+          : setDoc(doc(db, 'regional_fuel_prices', entry.id), {
+              countryId: entry.id,
+              countryName: entry.name,
+              petrol: parseFloat(entry.petrolInput) || 0,
+              diesel: parseFloat(entry.dieselInput) || 0,
+              kerosene: parseFloat(entry.keroseneInput) || 0,
+              exchangeRateToUSD: parseFloat(entry.exchangeRateInput) || entry.exchangeRateToUSD,
+              currencyCode: entry.currencyCode,
+              currencySymbol: entry.currencySymbol,
+              updatedAt: serverTimestamp(),
+            })
       ));
       toast.success(`${dirtyEntries.length} countries updated successfully`);
       setEntries(prev => prev.map(e => ({ ...e, isDirty: false })));
@@ -544,6 +577,7 @@ export default function AdminRegionalPrices() {
       setIsSaving(false);
     }
   };
+
 
   // ── Real Multi-Source Scrape Engine ─────────────────────────────────────
   const handleScrape = async () => {
@@ -818,7 +852,7 @@ export default function AdminRegionalPrices() {
           <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4 text-xs text-emerald-700">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <p>
-              <strong>Sierra Leone</strong> prices are managed via the <em>Official Prices</em> tab and read automatically from the live database.
+              <strong>Sierra Leone</strong> prices are managed via the <em>Price Trends Management</em> tab and read automatically from the live database.
               You can still override the exchange rate here.
             </p>
           </div>
