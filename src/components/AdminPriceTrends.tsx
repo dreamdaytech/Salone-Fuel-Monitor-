@@ -22,10 +22,11 @@ export function AdminPriceTrends() {
   const [isAdding, setIsAdding] = useState(false);
 
   // Confirmation Modals State
-  const [deleteTarget, setDeleteTarget] = useState<PriceTrendRecord | null>(null);
+  const [deleteTargets, setDeleteTargets] = useState<PriceTrendRecord[] | null>(null);
   const [saveTargetId, setSaveTargetId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -111,24 +112,43 @@ export function AdminPriceTrends() {
   };
 
   // Trigger Confirmation Modal for Delete
-  const triggerDeleteConfirmation = (trend: PriceTrendRecord) => {
-    setDeleteTarget(trend);
+  const triggerDeleteConfirmation = (trends: PriceTrendRecord[]) => {
+    setDeleteTargets(trends);
   };
 
   // Execute Delete
   const executeDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTargets || deleteTargets.length === 0) return;
     setIsSubmitting(true);
     try {
-      await deleteDoc(doc(db, 'price_trends', deleteTarget.id));
-      showToast(`Deleted price trend record for ${deleteTarget.monthYear || deleteTarget.effectiveDate}.`);
-      setDeleteTarget(null);
+      await Promise.all(deleteTargets.map(target => deleteDoc(doc(db, 'price_trends', target.id))));
+      showToast(`Deleted ${deleteTargets.length} price trend record(s).`);
+      setDeleteTargets(null);
+      setSelectedIds(new Set());
     } catch (error) {
-      console.error('Error deleting price trend:', error);
-      alert('Failed to delete price trend record.');
+      console.error('Error deleting price trends:', error);
+      alert('Failed to delete price trend records.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === trends.length && trends.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(trends.map(t => t.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
   };
 
   const startAdd = () => {
@@ -178,20 +198,40 @@ export function AdminPriceTrends() {
             </h2>
             <p className="text-gray-500 mt-1 text-sm sm:text-base">View, add, edit or remove official historical fuel price records</p>
           </div>
-          <Button
-            onClick={startAdd}
-            disabled={isAdding}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add New Record
-          </Button>
+          <div className="flex items-center gap-3">
+            {selectedIds.size > 0 && (
+              <Button
+                onClick={() => triggerDeleteConfirmation(trends.filter(t => selectedIds.has(t.id)))}
+                disabled={isAdding}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Selected ({selectedIds.size})
+              </Button>
+            )}
+            <Button
+              onClick={startAdd}
+              disabled={isAdding}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Record
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
               <tr className="bg-surface-50 border-b border-gray-100">
+                <th className="p-4 w-12 text-center">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                    checked={trends.length > 0 && selectedIds.size === trends.length}
+                    onChange={toggleSelectAll}
+                  />
+                </th>
                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Month & Year</th>
                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Petrol (PMS) NLe/L</th>
                 <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Diesel (AGO) NLe/L</th>
@@ -203,6 +243,7 @@ export function AdminPriceTrends() {
             <tbody className="divide-y divide-gray-100">
               {isAdding && (
                 <tr className="bg-primary/5">
+                  <td className="p-4"></td>
                   <td className="p-4">
                     <input
                       type="text"
@@ -274,6 +315,14 @@ export function AdminPriceTrends() {
               )}
               {trends.map((trend) => (
                 <tr key={trend.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="p-4 text-center">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                      checked={selectedIds.has(trend.id)}
+                      onChange={() => toggleSelect(trend.id)}
+                    />
+                  </td>
                   {editingId === trend.id ? (
                     <>
                       <td className="p-4">
@@ -363,7 +412,7 @@ export function AdminPriceTrends() {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => triggerDeleteConfirmation(trend)}
+                            onClick={() => triggerDeleteConfirmation([trend])}
                             className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all"
                             title="Delete Price Trend Record"
                           >
@@ -377,7 +426,7 @@ export function AdminPriceTrends() {
               ))}
               {!isAdding && trends.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-12 text-center text-sm font-medium text-gray-500">
+                  <td colSpan={7} className="p-12 text-center text-sm font-medium text-gray-500">
                     No price trends recorded yet. Click "Add New Record" to start.
                   </td>
                 </tr>
@@ -388,7 +437,7 @@ export function AdminPriceTrends() {
       </div>
 
       {/* Confirmation Modal: Delete */}
-      {deleteTarget && (
+      {deleteTargets && deleteTargets.length > 0 && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-gray-100 space-y-5">
             <div className="flex items-center gap-4">
@@ -401,19 +450,22 @@ export function AdminPriceTrends() {
               </div>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-xs space-y-1.5">
-              <p className="text-gray-700"><strong>Record Period:</strong> {deleteTarget.monthYear || 'N/A'}</p>
-              <p className="text-gray-700"><strong>Effective Date:</strong> {deleteTarget.effectiveDate || 'N/A'}</p>
-              <p className="text-gray-700"><strong>Prices:</strong> Petrol: {deleteTarget.petrolPrice || '-'}, Diesel: {deleteTarget.dieselPrice || '-'}, Kerosene: {deleteTarget.kerosenePrice || '-'}</p>
+            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-xs max-h-40 overflow-y-auto space-y-2">
+              {deleteTargets.map((target) => (
+                <div key={target.id} className="pb-2 border-b border-gray-200 last:border-0 last:pb-0">
+                  <p className="text-gray-700"><strong>Period:</strong> {target.monthYear || target.effectiveDate || 'N/A'}</p>
+                  <p className="text-gray-700"><strong>Prices:</strong> Petrol: {target.petrolPrice || '-'}, Diesel: {target.dieselPrice || '-'}, Kerosene: {target.kerosenePrice || '-'}</p>
+                </div>
+              ))}
             </div>
 
             <p className="text-sm text-gray-600 font-medium">
-              Are you sure you want to permanently delete this official price trend entry from the database?
+              Are you sure you want to permanently delete {deleteTargets.length === 1 ? 'this official price trend entry' : `these ${deleteTargets.length} official price trend entries`} from the database?
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
-                onClick={() => setDeleteTarget(null)}
+                onClick={() => setDeleteTargets(null)}
                 disabled={isSubmitting}
                 className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-all disabled:opacity-50"
               >
