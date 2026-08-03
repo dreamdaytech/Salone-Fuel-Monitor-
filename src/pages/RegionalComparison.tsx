@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { db, doc, onSnapshot, collection } from '../firebase';
+import { db, doc, onSnapshot, collection, query, orderBy, limit } from '../firebase';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer
@@ -767,10 +767,15 @@ export default function RegionalComparison() {
   // Fetch Sierra Leone live prices from Firebase
   useEffect(() => {
     const unsub = onSnapshot(
-      doc(db, 'government_prices', 'current'),
+      query(collection(db, 'price_trends'), orderBy('effectiveDate', 'desc'), limit(1)),
       (snap) => {
-        if (snap.exists()) {
-          setSlPrices(snap.data().prices || null);
+        if (!snap.empty) {
+          const data = snap.docs[0].data();
+          setSlPrices({
+            Petrol: data.petrolPrice || 0,
+            Diesel: data.dieselPrice || 0,
+            Kerosene: data.kerosenePrice || 0
+          });
         }
         setSlLoading(false);
       },

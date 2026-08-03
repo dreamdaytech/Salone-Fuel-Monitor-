@@ -45,7 +45,7 @@ export const REGIONAL_COUNTRIES: RegionalCountry[] = [
     currencySymbol: 'NLe',
     exchangeRateToUSD: 22.5, // approx Jul 2026: 1 USD ≈ 22.5 NLe
     prices: {
-      // Fallback prices in NLe (new leones) — overridden at runtime from Firebase government_prices/current
+      // Fallback prices in NLe (new leones) — overridden at runtime from Firebase price_trends
       petrol:   33,   // NLe per litre
       diesel:   35,   // NLe per litre
       kerosene: 37,   // NLe per litre

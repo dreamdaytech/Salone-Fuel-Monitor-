@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db, collection, doc, setDoc, onSnapshot, serverTimestamp } from '../firebase';
+import { db, collection, doc, setDoc, onSnapshot, serverTimestamp, query, orderBy, limit } from '../firebase';
 import {
   Globe, Save, RefreshCw, CheckCircle, AlertTriangle, ExternalLink,
   Edit2, X, Clock, Database, Zap, Info
@@ -417,16 +417,16 @@ export default function AdminRegionalPrices() {
     }
   };
 
-  // Sync SL official prices from government_prices/current (same source as rest of app)
+  // Sync SL official prices from price_trends (same source as rest of app)
   useEffect(() => {
     const unsub = onSnapshot(
-      doc(db, 'government_prices', 'current'),
+      query(collection(db, 'price_trends'), orderBy('effectiveDate', 'desc'), limit(1)),
       (snap) => {
-        if (snap.exists()) {
-          const p = snap.data().prices || {};
-          const petrol   = p.Petrol   ?? p.petrol   ?? null;
-          const diesel   = p.Diesel   ?? p.diesel   ?? null;
-          const kerosene = p.Kerosene ?? p.kerosene ?? null;
+        if (!snap.empty) {
+          const data = snap.docs[0].data();
+          const petrol   = data.petrolPrice || null;
+          const diesel   = data.dieselPrice || null;
+          const kerosene = data.kerosenePrice || null;
           if (petrol || diesel || kerosene) {
             setSlGovPrices({ petrol, diesel, kerosene });
             setEntries(prev => prev.map(e => {

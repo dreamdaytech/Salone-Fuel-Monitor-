@@ -459,15 +459,37 @@ export default function ExchangeRates() {
           </div>
 
           <div className="p-6">
-            <div className="relative z-20 grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-end">
-              {/* From */}
-              <div className="space-y-4">
+            <div className="relative z-20 flex flex-col gap-6">
+              {/* Currencies Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-end">
                 <CurrencySelect
                   id="from"
                   label="From Currency"
                   value={fromCurrency}
                   onChange={setFromCurrency}
                 />
+
+                <div className="flex justify-center pb-2">
+                  <button
+                    type="button"
+                    onClick={handleSwap}
+                    title="Swap currencies"
+                    className="w-11 h-11 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25 transition-all hover:scale-110 active:scale-95"
+                  >
+                    <ArrowLeftRight className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <CurrencySelect
+                  id="to"
+                  label="To Currency"
+                  value={toCurrency}
+                  onChange={setToCurrency}
+                />
+              </div>
+
+              {/* Amounts Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-end">
                 <div>
                   <label htmlFor="converter-amount" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                     Amount
@@ -483,29 +505,11 @@ export default function ExchangeRates() {
                     placeholder="1"
                   />
                 </div>
-              </div>
 
-              {/* Swap Button */}
-              <div className="flex justify-center pb-2">
-                <button
-                  type="button"
-                  onClick={handleSwap}
-                  title="Swap currencies"
-                  className="w-11 h-11 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg shadow-emerald-500/25 transition-all hover:scale-110 active:scale-95"
-                >
-                  <ArrowLeftRight className="w-5 h-5" />
-                </button>
-              </div>
+                <div className="hidden sm:flex justify-center pb-2 w-11 mx-auto">
+                  {/* Empty spacer to align with the swap button above */}
+                </div>
 
-              {/* To */}
-              <div className="space-y-4">
-                <CurrencySelect
-                  id="to"
-                  label="To Currency"
-                  value={toCurrency}
-                  onChange={setToCurrency}
-                />
-                {/* Result display */}
                 <div>
                   <label className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                     <span>Converted Amount</span>

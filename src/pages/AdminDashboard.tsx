@@ -24,7 +24,6 @@ import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
 
 export default function AdminDashboard() {
   const { user, profile } = useAuth();
-  const [govPrices, setGovPrices] = useState<Record<string, number>>({ Petrol: 0, Diesel: 0, Kerosene: 0 });
   const [users, setUsers] = useState<any[]>([]);
   const [stations, setStations] = useState<any[]>([]);
   const [priceReports, setPriceReports] = useState<any[]>([]);
@@ -251,7 +250,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'prices' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates'>(initialTab);
 
   useEffect(() => {
     if (activeTab !== initialTab) {
@@ -274,7 +273,6 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [userToDelete, setUserToDelete] = useState<any | null>(null);
   const [isDeletingUser, setIsDeletingUser] = useState(false);
-  const [isUpdatingGovPrice, setIsUpdatingGovPrice] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [selectedStationIds, setSelectedStationIds] = useState<string[]>([]);
   const [isBulkActionLoading, setIsBulkActionLoading] = useState(false);
@@ -334,15 +332,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (profile?.role !== 'admin') return;
 
-    const unsubscribeGov = onSnapshot(
-      doc(db, 'government_prices', 'current'),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setGovPrices(docSnap.data().prices || { Petrol: 0, Diesel: 0, Kerosene: 0 });
-        }
-      },
-      (error) => handleFirestoreError(error, OperationType.GET, 'government_prices/current')
-    );
+
 
     const unsubscribeUsers = onSnapshot(
       collection(db, 'users'),
@@ -373,7 +363,6 @@ export default function AdminDashboard() {
     );
 
     return () => {
-      unsubscribeGov();
       unsubscribeUsers();
       unsubscribeStations();
       unsubscribeReports();
@@ -519,24 +508,6 @@ export default function AdminDashboard() {
 
     return () => unsubscribeHistory();
   }, [selectedStation, historyLimit]);
-
-  const handleUpdateGovPrice = async () => {
-    if (!user || isUpdatingGovPrice) return;
-    setIsUpdatingGovPrice(true);
-    try {
-      await setDoc(doc(db, 'government_prices', 'current'), {
-        prices: govPrices,
-        updatedAt: serverTimestamp(),
-        updatedBy: user.uid
-      });
-      setSuccessMessage('Official prices updated successfully');
-      await NotificationService.notifyGovPriceUpdate(govPrices);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'government_prices/current');
-    } finally {
-      setIsUpdatingGovPrice(false);
-    }
-  };
 
   const handleUpdateUserRole = async (userId: string, newRole: string) => {
     try {
@@ -1127,20 +1098,6 @@ export default function AdminDashboard() {
               {activeTab === 'users' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
               <Users className={`w-5 h-5 shrink-0 ${activeTab === 'users' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Users</span>}
-            </Button>
-            <Button 
-              onClick={() => { setActiveTab('prices'); setIsMobileMenuOpen(false); }}
-              showNotification={false}
-              variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
-                activeTab === 'prices' 
-                  ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              {activeTab === 'prices' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
-              <TrendingUp className={`w-5 h-5 shrink-0 ${activeTab === 'prices' ? 'text-primary' : 'group-hover:text-white'}`} />
-              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Official Prices</span>}
             </Button>
             <Button 
               onClick={() => { setActiveTab('price_trends'); setIsMobileMenuOpen(false); }}
@@ -1886,54 +1843,6 @@ export default function AdminDashboard() {
             
             {activeTab === 'price_trends' && (
               <AdminPriceTrends />
-            )}
-
-            {activeTab === 'prices' && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="p-8 border-b border-gray-100">
-                    <h2 className="text-2xl font-bold text-surface-900">Official Fuel Prices</h2>
-                    <p className="text-gray-500 mt-1">Set the government regulated fuel prices for the country</p>
-                  </div>
-                  <div className="p-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                      {['Petrol', 'Diesel', 'Kerosene'].map(fuel => (
-                        <div key={fuel} className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-primary/30 transition-all group">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-primary flex items-center justify-center">
-                              <Fuel className="w-6 h-6" />
-                            </div>
-                            <span className="text-xs font-bold text-primary uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-lg">Official</span>
-                          </div>
-                          <label className="block text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">{fuel}</label>
-                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Le</span>
-                            <input
-                              type="number"
-                              className="w-full pl-12 pr-4 py-4 bg-white border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-xl font-bold text-surface-900 shadow-sm"
-                              value={govPrices[fuel] || ''}
-                              onChange={e => setGovPrices({...govPrices, [fuel]: Number(e.target.value)})}
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-8 flex justify-end">
-                      <Button
-                        onClick={handleUpdateGovPrice}
-                        loading={isUpdatingGovPrice}
-                        variant="primary"
-                        notificationMessage="Official fuel prices updated successfully"
-                        className="px-8 py-4 rounded-2xl font-bold transition-all flex items-center gap-3 shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Save className="w-5 h-5" />
-                        <span>Save Official Prices</span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
             )}
 
             {activeTab === 'overview' && (

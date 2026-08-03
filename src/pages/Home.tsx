@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy, where, db, handleFirestoreError, OperationType, doc, addDoc, serverTimestamp } from '../firebase';
+import { collection, onSnapshot, query, orderBy, where, db, handleFirestoreError, OperationType, doc, addDoc, serverTimestamp, limit } from '../firebase';
 import { Search, Download, MapPin, Filter, TrendingDown, TrendingUp, Minus, Shield, Fuel, Bell, BellOff, X, ShieldCheck, Building2, ArrowUpDown, History, Clock, Activity, ArrowLeft, CheckSquare, Square, Trophy, ChevronDown, Check, Navigation, Phone, ExternalLink, ShieldAlert, Slash, LayoutList, ChevronUp, Target, Percent, Heart, CloudOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -387,13 +387,18 @@ export default function Home() {
     );
 
     const unsubscribeGov = onSnapshot(
-      doc(db, 'government_prices', 'current'),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setGovPrices(docSnap.data().prices || {});
+      query(collection(db, 'price_trends'), orderBy('effectiveDate', 'desc'), limit(1)),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const data = snapshot.docs[0].data();
+          setGovPrices({
+            Petrol: data.petrolPrice || 0,
+            Diesel: data.dieselPrice || 0,
+            Kerosene: data.kerosenePrice || 0
+          });
         }
       },
-      (error) => handleFirestoreError(error, OperationType.GET, 'government_prices/current')
+      (error) => handleFirestoreError(error, OperationType.GET, 'price_trends')
     );
 
     const promoQ = query(collection(db, 'promotions'), where('isActive', '==', true));

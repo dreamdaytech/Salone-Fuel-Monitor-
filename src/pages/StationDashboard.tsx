@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db, collection, query, where, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, handleFirestoreError, OperationType, getDocs } from '../firebase';
+import { db, collection, query, where, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, handleFirestoreError, OperationType, getDocs, orderBy, limit } from '../firebase';
 import { Plus, Edit2, Save, X, Building2, MapPin, Clock, Phone, Tag, ShieldCheck, Zap, ShieldAlert, Check, TrendingDown, Calendar, Percent, Trash2 } from 'lucide-react';
 import { NotificationService } from '../services/NotificationService';
 import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
@@ -220,9 +220,14 @@ export default function StationDashboard() {
       handleFirestoreError(error, OperationType.LIST, 'stations');
     });
 
-    const unsubGov = onSnapshot(doc(db, 'government_prices', 'current'), (docSnap) => {
-      if (docSnap.exists()) {
-        setGovPrices(docSnap.data().prices || {});
+    const unsubGov = onSnapshot(query(collection(db, 'price_trends'), orderBy('effectiveDate', 'desc'), limit(1)), (snapshot) => {
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0].data();
+        setGovPrices({
+          Petrol: data.petrolPrice || 0,
+          Diesel: data.dieselPrice || 0,
+          Kerosene: data.kerosenePrice || 0
+        });
       }
     });
 
