@@ -13,33 +13,33 @@ import { Toaster, toast } from 'sonner';
 import PageTransition from './components/PageTransition';
 import Navbar from './components/Navbar';
 import SystemUpdater from './components/SystemUpdater';
-import Home from './pages/Home';
-import TransportPrices from './pages/TransportPrices';
-import TransportPriceDetails from './pages/TransportPriceDetails';
-import AdminTransportPriceDetails from './pages/AdminTransportPriceDetails';
-import PriceTrends from './pages/PriceTrends';
-import TransportTrends from './pages/TransportTrends';
-import StationDashboard from './pages/StationDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminReviews from './pages/AdminReviews';
-import Auth from './pages/Auth';
-import Register from './pages/Register';
-import Profile from './pages/Profile';
-import Polls from './pages/Polls';
-import Surveys from './pages/Surveys';
-import Petitions from './pages/Petitions';
-import Decision from './pages/Decision';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import TermsOfService from './pages/TermsOfService';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import CookiePolicy from './pages/CookiePolicy';
-import CalculatorPage from './pages/Calculator';
-import Onboarding from './pages/Onboarding';
-import LocationPickerPage from './pages/LocationPickerPage';
-import RegionalComparison from './pages/RegionalComparison';
-import MarketIntelligence from './pages/MarketIntelligence';
-import ExchangeRates from './pages/ExchangeRates';
+const Home = React.lazy(() => import('./pages/Home'));
+const TransportPrices = React.lazy(() => import('./pages/TransportPrices'));
+const TransportPriceDetails = React.lazy(() => import('./pages/TransportPriceDetails'));
+const AdminTransportPriceDetails = React.lazy(() => import('./pages/AdminTransportPriceDetails'));
+const PriceTrends = React.lazy(() => import('./pages/PriceTrends'));
+const TransportTrends = React.lazy(() => import('./pages/TransportTrends'));
+const StationDashboard = React.lazy(() => import('./pages/StationDashboard'));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
+const AdminReviews = React.lazy(() => import('./pages/AdminReviews'));
+const Auth = React.lazy(() => import('./pages/Auth'));
+const Register = React.lazy(() => import('./pages/Register'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const Polls = React.lazy(() => import('./pages/Polls'));
+const Surveys = React.lazy(() => import('./pages/Surveys'));
+const Petitions = React.lazy(() => import('./pages/Petitions'));
+const Decision = React.lazy(() => import('./pages/Decision'));
+const About = React.lazy(() => import('./pages/About'));
+const Contact = React.lazy(() => import('./pages/Contact'));
+const TermsOfService = React.lazy(() => import('./pages/TermsOfService'));
+const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy'));
+const CookiePolicy = React.lazy(() => import('./pages/CookiePolicy'));
+const CalculatorPage = React.lazy(() => import('./pages/Calculator'));
+const Onboarding = React.lazy(() => import('./pages/Onboarding'));
+const LocationPickerPage = React.lazy(() => import('./pages/LocationPickerPage'));
+const RegionalComparison = React.lazy(() => import('./pages/RegionalComparison'));
+const MarketIntelligence = React.lazy(() => import('./pages/MarketIntelligence'));
+const ExchangeRates = React.lazy(() => import('./pages/ExchangeRates'));
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -119,35 +119,41 @@ function AppContent() {
             </div>
           )}
           <main>
-            <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<Home />} />
-              <Route path="/transport-prices" element={<TransportPrices />} />
-              <Route path="/calculator" element={<CalculatorPage />} />
-              <Route path="/transport-prices/:id" element={<TransportPriceDetails />} />
-              <Route path="/price-trends" element={<PriceTrends />} />
-              <Route path="/transport-trends" element={<TransportTrends />} />
-              <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
-              <Route path="/signup" element={!user ? <Auth /> : <Navigate to="/" />} />
-              <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-              <Route path="/polls" element={user ? <Polls /> : <Navigate to="/login" />} />
-              <Route path="/surveys" element={user ? <Surveys /> : <Navigate to="/login" />} />
-              <Route path="/petitions" element={user ? <Petitions /> : <Navigate to="/login" />} />
-              <Route path="/decision" element={user ? <Decision /> : <Navigate to="/login" />} />
-              <Route path="/regional-comparison" element={<RegionalComparison />} />
-              <Route path="/market-intelligence" element={<MarketIntelligence />} />
-              <Route path="/exchange-rates" element={<ExchangeRates />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/terms" element={<TermsOfService />} />
-              <Route path="/privacy" element={<PrivacyPolicy />} />
-              <Route path="/cookies" element={<CookiePolicy />} />
-              <Route path="/onboarding" element={user && profile && !profile.onboardingCompleted ? <Onboarding /> : <Navigate to="/" />} />
-              <Route path="/location-picker" element={<LocationPickerPage />} />
-              <Route path="/dashboard" element={user && (profile?.role === 'station_owner' || profile?.role === 'admin') ? <StationDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
-              <Route path="/admin" element={user && profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
-              <Route path="/admin/transport-prices/:id" element={user && profile?.role === 'admin' ? <AdminTransportPriceDetails /> : <Navigate to={user ? "/" : "/login"} />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
+            <React.Suspense fallback={
+              <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            }>
+              <Routes location={location} key={location.pathname}>
+                <Route path="/" element={<Home />} />
+                <Route path="/transport-prices" element={<TransportPrices />} />
+                <Route path="/calculator" element={<CalculatorPage />} />
+                <Route path="/transport-prices/:id" element={<TransportPriceDetails />} />
+                <Route path="/price-trends" element={<PriceTrends />} />
+                <Route path="/transport-trends" element={<TransportTrends />} />
+                <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
+                <Route path="/signup" element={!user ? <Auth /> : <Navigate to="/" />} />
+                <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+                <Route path="/polls" element={user ? <Polls /> : <Navigate to="/login" />} />
+                <Route path="/surveys" element={user ? <Surveys /> : <Navigate to="/login" />} />
+                <Route path="/petitions" element={user ? <Petitions /> : <Navigate to="/login" />} />
+                <Route path="/decision" element={user ? <Decision /> : <Navigate to="/login" />} />
+                <Route path="/regional-comparison" element={<RegionalComparison />} />
+                <Route path="/market-intelligence" element={<MarketIntelligence />} />
+                <Route path="/exchange-rates" element={<ExchangeRates />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/terms" element={<TermsOfService />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/cookies" element={<CookiePolicy />} />
+                <Route path="/onboarding" element={user && profile && !profile.onboardingCompleted ? <Onboarding /> : <Navigate to="/" />} />
+                <Route path="/location-picker" element={<LocationPickerPage />} />
+                <Route path="/dashboard" element={user && (profile?.role === 'station_owner' || profile?.role === 'admin') ? <StationDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
+                <Route path="/admin" element={user && profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
+                <Route path="/admin/transport-prices/:id" element={user && profile?.role === 'admin' ? <AdminTransportPriceDetails /> : <Navigate to={user ? "/" : "/login"} />} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </React.Suspense>
           </main>
           {isPublicRoute && <Footer />}
         </div>
