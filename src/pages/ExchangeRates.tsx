@@ -462,6 +462,12 @@ export default function ExchangeRates() {
             <div className="relative z-20 grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-end">
               {/* From */}
               <div className="space-y-4">
+                <CurrencySelect
+                  id="from"
+                  label="From Currency"
+                  value={fromCurrency}
+                  onChange={setFromCurrency}
+                />
                 <div>
                   <label htmlFor="converter-amount" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
                     Amount
@@ -477,12 +483,6 @@ export default function ExchangeRates() {
                     placeholder="1"
                   />
                 </div>
-                <CurrencySelect
-                  id="from"
-                  label="From Currency"
-                  value={fromCurrency}
-                  onChange={setFromCurrency}
-                />
               </div>
 
               {/* Swap Button */}
@@ -499,6 +499,12 @@ export default function ExchangeRates() {
 
               {/* To */}
               <div className="space-y-4">
+                <CurrencySelect
+                  id="to"
+                  label="To Currency"
+                  value={toCurrency}
+                  onChange={setToCurrency}
+                />
                 {/* Result display */}
                 <div>
                   <label className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
@@ -519,12 +525,6 @@ export default function ExchangeRates() {
                     )}
                   </div>
                 </div>
-                <CurrencySelect
-                  id="to"
-                  label="To Currency"
-                  value={toCurrency}
-                  onChange={setToCurrency}
-                />
               </div>
             </div>
 
