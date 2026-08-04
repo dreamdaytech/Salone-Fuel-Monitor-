@@ -129,7 +129,8 @@ function AppContent() {
               </div>
             }>
               <Routes location={location} key={location.pathname}>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Landing />} />
+                <Route path="/stations" element={<FuelStations />} />
                 <Route path="/transport-prices" element={<TransportPrices />} />
                 <Route path="/calculator" element={<CalculatorPage />} />
                 <Route path="/transport-prices/:id" element={<TransportPriceDetails />} />

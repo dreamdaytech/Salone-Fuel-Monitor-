@@ -66,8 +66,8 @@ export default function Navbar() {
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden sm:flex items-center gap-4 md:gap-6 mr-2 sm:mr-4">
               <Link
-                to="/"
-                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
+                to="/stations"
+                className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/stations') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
               >
                 <MapPin className="h-4 w-4" />
                 <span>Fuel Stations</span>

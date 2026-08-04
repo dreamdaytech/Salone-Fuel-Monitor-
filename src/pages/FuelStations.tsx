@@ -67,7 +67,7 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
-export default function Home() {
+export default function FuelStations() {
   const { user } = useAuth();
   const { subscribe, unsubscribe, isSubscribed, subscriptions } = useNotifications();
   const { isFavorite, toggleFavorite, favorites } = useFavorites();
