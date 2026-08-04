@@ -1138,6 +1138,15 @@ export default function AdminDashboard() {
               <BarChart2 className={`w-5 h-5 shrink-0 ${activeTab === 'market_intel' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Market Intel</span>}
             </Button>
+
+            {/* Barrel vs Fuel — external link to dedicated page */}
+            <Link
+              to="/admin/barrel-vs-fuel"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative text-gray-400 hover:bg-white/5 hover:text-white"
+            >
+              <BarChart2 className="w-5 h-5 shrink-0 group-hover:text-white" />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Barrel vs Fuel</span>}
+            </Link>
             <Button 
               onClick={() => { setActiveTab('exchange_rates'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -1180,15 +1189,6 @@ export default function AdminDashboard() {
               <FileText className={`w-5 h-5 shrink-0 ${activeTab === 'blog' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Blog Management</span>}
             </Button>
-
-            {/* Barrel vs Fuel — external link to dedicated page */}
-            <Link
-              to="/admin/barrel-vs-fuel"
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative text-gray-400 hover:bg-white/5 hover:text-white"
-            >
-              <BarChart2 className="w-5 h-5 shrink-0 group-hover:text-white" />
-              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Barrel vs Fuel</span>}
-            </Link>
 
             <Button 
               onClick={() => { setActiveTab('reports'); setIsMobileMenuOpen(false); }}
