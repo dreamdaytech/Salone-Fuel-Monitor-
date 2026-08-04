@@ -900,35 +900,35 @@ export default function RegionalComparison() {
           {/* World Average Benchmark Banner */}
           {worldAvg && (worldAvg.petrol || worldAvg.diesel) && (
             <>
-              <div className="mt-5 flex flex-wrap items-center gap-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-4 py-3">
+              <div className="mt-5 flex flex-wrap items-center gap-3 bg-white rounded-2xl px-5 py-3.5 shadow-xl shadow-black/10 border border-white/20">
                 <div className="flex items-center gap-2 mr-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-400" />
-                  <span className="text-xs font-bold text-blue-300 uppercase tracking-wider">World Average</span>
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="text-xs font-black text-surface-900 uppercase tracking-wider">World Average</span>
                   {worldAvg.asOfDate && (
-                    <span className="text-[10px] text-gray-400">
+                    <span className="text-[10px] font-medium text-gray-500">
                       as of {new Date(worldAvg.asOfDate + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </span>
                   )}
                 </div>
                 {worldAvg.petrol && (
-                  <div className="flex items-center gap-1.5 bg-emerald-500/20 rounded-xl px-3 py-1.5">
-                    <Fuel className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-xs text-gray-300">Petrol</span>
-                    <span className="text-sm font-black text-emerald-300">${worldAvg.petrol.toFixed(3)}<span className="text-[10px] font-normal text-gray-400">/L</span></span>
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5">
+                    <Fuel className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="text-xs font-medium text-gray-600">Petrol</span>
+                    <span className="text-sm font-black text-emerald-600">${worldAvg.petrol.toFixed(3)}<span className="text-[10px] font-bold text-gray-400 ml-0.5">/L</span></span>
                   </div>
                 )}
                 {worldAvg.diesel && (
-                  <div className="flex items-center gap-1.5 bg-blue-500/20 rounded-xl px-3 py-1.5">
-                    <Fuel className="w-3.5 h-3.5 text-blue-400" />
-                    <span className="text-xs text-gray-300">Diesel</span>
-                    <span className="text-sm font-black text-blue-300">${worldAvg.diesel.toFixed(3)}<span className="text-[10px] font-normal text-gray-400">/L</span></span>
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5">
+                    <Fuel className="w-3.5 h-3.5 text-blue-500" />
+                    <span className="text-xs font-medium text-gray-600">Diesel</span>
+                    <span className="text-sm font-black text-blue-600">${worldAvg.diesel.toFixed(3)}<span className="text-[10px] font-bold text-gray-400 ml-0.5">/L</span></span>
                   </div>
                 )}
                 {worldAvg.kerosene && (
-                  <div className="flex items-center gap-1.5 bg-amber-500/20 rounded-xl px-3 py-1.5">
-                    <Fuel className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-xs text-gray-300">Kerosene</span>
-                    <span className="text-sm font-black text-amber-300">${worldAvg.kerosene.toFixed(3)}<span className="text-[10px] font-normal text-gray-400">/L</span></span>
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl px-3 py-1.5">
+                    <Fuel className="w-3.5 h-3.5 text-amber-500" />
+                    <span className="text-xs font-medium text-gray-600">Kerosene</span>
+                    <span className="text-sm font-black text-amber-600">${worldAvg.kerosene.toFixed(3)}<span className="text-[10px] font-bold text-gray-400 ml-0.5">/L</span></span>
                   </div>
                 )}
               </div>
