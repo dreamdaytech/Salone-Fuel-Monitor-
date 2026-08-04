@@ -513,33 +513,48 @@ export default function PriceTrends() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-surface-900 mb-2 tracking-tight">Price Trends</h1>
-          <p className="text-gray-500 font-medium">Historical official fuel prices across Sierra Leone with interactive analytics</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Link
-            to="/barrel-vs-fuel"
-            className="flex items-center justify-center gap-2 bg-[#0072C6] hover:bg-[#005aa0] text-white px-5 py-2.5 rounded-2xl text-sm font-semibold shadow-sm transition-all"
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span>Barrel vs Fuel</span>
-          </Link>
-          <button
-            onClick={handleExportPDF}
-            disabled={isExporting || globalHistoryLoading || filteredData.length === 0}
-            className="flex items-center justify-center gap-2 bg-surface-900 text-white hover:bg-black px-5 py-2.5 rounded-2xl text-sm font-semibold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isExporting ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            <span>Export Report</span>
-          </button>
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] rounded-3xl p-6 sm:p-8 mb-8 text-white shadow-xl shadow-blue-900/10">
+        <div 
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ 
+            backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+            backgroundSize: '60px 60px' 
+          }} 
+        />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-white/10 p-2.5 rounded-xl border border-white/20 backdrop-blur-sm">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <p className="text-blue-100 text-sm font-semibold uppercase tracking-wider">Analytics</p>
+            </div>
+            <h1 className="text-3xl font-black text-white mb-2 tracking-tight">Price Trends</h1>
+            <p className="text-blue-100 font-medium max-w-2xl">Historical official fuel prices across Sierra Leone with interactive analytics</p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Link
+              to="/barrel-vs-fuel"
+              className="flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-5 py-3 rounded-2xl text-sm font-semibold shadow-sm transition-all"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Barrel vs Fuel</span>
+            </Link>
+            <button
+              onClick={handleExportPDF}
+              disabled={isExporting || globalHistoryLoading || filteredData.length === 0}
+              className="flex items-center justify-center gap-2 bg-white text-[#005aa0] hover:bg-gray-50 px-5 py-3 rounded-2xl text-sm font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? (
+                <RefreshCw className="w-4 h-4 animate-spin text-[#005aa0]" />
+              ) : (
+                <Download className="w-4 h-4 text-[#005aa0]" />
+              )}
+              <span>Export Report</span>
+            </button>
+          </div>
         </div>
       </div>
 
