@@ -75,7 +75,7 @@ export default function BarrelVsFuel() {
   const [records, setRecords] = useState<BarrelFuelSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [benchmark, setBenchmark] = useState<Benchmark>('brentUSD');
-  const [viewMode, setViewMode] = useState<ViewMode>('chart');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [seeded, setSeeded] = useState(false);
   const [filterYear, setFilterYear] = useState<string>('all');
   const [filterMonth, setFilterMonth] = useState<string>('all');
