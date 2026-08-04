@@ -6,7 +6,8 @@ import {
 } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Plus, Edit2, Trash2, Calendar, DollarSign, Fuel, AlertCircle, X, ChevronRight, BarChart3, Save, AlertTriangle
+  Plus, Pencil, Trash2, X, Save, BarChart3,
+  ArrowLeft, ChevronRight, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -66,7 +67,7 @@ export default function AdminBarrelVsFuel() {
 
   // Live listener
   useEffect(() => {
-    const q = query(collection(db, 'barrelFuelSnapshots'), orderBy('date', 'desc'));
+    const q = query(collection(db, 'barrelFuelSnapshots'), orderBy('date', 'asc'));
     const unsub = onSnapshot(q, (snap) => {
       setRecords(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
       setLoading(false);
@@ -196,82 +197,190 @@ export default function AdminBarrelVsFuel() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Barrel vs Fuel</h2>
-          <p className="text-gray-500">Manage historical price snapshots</p>
-        </div>
-        <button
-          onClick={openAdd}
-          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-sm"
-        >
-          <Plus className="w-4 h-4" /> Add Record
-        </button>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-semibold">Month</th>
-                <th className="text-right px-4 py-3 font-semibold">Brent</th>
-                <th className="text-right px-4 py-3 font-semibold">WTI</th>
-                <th className="text-right px-4 py-3 font-semibold">OPEC</th>
-                <th className="text-right px-4 py-3 font-semibold">Petrol</th>
-                <th className="text-right px-4 py-3 font-semibold">Diesel</th>
-                <th className="text-right px-4 py-3 font-semibold">Kerosene</th>
-                <th className="text-center px-4 py-3 font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {records.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900">{r.monthLabel}</td>
-                  <td className="px-4 py-3 text-right font-mono text-gray-600">${r.brentUSD}</td>
-                  <td className="px-4 py-3 text-right font-mono text-gray-600">${r.wtiUSD}</td>
-                  <td className="px-4 py-3 text-right font-mono text-gray-600">${r.opecUSD}</td>
-                  <td className="px-4 py-3 text-right font-mono text-gray-900 font-semibold">{r.petrolNLe}</td>
-                  <td className="px-4 py-3 text-right font-mono text-gray-900 font-semibold">{r.dieselNLe}</td>
-                  <td className="px-4 py-3 text-right font-mono text-gray-900 font-semibold">{r.keroseneNLe}</td>
-                  <td className="px-4 py-3 flex justify-center gap-2">
-                    <button onClick={() => openEdit(r)} className="p-1.5 text-gray-500 hover:text-primary transition-colors">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => setDeleteId(r.id)} className="p-1.5 text-gray-500 hover:text-red-500 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="min-h-screen bg-surface-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#0072C6] to-[#005aa0] shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center gap-3 text-blue-200 text-sm mb-3">
+            <Link to="/admin" className="hover:text-white transition-colors">Admin Dashboard</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-white font-medium">Barrel vs Fuel</span>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-extrabold text-white">Barrel vs Fuel — Manage Records</h1>
+              <p className="text-blue-200 text-sm mt-1">
+                Add, edit or delete barrel & fuel price snapshots. {records.length} record{records.length !== 1 ? 's' : ''} total.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                to="/barrel-vs-fuel"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm border border-white/20 transition-colors"
+              >
+                <BarChart3 className="h-4 w-4" />
+                View Public Page
+              </Link>
+              <button
+                onClick={openAdd}
+                className="flex items-center gap-2 bg-[#1EB53A] hover:bg-[#18a033] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow"
+              >
+                <Plus className="h-4 w-4" />
+                Add Record
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Modals */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {records.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center">
+            <BarChart3 className="h-14 w-14 text-gray-200 mx-auto mb-4" />
+            <p className="text-gray-500 mb-4">No records yet. Add the first snapshot.</p>
+            <button onClick={openAdd} className="bg-primary text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
+              + Add First Record
+            </button>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold">Month</th>
+                    <th className="text-right px-4 py-3 font-semibold">Brent</th>
+                    <th className="text-right px-4 py-3 font-semibold">WTI</th>
+                    <th className="text-right px-4 py-3 font-semibold">OPEC</th>
+                    <th className="text-right px-4 py-3 font-semibold">Petrol</th>
+                    <th className="text-right px-4 py-3 font-semibold">Diesel</th>
+                    <th className="text-right px-4 py-3 font-semibold">Kerosene</th>
+                    <th className="text-left px-4 py-3 font-semibold">Notes</th>
+                    <th className="text-center px-4 py-3 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {records.map((r) => (
+                    <tr key={r.id} className="hover:bg-blue-50/20 transition-colors">
+                      <td className="px-4 py-3 font-semibold text-gray-900">{r.monthLabel}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#0072C6]">${r.brentUSD}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#10B981]">${r.wtiUSD}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#F59E0B]">${r.opecUSD}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#EF4444]">Le {r.petrolNLe > 0 ? r.petrolNLe : '—'}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#8B5CF6]">Le {r.dieselNLe > 0 ? r.dieselNLe : '—'}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#F97316]">Le {r.keroseneNLe > 0 ? r.keroseneNLe : '—'}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs italic max-w-[140px] truncate">{r.notes || '—'}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => openEdit(r)}
+                            className="flex items-center gap-1 text-blue-600 hover:bg-blue-50 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border border-blue-100"
+                          >
+                            <Pencil className="h-3.5 w-3.5" /> Edit
+                          </button>
+                          <button
+                            onClick={() => setDeleteId(r.id)}
+                            className="flex items-center gap-1 text-red-500 hover:bg-red-50 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border border-red-100"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" /> Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ---- Add / Edit Modal ---- */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Edit Record' : 'Add Record'}</h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              <h2 className="text-lg font-bold text-gray-900">
+                {editingId ? 'Edit Record' : 'Add New Record'}
+              </h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="p-6 space-y-4">
-              <label className="block text-sm font-medium text-gray-700">Date</label>
-              <input type="date" name="dateStr" value={form.dateStr} onChange={handleDateChange} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20" />
+            <div className="p-6 space-y-5">
+              {/* Date */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Date <span className="text-red-500">*</span></label>
+                <input
+                  type="date"
+                  name="dateStr"
+                  value={form.dateStr}
+                  onChange={handleDateChange}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                {form.monthLabel && (
+                  <p className="text-xs text-gray-400 mt-1">Will display as: <strong>{form.monthLabel}</strong></p>
+                )}
+              </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <input type="number" name="brentUSD" placeholder="Brent USD" value={form.brentUSD} onChange={handleChange} className="border p-2 rounded text-sm" />
-                <input type="number" name="wtiUSD" placeholder="WTI USD" value={form.wtiUSD} onChange={handleChange} className="border p-2 rounded text-sm" />
-                <input type="number" name="opecUSD" placeholder="OPEC USD" value={form.opecUSD} onChange={handleChange} className="border p-2 rounded text-sm" />
+              {/* Barrel Prices */}
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">🛢️ Global Barrel Prices (USD/bbl)</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { key: 'brentUSD', label: 'Brent Crude', color: '#0072C6' },
+                    { key: 'wtiUSD', label: 'WTI Crude', color: '#10B981' },
+                    { key: 'opecUSD', label: 'OPEC Basket', color: '#F59E0B' },
+                  ].map(({ key, label, color }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium mb-1" style={{ color }}>{label}</label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">$</span>
+                        <input
+                          type="number"
+                          name={key}
+                          value={(form as any)[key] || ''}
+                          onChange={handleChange}
+                          placeholder="0.00"
+                          step="0.01"
+                          className="w-full border border-gray-200 rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-primary"
+                          style={{ '--tw-ring-color': color + '40' } as any}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <input type="number" name="petrolNLe" placeholder="Petrol NLe" value={form.petrolNLe} onChange={handleChange} className="border p-2 rounded text-sm" />
-                <input type="number" name="dieselNLe" placeholder="Diesel NLe" value={form.dieselNLe} onChange={handleChange} className="border p-2 rounded text-sm" />
-                <input type="number" name="keroseneNLe" placeholder="Kerosene NLe" value={form.keroseneNLe} onChange={handleChange} className="border p-2 rounded text-sm" />
+
+              {/* Fuel Prices */}
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">⛽ Sierra Leone Pump Prices (NLe/L)</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { key: 'petrolNLe', label: 'Petrol', color: '#EF4444' },
+                    { key: 'dieselNLe', label: 'Diesel', color: '#8B5CF6' },
+                    { key: 'keroseneNLe', label: 'Kerosene', color: '#F97316' },
+                  ].map(({ key, label, color }) => (
+                    <div key={key}>
+                      <label className="block text-xs font-medium mb-1" style={{ color }}>{label}</label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">Le</span>
+                        <input
+                          type="number"
+                          name={key}
+                          value={(form as any)[key] || ''}
+                          onChange={handleChange}
+                          placeholder="0"
+                          step="0.5"
+                          className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:border-primary"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
+
+              {/* Notes */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Notes (optional)</label>
                 <textarea
