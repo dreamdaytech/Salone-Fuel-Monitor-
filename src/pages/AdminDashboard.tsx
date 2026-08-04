@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, where, limit } from '../firebase';
 import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft, BarChart2, DollarSign, FileText } from 'lucide-react';
@@ -1180,6 +1180,15 @@ export default function AdminDashboard() {
               <FileText className={`w-5 h-5 shrink-0 ${activeTab === 'blog' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Blog Management</span>}
             </Button>
+
+            {/* Barrel vs Fuel — external link to dedicated page */}
+            <Link
+              to="/admin/barrel-vs-fuel"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative text-gray-400 hover:bg-white/5 hover:text-white"
+            >
+              <BarChart2 className="w-5 h-5 shrink-0 group-hover:text-white" />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Barrel vs Fuel</span>}
+            </Link>
 
             <Button 
               onClick={() => { setActiveTab('reports'); setIsMobileMenuOpen(false); }}
