@@ -78,12 +78,26 @@ export default function CalculatorPage() {
   return (
     <PageTransition>
       <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="inline-flex items-center justify-center p-3 bg-emerald-100 rounded-2xl mb-4 text-emerald-600">
-            <Calculator className="w-8 h-8" />
+        {/* Hero Banner */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] rounded-3xl p-8 sm:p-12 mb-12 text-white shadow-xl shadow-blue-900/10 text-center">
+          <div 
+            className="absolute inset-0 opacity-10 pointer-events-none"
+            style={{ 
+              backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+              backgroundSize: '60px 60px' 
+            }} 
+          />
+          <div className="relative z-10 max-w-2xl mx-auto">
+            <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-2xl mb-6 text-white border border-white/20 backdrop-blur-sm">
+              <Calculator className="w-8 h-8" />
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-black text-white mb-4 tracking-tight">Fuel Cost Calculator</h1>
+            <p className="text-lg text-blue-100 font-medium">Estimate your travel costs by entering your vehicle's fuel efficiency, distance, and current fuel price.</p>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Fuel Cost Calculator</h1>
-          <p className="text-lg text-gray-600">Estimate your travel costs by entering your vehicle's fuel efficiency, distance, and current fuel price.</p>
+          
+          {/* Decorative Elements */}
+          <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
         </div>
 
         <div className="bg-white rounded-[2rem] p-6 sm:p-8 shadow-xl border border-gray-100">
