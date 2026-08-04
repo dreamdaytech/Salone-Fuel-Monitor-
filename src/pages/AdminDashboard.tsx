@@ -1024,7 +1024,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('overview'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'overview' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1038,7 +1038,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('stations'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'stations' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1052,7 +1052,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('submitted_stations'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'submitted_stations' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1066,7 +1066,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('map'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'map' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1080,7 +1080,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'users' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1094,7 +1094,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('price_trends'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'price_trends' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1108,7 +1108,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('transport'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'transport' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1123,7 +1123,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('regional'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'regional' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1137,7 +1137,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('market_intel'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'market_intel' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1153,7 +1153,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('barrel_vs_fuel'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'barrel_vs_fuel' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1167,7 +1167,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('exchange_rates'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'exchange_rates' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1181,7 +1181,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('messages'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'messages' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1195,7 +1195,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('blog'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'blog' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1210,7 +1210,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('reports'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'reports' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1233,7 +1233,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('reviews'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'reviews' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
@@ -1248,7 +1248,7 @@ export default function AdminDashboard() {
               onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'settings' 
                   ? 'bg-white/10 text-white' 
                   : 'text-blue-100 hover:bg-white/10 hover:text-white'
