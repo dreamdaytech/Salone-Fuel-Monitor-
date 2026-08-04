@@ -178,8 +178,8 @@ export default function Landing() {
                 )}
 
                 <div className="mt-6 pt-6 border-t border-gray-100">
-                  <Link to="/stations" className="flex items-center justify-between w-full group">
-                    <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">Report Discrepancy</span>
+                  <Link to="/price-trends" className="flex items-center justify-between w-full group">
+                    <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">View Detailed Price Trends</span>
                     <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors group-hover:translate-x-1" />
                   </Link>
                 </div>
