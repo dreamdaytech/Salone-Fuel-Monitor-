@@ -6,7 +6,7 @@ import {
 } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Plus, Edit2, Trash2, Calendar, DollarSign, Fuel, AlertCircle, X, ChevronRight, BarChart3, Save
+  Plus, Edit2, Trash2, Calendar, DollarSign, Fuel, AlertCircle, X, ChevronRight, BarChart3, Save, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
