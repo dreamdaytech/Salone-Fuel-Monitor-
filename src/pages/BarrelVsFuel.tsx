@@ -9,8 +9,12 @@ import {
 } from 'recharts';
 import {
   TrendingUp, Table as TableIcon, LineChart as LineChartIcon,
-  BarChart3, DollarSign, Fuel, ArrowRight
+  BarChart3, DollarSign, Fuel, ArrowRight, Download, RefreshCw
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { getLogoBase64, drawPdfHeader } from '../utils/pdfUtils';
+import { toCanvas } from 'html-to-image';
 
 // ---------- types ----------
 interface BarrelFuelSnapshot {
@@ -79,6 +83,8 @@ export default function BarrelVsFuel() {
   const [seeded, setSeeded] = useState(false);
   const [filterYear, setFilterYear] = useState<string>('all');
   const [filterMonth, setFilterMonth] = useState<string>('all');
+  const [isExporting, setIsExporting] = useState(false);
+  const chartRef = React.useRef<HTMLDivElement>(null);
 
   // Seed initial data if collection is empty
   useEffect(() => {
@@ -181,6 +187,20 @@ export default function BarrelVsFuel() {
               >
                 ← Back to Price Trends
               </Link>
+
+              <button
+                onClick={handleExportPDF}
+                disabled={isExporting || loading || filteredRecords.length === 0}
+                className="flex items-center justify-center gap-2 bg-white text-[#005aa0] hover:bg-gray-50 px-5 py-2.5 rounded-2xl text-sm font-bold shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/20"
+              >
+                {isExporting ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-[#005aa0]" />
+                ) : (
+                  <Download className="w-4 h-4 text-[#005aa0]" />
+                )}
+                <span>Export Report</span>
+              </button>
+
             </div>
           </div>
         </div>
