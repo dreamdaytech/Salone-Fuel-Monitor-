@@ -977,14 +977,22 @@ export default function AdminDashboard() {
 
         {/* Sidebar */}
         <aside 
-          className={`bg-surface-900 text-gray-400 transition-all duration-300 flex flex-col fixed md:sticky top-0 h-screen z-50 md:z-40 w-64 ${
+          className={`relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] text-blue-100 transition-all duration-300 flex flex-col fixed md:sticky top-0 h-screen z-50 md:z-40 w-64 border-r border-white/10 ${
             isSidebarCollapsed ? 'md:w-20' : 'md:w-64'
           } ${
             isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
         >
+          {/* Background Overlay */}
+          <div 
+            className="absolute inset-0 opacity-10 pointer-events-none"
+            style={{ 
+              backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+              backgroundSize: '60px 60px' 
+            }} 
+          />
           {/* Logo Section */}
-          <div className="p-6 flex items-center justify-between">
+          <div className="relative p-6 flex items-center justify-between z-10">
             {(!isSidebarCollapsed || isMobileMenuOpen) && (
               <div className="flex items-center gap-2">
                 <div className="bg-primary p-1.5 rounded-lg">
@@ -1011,7 +1019,7 @@ export default function AdminDashboard() {
             </Button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-2">
+          <nav className="relative flex-1 overflow-y-auto py-4 px-3 space-y-2 z-10">
             <Button 
               onClick={() => { setActiveTab('overview'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -1019,7 +1027,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'overview' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'overview' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1033,7 +1041,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'stations' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'stations' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1047,7 +1055,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'submitted_stations' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'submitted_stations' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1061,7 +1069,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'map' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'map' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1075,7 +1083,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'users' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'users' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1089,7 +1097,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'price_trends' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'price_trends' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1103,7 +1111,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'transport' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'transport' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1118,7 +1126,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'regional' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'regional' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1132,7 +1140,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'market_intel' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'market_intel' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1148,7 +1156,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'barrel_vs_fuel' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'barrel_vs_fuel' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1162,7 +1170,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'exchange_rates' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'exchange_rates' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1176,7 +1184,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'messages' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'messages' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1190,7 +1198,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'blog' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'blog' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1205,7 +1213,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'reports' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'reports' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1228,7 +1236,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'reviews' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'reviews' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1243,7 +1251,7 @@ export default function AdminDashboard() {
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                 activeTab === 'settings' 
                   ? 'bg-white/10 text-white' 
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
               }`}
             >
               {activeTab === 'settings' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
@@ -1258,7 +1266,7 @@ export default function AdminDashboard() {
               onClick={() => window.location.href = '#/'}
               showNotification={false}
               variant="ghost"
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all duration-200"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-100 hover:bg-white/10 hover:text-white transition-all duration-200"
             >
               <LogOut className="w-5 h-5 shrink-0" />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-medium text-sm">Sign Out</span>}
@@ -1873,27 +1881,34 @@ export default function AdminDashboard() {
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Welcome Banner */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-surface-900 to-surface-800 rounded-3xl p-8 text-white shadow-2xl shadow-slate-200">
+                <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] rounded-3xl p-8 text-white shadow-lg shadow-blue-900/10">
+                  <div 
+                    className="absolute inset-0 opacity-10 pointer-events-none"
+                    style={{ 
+                      backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+                      backgroundSize: '60px 60px' 
+                    }} 
+                  />
                   <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
                       <h2 className="text-3xl font-bold mb-2 tracking-tight">Welcome back, {profile?.name?.split(' ')[0]}! 👋</h2>
-                      <p className="text-slate-400 max-w-md leading-relaxed">
+                      <p className="text-blue-100 max-w-md leading-relaxed">
                         Here's what's happening with the Salone Fuel Monitor platform today. You have {stations.filter(s => !s.isVerified).length} stations waiting for verification.
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                        <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">System Status</div>
+                      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                        <div className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-1">System Status</div>
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                          <span className="text-sm font-bold">All Systems Operational</span>
+                          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                          <span className="text-sm font-bold text-white">All Systems Operational</span>
                         </div>
                       </div>
                     </div>
                   </div>
                   {/* Decorative Elements */}
-                  <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-primary/10 rounded-full blur-3xl"></div>
-                  <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
+                  <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+                  <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
                 </div>
 
                 {/* Stats Grid */}

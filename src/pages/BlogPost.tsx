@@ -170,7 +170,6 @@ export default function BlogPost() {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </main>
-      <Footer />
     </div>
   );
 }

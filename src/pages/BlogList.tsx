@@ -137,7 +137,6 @@ export default function BlogList() {
         </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 }

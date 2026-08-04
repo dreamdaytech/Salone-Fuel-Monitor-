@@ -11,7 +11,6 @@ import {
   TrendingUp, Table as TableIcon, LineChart as LineChartIcon,
   BarChart3, DollarSign, Fuel, ArrowRight
 } from 'lucide-react';
-import Footer from '../components/Footer';
 
 // ---------- types ----------
 interface BarrelFuelSnapshot {
@@ -428,7 +427,6 @@ export default function BarrelVsFuel() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }
