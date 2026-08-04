@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getLogoBase64, drawPdfHeader } from '../utils/pdfUtils';
 import { toCanvas } from 'html-to-image';
 import {
   REGIONAL_COUNTRIES, computeRegionalData, getMockHistoricalData,
@@ -530,32 +531,16 @@ export default function RegionalComparison() {
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
+      const logo = await getLogoBase64();
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth  = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 14;
-      let currentY = 0;
+      let currentY = drawPdfHeader(pdf, 'West Africa Regional Fuel Comparison', logo);
 
       const fuelLabel = fuel.charAt(0).toUpperCase() + fuel.slice(1);
       const currencyLabel = currency === 'usd' ? 'USD Equivalent' : 'Local Currency';
       const viewLabel = VIEW_MODES.find(v => v.id === viewMode)?.label || viewMode;
-
-      // ── Brand Header Banner ──
-      pdf.setFillColor(0, 114, 198); // Sierra Leone Blue
-      pdf.rect(0, 0, pageWidth, 28, 'F');
-      pdf.setFillColor(30, 181, 58);  // Sierra Leone Green
-      pdf.rect(0, 28, pageWidth, 2, 'F');
-
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(255, 255, 255);
-      pdf.text('Salone Fuel Monitor', margin, 18);
-
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('WEST AFRICA REGIONAL FUEL COMPARISON', pageWidth - margin, 18, { align: 'right' });
-
-      currentY = 42;
 
       // ── Report Title ──
       pdf.setFontSize(22);

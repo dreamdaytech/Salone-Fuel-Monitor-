@@ -20,6 +20,7 @@ import { Button } from '../components/ui/Button';
 import { NotificationService } from '../services/NotificationService';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getLogoBase64, drawPdfHeader } from '../utils/pdfUtils';
 import { toCanvas } from 'html-to-image';
 import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
 
@@ -97,33 +98,13 @@ export default function AdminDashboard() {
     if (!selectedStation) return;
     
     try {
+      const logo = await getLogoBase64();
       const doc = new jsPDF('p', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       const margin = 14;
       
-      let currentY = 0;
-
-      // --- Brand Header Banner ---
-      doc.setFillColor(0, 114, 198); // Sierra Leone Blue
-      doc.rect(0, 0, pageWidth, 28, 'F');
-      
-      // Green Accent line at the bottom of the header
-      doc.setFillColor(30, 181, 58); // Sierra Leone Green
-      doc.rect(0, 28, pageWidth, 2, 'F');
-      
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.text('Salone Fuel Monitor', margin, 18);
-      
-      // Subtitle / Label in header
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(255, 255, 255); // White
-      doc.text('STATION PRICE HISTORY', pageWidth - margin, 18, { align: 'right' });
-
-      currentY = 42;
+      let currentY = drawPdfHeader(doc, 'Station Price History', logo);
 
       // --- Report Title & Meta ---
       doc.setFontSize(22);

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { getLogoBase64, drawPdfHeader } from '../utils/pdfUtils';
 import { toCanvas } from 'html-to-image';
 
 interface TransportPrice {
@@ -234,33 +235,13 @@ export default function TransportTrends() {
     try {
       setIsExporting(true);
       
+      const logo = await getLogoBase64();
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 14;
       
-      let currentY = 0;
-
-      // --- Brand Header Banner ---
-      pdf.setFillColor(0, 114, 198); // Sierra Leone Blue
-      pdf.rect(0, 0, pageWidth, 28, 'F');
-      
-      // Green Accent line at the bottom of the header
-      pdf.setFillColor(30, 181, 58); // Sierra Leone Green
-      pdf.rect(0, 28, pageWidth, 2, 'F');
-      
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(255, 255, 255);
-      pdf.text('Salone Fuel Monitor', margin, 18);
-      
-      // Subtitle / Label in header
-      pdf.setFontSize(10);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(255, 255, 255); // White
-      pdf.text('OFFICIAL TRANSPORT TRENDS REPORT', pageWidth - margin, 18, { align: 'right' });
-
-      currentY = 42;
+      let currentY = drawPdfHeader(pdf, 'Official Transport Trends Report', logo);
 
       // --- Report Title & Meta ---
       pdf.setFontSize(22);
