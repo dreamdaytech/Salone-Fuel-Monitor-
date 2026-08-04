@@ -53,19 +53,21 @@ const SEED_RECORDS = [
   },
 ];
 
-type Benchmark = 'brentUSD' | 'wtiUSD' | 'opecUSD';
+type Benchmark = 'brentUSD' | 'wtiUSD' | 'opecUSD' | 'averageUSD';
 type ViewMode = 'chart' | 'table';
 
 const BENCHMARK_LABELS: Record<Benchmark, string> = {
   brentUSD: 'Brent Crude',
   wtiUSD: 'WTI Crude',
   opecUSD: 'OPEC Basket',
+  averageUSD: 'Combined Average',
 };
 
 const BENCHMARK_COLORS: Record<Benchmark, string> = {
   brentUSD: '#0072C6',
   wtiUSD: '#10B981',
   opecUSD: '#F59E0B',
+  averageUSD: '#8B5CF6',
 };
 
 // ---------- component ----------
@@ -139,13 +141,17 @@ export default function BarrelVsFuel() {
   });
 
   // Chart data: merge barrel + fuel on same x-axis point
-  const chartData = filteredRecords.map((r) => ({
-    label: r.monthLabel,
-    barrel: r[benchmark] ?? null,
-    Petrol: r.petrolNLe || null,
-    Diesel: r.dieselNLe || null,
-    Kerosene: r.keroseneNLe || null,
-  }));
+  const chartData = filteredRecords.map((r) => {
+    const avgUSD = (r.brentUSD + r.wtiUSD + r.opecUSD) / 3;
+    return {
+      label: r.monthLabel,
+      barrel: benchmark === 'averageUSD' ? avgUSD : r[benchmark] ?? null,
+      Petrol: r.petrolNLe || null,
+      Diesel: r.dieselNLe || null,
+      Kerosene: r.keroseneNLe || null,
+      averageUSD: avgUSD,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-surface-50">
@@ -193,17 +199,18 @@ export default function BarrelVsFuel() {
           const opecDiff = prev ? latest.opecUSD - prev.opecUSD : 0;
           const petrolDiff = prev ? latest.petrolNLe - prev.petrolNLe : 0;
           
-          const avgBrent = filteredRecords.reduce((sum, r) => sum + r.brentUSD, 0) / filteredRecords.length;
-          const avgWTI = filteredRecords.reduce((sum, r) => sum + r.wtiUSD, 0) / filteredRecords.length;
-          const avgOPEC = filteredRecords.reduce((sum, r) => sum + r.opecUSD, 0) / filteredRecords.length;
+          const latestAvg = (latest.brentUSD + latest.wtiUSD + latest.opecUSD) / 3;
+          const prevAvg = prev ? (prev.brentUSD + prev.wtiUSD + prev.opecUSD) / 3 : 0;
+          const avgDiff = prev ? latestAvg - prevAvg : 0;
 
           return (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
               {[
-                { label: 'Brent Crude', value: `$${latest.brentUSD}`, unit: '/bbl', diff: brentDiff, avg: avgBrent, icon: DollarSign, color: '#0072C6' },
-                { label: 'WTI Crude', value: `$${latest.wtiUSD}`, unit: '/bbl', diff: wtiDiff, avg: avgWTI, icon: DollarSign, color: '#10B981' },
-                { label: 'OPEC Basket', value: `$${latest.opecUSD}`, unit: '/bbl', diff: opecDiff, avg: avgOPEC, icon: DollarSign, color: '#F59E0B' },
-                { label: 'Petrol (latest)', value: `Le ${latest.petrolNLe}`, unit: '/L', diff: petrolDiff, avg: null, icon: Fuel, color: '#EF4444' },
+                { label: 'Brent Crude', value: `$${latest.brentUSD}`, unit: '/bbl', diff: brentDiff, icon: DollarSign, color: '#0072C6' },
+                { label: 'WTI Crude', value: `$${latest.wtiUSD}`, unit: '/bbl', diff: wtiDiff, icon: DollarSign, color: '#10B981' },
+                { label: 'OPEC Basket', value: `$${latest.opecUSD}`, unit: '/bbl', diff: opecDiff, icon: DollarSign, color: '#F59E0B' },
+                { label: 'Combined Average', value: `$${latestAvg.toFixed(2)}`, unit: '/bbl', diff: avgDiff, icon: DollarSign, color: '#8B5CF6' },
+                { label: 'Petrol (latest)', value: `Le ${latest.petrolNLe}`, unit: '/L', diff: petrolDiff, icon: Fuel, color: '#EF4444' },
               ].map((kpi) => (
                 <div key={kpi.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                   <div className="flex items-center gap-2 mb-1">
@@ -213,14 +220,11 @@ export default function BarrelVsFuel() {
                   <div className="text-xl font-bold text-gray-900">{kpi.value}<span className="text-xs text-gray-400 font-normal ml-1">{kpi.unit}</span></div>
                   {kpi.diff !== 0 && (
                     <div className={`text-xs mt-1 font-medium ${kpi.diff > 0 ? 'text-red-500' : 'text-green-600'}`}>
-                      {kpi.diff > 0 ? '▲' : '▼'} {Math.abs(kpi.diff).toFixed(1)} vs prev
+                      {kpi.diff > 0 ? '▲' : '▼'} {Math.abs(kpi.diff).toFixed(2)} vs prev
                     </div>
                   )}
                   <div className="flex items-center justify-between text-xs text-gray-400 mt-2 pt-2 border-t border-gray-50">
                     <span>as of {latest.monthLabel}</span>
-                    {kpi.avg !== null && (
-                      <span className="font-medium" style={{ color: kpi.color }}>Avg: ${kpi.avg.toFixed(2)}</span>
-                    )}
                   </div>
                 </div>
               ))}
@@ -375,28 +379,33 @@ export default function BarrelVsFuel() {
                 <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
                   <tr>
                     <th className="text-left px-4 py-3 font-semibold">Month</th>
-                    <th className="text-right px-4 py-3 font-semibold">Brent ($/bbl)</th>
-                    <th className="text-right px-4 py-3 font-semibold">WTI ($/bbl)</th>
-                    <th className="text-right px-4 py-3 font-semibold">OPEC ($/bbl)</th>
-                    <th className="text-right px-4 py-3 font-semibold">Petrol (NLe/L)</th>
-                    <th className="text-right px-4 py-3 font-semibold">Diesel (NLe/L)</th>
-                    <th className="text-right px-4 py-3 font-semibold">Kerosene (NLe/L)</th>
+                    <th className="text-right px-4 py-3 font-semibold text-[#0072C6]">Brent ($)</th>
+                    <th className="text-right px-4 py-3 font-semibold text-[#10B981]">WTI ($)</th>
+                    <th className="text-right px-4 py-3 font-semibold text-[#F59E0B]">OPEC ($)</th>
+                    <th className="text-right px-4 py-3 font-semibold text-[#8B5CF6]">Average ($)</th>
+                    <th className="text-right px-4 py-3 font-semibold">Petrol (Le)</th>
+                    <th className="text-right px-4 py-3 font-semibold">Diesel (Le)</th>
+                    <th className="text-right px-4 py-3 font-semibold">Kerosene (Le)</th>
                     <th className="text-left px-4 py-3 font-semibold">Notes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
-                  {filteredRecords.map((r, i) => (
-                    <tr key={r.id} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
-                      <td className="px-4 py-3 font-semibold text-gray-900">{r.monthLabel}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[#0072C6] font-semibold">${r.brentUSD}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[#10B981] font-semibold">${r.wtiUSD}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[#F59E0B] font-semibold">${r.opecUSD}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[#EF4444]">Le {r.petrolNLe > 0 ? r.petrolNLe : '—'}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[#8B5CF6]">Le {r.dieselNLe > 0 ? r.dieselNLe : '—'}</td>
-                      <td className="px-4 py-3 text-right font-mono text-[#F97316]">Le {r.keroseneNLe > 0 ? r.keroseneNLe : '—'}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs italic">{r.notes || '—'}</td>
-                    </tr>
-                  ))}
+                  {filteredRecords.map((r, i) => {
+                    const avgUSD = (r.brentUSD + r.wtiUSD + r.opecUSD) / 3;
+                    return (
+                      <tr key={r.id} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                        <td className="px-4 py-3 font-semibold text-gray-900">{r.monthLabel}</td>
+                        <td className="px-4 py-3 text-right font-mono text-[#0072C6] font-semibold">${r.brentUSD}</td>
+                        <td className="px-4 py-3 text-right font-mono text-[#10B981] font-semibold">${r.wtiUSD}</td>
+                        <td className="px-4 py-3 text-right font-mono text-[#F59E0B] font-semibold">${r.opecUSD}</td>
+                        <td className="px-4 py-3 text-right font-mono text-[#8B5CF6] font-semibold">${avgUSD.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right font-mono text-gray-600">Le {r.petrolNLe}</td>
+                        <td className="px-4 py-3 text-right font-mono text-gray-600">Le {r.dieselNLe}</td>
+                        <td className="px-4 py-3 text-right font-mono text-gray-600">Le {r.keroseneNLe}</td>
+                        <td className="px-4 py-3 text-gray-500">{r.notes || '-'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
