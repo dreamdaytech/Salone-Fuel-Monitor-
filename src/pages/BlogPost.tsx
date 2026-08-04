@@ -155,7 +155,7 @@ export default function BlogPost() {
           <img 
             src={post.coverImage} 
             alt={post.title} 
-            className="w-full aspect-[2/1] md:aspect-[21/9] object-cover rounded-[2rem] shadow-2xl border-4 border-white bg-gray-100"
+            className="w-full aspect-[2/1] md:aspect-[21/9] object-contain rounded-[2rem] shadow-2xl border-4 border-white bg-white"
           />
         </div>
       )}

@@ -84,7 +84,7 @@ export default function BlogList() {
                   <img 
                     src={post.coverImage} 
                     alt={post.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-contain bg-white group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-surface-100">
@@ -110,7 +110,7 @@ export default function BlogList() {
                   </div>
                 </div>
 
-                <h2 className="text-xl font-bold text-surface-900 mb-3 group-hover:text-primary transition-colors line-clamp-2">
+                <h2 className="text-xl font-bold text-surface-900 mb-3 group-hover:text-primary transition-colors">
                   {post.title}
                 </h2>
                 

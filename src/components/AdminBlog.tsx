@@ -15,7 +15,9 @@ export default function AdminBlog() {
   
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<BlogPost> | null>(null);
+  const [customDate, setCustomDate] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [postToDelete, setPostToDelete] = useState<{id: string, title: string} | null>(null);
 
   // Load posts
   useEffect(() => {
@@ -47,23 +49,35 @@ export default function AdminBlog() {
       seoTitle: '',
       seoDescription: ''
     });
+    setCustomDate('');
     setIsEditing(true);
   };
 
   const handleEdit = (post: BlogPost) => {
     setEditForm(post);
+    if (post.publishedAt?.toDate) {
+      const d = post.publishedAt.toDate();
+      setCustomDate(new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16));
+    } else {
+      setCustomDate('');
+    }
     setIsEditing(true);
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`Are you sure you want to delete the post "${title}"? This cannot be undone.`)) return;
-    
+  const handleDelete = (id: string, title: string) => {
+    setPostToDelete({ id, title });
+  };
+
+  const confirmDelete = async () => {
+    if (!postToDelete) return;
     try {
-      await deleteDoc(doc(db, 'blog_posts', id));
+      await deleteDoc(doc(db, 'blog_posts', postToDelete.id));
       toast.success('Post deleted successfully');
     } catch (err) {
       console.error(err);
       toast.error('Failed to delete post');
+    } finally {
+      setPostToDelete(null);
     }
   };
 
@@ -127,6 +141,54 @@ export default function AdminBlog() {
     reader.readAsDataURL(file);
   };
 
+  const handleContentImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/webp', 0.8);
+        const imgTag = `<br/><img src="${dataUrl}" alt="Blog content image" style="max-width: 100%; border-radius: 8px; margin: 1rem 0;" /><br/>`;
+        setEditForm(prev => prev ? { ...prev, content: (prev.content || '') + imgTag } : prev);
+        toast.success('Image added to content');
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    // Reset input so the same file can be selected again
+    e.target.value = '';
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editForm || !editForm.title || !editForm.slug || !editForm.content) {
@@ -158,9 +220,15 @@ export default function AdminBlog() {
         payload.authorName = profile?.name || 'Admin';
       }
 
-      if (editForm.isPublished && !editForm.publishedAt) {
-        payload.publishedAt = serverTimestamp();
-      } else if (!editForm.isPublished) {
+      if (editForm.isPublished) {
+        if (customDate) {
+          payload.publishedAt = new Date(customDate);
+        } else if (!editForm.publishedAt) {
+          payload.publishedAt = serverTimestamp();
+        } else {
+          payload.publishedAt = editForm.publishedAt;
+        }
+      } else {
         payload.publishedAt = null;
       }
 
@@ -276,8 +344,12 @@ export default function AdminBlog() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-surface-900 flex justify-between">
+            <label className="text-sm font-semibold text-surface-900 flex justify-between items-center">
               <span>Content *</span>
+              <label className="cursor-pointer text-primary hover:text-primary/80 flex items-center gap-1.5 text-xs bg-primary/10 px-3 py-1.5 rounded-md transition-colors">
+                <Upload className="w-3.5 h-3.5" /> Insert Local Image
+                <input type="file" accept="image/*" className="hidden" onChange={handleContentImageUpload} />
+              </label>
             </label>
             <div className="prose-editor">
               <Editor
@@ -325,7 +397,7 @@ export default function AdminBlog() {
               </div>
             </div>
 
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -333,8 +405,21 @@ export default function AdminBlog() {
                   onChange={e => setEditForm({ ...editForm, isPublished: e.target.checked })}
                   className="w-5 h-5 text-primary rounded focus:ring-primary"
                 />
-                <span className="font-semibold text-surface-900">Publish immediately</span>
+                <span className="font-semibold text-surface-900">Publish Post</span>
               </label>
+
+              {editForm.isPublished && (
+                <div className="pl-7 space-y-2">
+                  <label className="text-sm font-semibold text-surface-900">Publication Date (Optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={customDate}
+                    onChange={e => setCustomDate(e.target.value)}
+                    className="w-full md:w-64 px-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p className="text-xs text-gray-500">Leave empty to use current time, or pick a past/future date.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -456,6 +541,32 @@ export default function AdminBlog() {
           </table>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {postToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+            <h3 className="text-xl font-bold text-surface-900 mb-2">Delete Post?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete the post "{postToDelete.title}"? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPostToDelete(null)}
+                className="px-4 py-2 text-surface-600 font-semibold hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
