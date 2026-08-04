@@ -16,6 +16,7 @@ import AdminRegionalPrices from '../components/AdminRegionalPrices';
 import AdminMarketIntelligence from '../components/AdminMarketIntelligence';
 import AdminExchangeRates from '../components/AdminExchangeRates';
 import AdminBlog from '../components/AdminBlog';
+import AdminBarrelVsFuel from './AdminBarrelVsFuel';
 import { Button } from '../components/ui/Button';
 import { NotificationService } from '../services/NotificationService';
 import { jsPDF } from 'jspdf';
@@ -232,7 +233,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog' | 'barrel_vs_fuel'>(initialTab);
 
   useEffect(() => {
     if (activeTab !== initialTab) {
@@ -1139,14 +1140,21 @@ export default function AdminDashboard() {
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Market Intel</span>}
             </Button>
 
-            {/* Barrel vs Fuel — external link to dedicated page */}
-            <Link
-              to="/admin/barrel-vs-fuel"
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative text-gray-400 hover:bg-white/5 hover:text-white"
+            {/* Barrel vs Fuel */}
+            <Button 
+              onClick={() => { setActiveTab('barrel_vs_fuel'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'barrel_vs_fuel' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              }`}
             >
-              <BarChart2 className="w-5 h-5 shrink-0 group-hover:text-white" />
+              {activeTab === 'barrel_vs_fuel' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <BarChart2 className={`w-5 h-5 shrink-0 ${activeTab === 'barrel_vs_fuel' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Barrel vs Fuel</span>}
-            </Link>
+            </Button>
             <Button 
               onClick={() => { setActiveTab('exchange_rates'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -1781,6 +1789,10 @@ export default function AdminDashboard() {
               <div className="p-6 sm:p-8">
                 <AdminBlog />
               </div>
+            )}
+
+            {activeTab === 'barrel_vs_fuel' && (
+              <AdminBarrelVsFuel />
             )}
 
             {activeTab === 'map' && (
