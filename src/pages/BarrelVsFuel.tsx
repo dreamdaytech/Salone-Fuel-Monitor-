@@ -168,14 +168,21 @@ export default function BarrelVsFuel() {
           const latest = records[records.length - 1];
           const prev = records.length > 1 ? records[records.length - 2] : null;
           const brentDiff = prev ? latest.brentUSD - prev.brentUSD : 0;
+          const wtiDiff = prev ? latest.wtiUSD - prev.wtiUSD : 0;
+          const opecDiff = prev ? latest.opecUSD - prev.opecUSD : 0;
           const petrolDiff = prev ? latest.petrolNLe - prev.petrolNLe : 0;
+          
+          const avgBrent = records.reduce((sum, r) => sum + r.brentUSD, 0) / records.length;
+          const avgWTI = records.reduce((sum, r) => sum + r.wtiUSD, 0) / records.length;
+          const avgOPEC = records.reduce((sum, r) => sum + r.opecUSD, 0) / records.length;
+
           return (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Brent Crude', value: `$${latest.brentUSD}`, unit: '/bbl', diff: brentDiff, icon: DollarSign, color: '#0072C6' },
-                { label: 'WTI Crude', value: `$${latest.wtiUSD}`, unit: '/bbl', diff: 0, icon: DollarSign, color: '#10B981' },
-                { label: 'OPEC Basket', value: `$${latest.opecUSD}`, unit: '/bbl', diff: 0, icon: DollarSign, color: '#F59E0B' },
-                { label: 'Petrol (latest)', value: `Le ${latest.petrolNLe}`, unit: '/L', diff: petrolDiff, icon: Fuel, color: '#EF4444' },
+                { label: 'Brent Crude', value: `$${latest.brentUSD}`, unit: '/bbl', diff: brentDiff, avg: avgBrent, icon: DollarSign, color: '#0072C6' },
+                { label: 'WTI Crude', value: `$${latest.wtiUSD}`, unit: '/bbl', diff: wtiDiff, avg: avgWTI, icon: DollarSign, color: '#10B981' },
+                { label: 'OPEC Basket', value: `$${latest.opecUSD}`, unit: '/bbl', diff: opecDiff, avg: avgOPEC, icon: DollarSign, color: '#F59E0B' },
+                { label: 'Petrol (latest)', value: `Le ${latest.petrolNLe}`, unit: '/L', diff: petrolDiff, avg: null, icon: Fuel, color: '#EF4444' },
               ].map((kpi) => (
                 <div key={kpi.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                   <div className="flex items-center gap-2 mb-1">
@@ -188,7 +195,12 @@ export default function BarrelVsFuel() {
                       {kpi.diff > 0 ? '▲' : '▼'} {Math.abs(kpi.diff).toFixed(1)} vs prev
                     </div>
                   )}
-                  <div className="text-xs text-gray-400 mt-1">as of {latest.monthLabel}</div>
+                  <div className="flex items-center justify-between text-xs text-gray-400 mt-2 pt-2 border-t border-gray-50">
+                    <span>as of {latest.monthLabel}</span>
+                    {kpi.avg !== null && (
+                      <span className="font-medium" style={{ color: kpi.color }}>Avg: ${kpi.avg.toFixed(2)}</span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
