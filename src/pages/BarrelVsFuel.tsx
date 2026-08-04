@@ -125,6 +125,41 @@ export default function BarrelVsFuel() {
       }
     );
   
+
+  return () => unsub();
+  }, []);
+
+  // Derive unique years and months from loaded records
+  const availableYears = Array.from(new Set(records.map((r) => r.monthLabel.split(' ')[1]))).sort();
+  const availableMonths = Array.from(
+    new Set(
+      records
+        .filter((r) => filterYear === 'all' || r.monthLabel.split(' ')[1] === filterYear)
+        .map((r) => r.monthLabel.split(' ')[0])
+    )
+  );
+
+  // Apply filters
+  const filteredRecords = records.filter((r) => {
+    const [mon, yr] = r.monthLabel.split(' ');
+    if (filterYear !== 'all' && yr !== filterYear) return false;
+    if (filterMonth !== 'all' && mon !== filterMonth) return false;
+    return true;
+  });
+
+  // Chart data: merge barrel + fuel on same x-axis point
+  const chartData = filteredRecords.map((r) => {
+    const avgUSD = (r.brentUSD + r.wtiUSD + r.opecUSD) / 3;
+    return {
+      label: r.monthLabel,
+      barrel: benchmark === 'averageUSD' ? avgUSD : r[benchmark] ?? null,
+      Petrol: r.petrolNLe || null,
+      Diesel: r.dieselNLe || null,
+      Kerosene: r.keroseneNLe || null,
+      averageUSD: avgUSD,
+    };
+  });
+
   const handleExportPDF = async () => {
     try {
       setIsExporting(true);
@@ -263,40 +298,6 @@ export default function BarrelVsFuel() {
       setIsExporting(false);
     }
   };
-
-  return () => unsub();
-  }, []);
-
-  // Derive unique years and months from loaded records
-  const availableYears = Array.from(new Set(records.map((r) => r.monthLabel.split(' ')[1]))).sort();
-  const availableMonths = Array.from(
-    new Set(
-      records
-        .filter((r) => filterYear === 'all' || r.monthLabel.split(' ')[1] === filterYear)
-        .map((r) => r.monthLabel.split(' ')[0])
-    )
-  );
-
-  // Apply filters
-  const filteredRecords = records.filter((r) => {
-    const [mon, yr] = r.monthLabel.split(' ');
-    if (filterYear !== 'all' && yr !== filterYear) return false;
-    if (filterMonth !== 'all' && mon !== filterMonth) return false;
-    return true;
-  });
-
-  // Chart data: merge barrel + fuel on same x-axis point
-  const chartData = filteredRecords.map((r) => {
-    const avgUSD = (r.brentUSD + r.wtiUSD + r.opecUSD) / 3;
-    return {
-      label: r.monthLabel,
-      barrel: benchmark === 'averageUSD' ? avgUSD : r[benchmark] ?? null,
-      Petrol: r.petrolNLe || null,
-      Diesel: r.dieselNLe || null,
-      Kerosene: r.keroseneNLe || null,
-      averageUSD: avgUSD,
-    };
-  });
 
   return (
     <div className="min-h-screen bg-surface-50">
