@@ -233,7 +233,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog' | 'barrel_vs_fuel'>(initialTab);
 
   useEffect(() => {
     if (activeTab !== initialTab) {
