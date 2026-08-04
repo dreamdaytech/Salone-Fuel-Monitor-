@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, where, limit } from '../firebase';
-import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft, BarChart2, DollarSign } from 'lucide-react';
+import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft, BarChart2, DollarSign, FileText } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import { AdminPriceTrends } from '../components/AdminPriceTrends';
@@ -15,6 +15,7 @@ import AdminSettings from '../components/AdminSettings';
 import AdminRegionalPrices from '../components/AdminRegionalPrices';
 import AdminMarketIntelligence from '../components/AdminMarketIntelligence';
 import AdminExchangeRates from '../components/AdminExchangeRates';
+import AdminBlog from '../components/AdminBlog';
 import { Button } from '../components/ui/Button';
 import { NotificationService } from '../services/NotificationService';
 import { jsPDF } from 'jspdf';
@@ -250,7 +251,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog'>(initialTab);
 
   useEffect(() => {
     if (activeTab !== initialTab) {
@@ -1184,6 +1185,20 @@ export default function AdminDashboard() {
               <MessageSquare className={`w-5 h-5 shrink-0 ${activeTab === 'messages' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Messages</span>}
             </Button>
+            <Button 
+              onClick={() => { setActiveTab('blog'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'blog' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              {activeTab === 'blog' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <FileText className={`w-5 h-5 shrink-0 ${activeTab === 'blog' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Blog Management</span>}
+            </Button>
 
             <Button 
               onClick={() => { setActiveTab('reports'); setIsMobileMenuOpen(false); }}
@@ -1770,6 +1785,12 @@ export default function AdminDashboard() {
 
             {activeTab === 'settings' && (
               <AdminSettings />
+            )}
+
+            {activeTab === 'blog' && (
+              <div className="p-6 sm:p-8">
+                <AdminBlog />
+              </div>
             )}
 
             {activeTab === 'map' && (

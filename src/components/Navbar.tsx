@@ -5,7 +5,7 @@ import {
   Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
   ChevronDown, LayoutGrid, Activity, ClipboardList, 
   PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
-  Menu, X, TrendingUp, Calculator, Globe, BarChart3, DollarSign
+  Menu, X, TrendingUp, Calculator, Globe, BarChart3, DollarSign, FileText
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { Button } from './ui/Button';
@@ -96,7 +96,7 @@ export default function Navbar() {
                 <Globe className="h-4 w-4" />
                 <span>Regional</span>
               </Link>
-              
+
               <div className="relative" ref={toolsMenuRef}>
                 <button
                   onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}

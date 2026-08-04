@@ -40,6 +40,8 @@ const LocationPickerPage = React.lazy(() => import('./pages/LocationPickerPage')
 const RegionalComparison = React.lazy(() => import('./pages/RegionalComparison'));
 const MarketIntelligence = React.lazy(() => import('./pages/MarketIntelligence'));
 const ExchangeRates = React.lazy(() => import('./pages/ExchangeRates'));
+const BlogList = React.lazy(() => import('./pages/BlogList'));
+const BlogPost = React.lazy(() => import('./pages/BlogPost'));
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -141,6 +143,8 @@ function AppContent() {
                 <Route path="/regional-comparison" element={<RegionalComparison />} />
                 <Route path="/market-intelligence" element={<MarketIntelligence />} />
                 <Route path="/exchange-rates" element={<ExchangeRates />} />
+                <Route path="/blog" element={<BlogList />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<TermsOfService />} />
