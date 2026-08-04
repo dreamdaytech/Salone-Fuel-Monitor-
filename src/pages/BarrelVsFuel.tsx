@@ -228,19 +228,21 @@ export default function BarrelVsFuel() {
           {/* Benchmark selector */}
           {viewMode === 'chart' && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 font-medium shrink-0">Barrel Benchmark:</span>
-              <div className="flex items-center gap-1">
+              <label htmlFor="benchmark-select" className="text-sm text-gray-500 font-medium shrink-0">
+                Barrel Benchmark:
+              </label>
+              <select
+                id="benchmark-select"
+                value={benchmark}
+                onChange={(e) => setBenchmark(e.target.value as Benchmark)}
+                className="block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6"
+              >
                 {(Object.keys(BENCHMARK_LABELS) as Benchmark[]).map((b) => (
-                  <button
-                    key={b}
-                    onClick={() => setBenchmark(b)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${benchmark === b ? 'text-white border-transparent shadow' : 'text-gray-600 border-gray-200 hover:border-gray-300'}`}
-                    style={benchmark === b ? { backgroundColor: BENCHMARK_COLORS[b], borderColor: BENCHMARK_COLORS[b] } : {}}
-                  >
+                  <option key={b} value={b}>
                     {BENCHMARK_LABELS[b]}
-                  </button>
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
           )}
         </div>
