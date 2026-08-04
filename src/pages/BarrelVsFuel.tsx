@@ -76,6 +76,8 @@ export default function BarrelVsFuel() {
   const [benchmark, setBenchmark] = useState<Benchmark>('brentUSD');
   const [viewMode, setViewMode] = useState<ViewMode>('chart');
   const [seeded, setSeeded] = useState(false);
+  const [filterYear, setFilterYear] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string>('all');
 
   // Seed initial data if collection is empty
   useEffect(() => {
@@ -118,8 +120,26 @@ export default function BarrelVsFuel() {
     return () => unsub();
   }, []);
 
+  // Derive unique years and months from loaded records
+  const availableYears = Array.from(new Set(records.map((r) => r.monthLabel.split(' ')[1]))).sort();
+  const availableMonths = Array.from(
+    new Set(
+      records
+        .filter((r) => filterYear === 'all' || r.monthLabel.split(' ')[1] === filterYear)
+        .map((r) => r.monthLabel.split(' ')[0])
+    )
+  );
+
+  // Apply filters
+  const filteredRecords = records.filter((r) => {
+    const [mon, yr] = r.monthLabel.split(' ');
+    if (filterYear !== 'all' && yr !== filterYear) return false;
+    if (filterMonth !== 'all' && mon !== filterMonth) return false;
+    return true;
+  });
+
   // Chart data: merge barrel + fuel on same x-axis point
-  const chartData = records.map((r) => ({
+  const chartData = filteredRecords.map((r) => ({
     label: r.monthLabel,
     barrel: r[benchmark] ?? null,
     Petrol: r.petrolNLe || null,
@@ -164,17 +184,18 @@ export default function BarrelVsFuel() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
 
         {/* KPI Cards */}
-        {!loading && records.length > 0 && (() => {
-          const latest = records[records.length - 1];
-          const prev = records.length > 1 ? records[records.length - 2] : null;
+        {(() => {
+          if (filteredRecords.length === 0) return null;
+          const latest = filteredRecords[filteredRecords.length - 1];
+          const prev = filteredRecords.length > 1 ? filteredRecords[filteredRecords.length - 2] : null;
           const brentDiff = prev ? latest.brentUSD - prev.brentUSD : 0;
           const wtiDiff = prev ? latest.wtiUSD - prev.wtiUSD : 0;
           const opecDiff = prev ? latest.opecUSD - prev.opecUSD : 0;
           const petrolDiff = prev ? latest.petrolNLe - prev.petrolNLe : 0;
           
-          const avgBrent = records.reduce((sum, r) => sum + r.brentUSD, 0) / records.length;
-          const avgWTI = records.reduce((sum, r) => sum + r.wtiUSD, 0) / records.length;
-          const avgOPEC = records.reduce((sum, r) => sum + r.opecUSD, 0) / records.length;
+          const avgBrent = filteredRecords.reduce((sum, r) => sum + r.brentUSD, 0) / filteredRecords.length;
+          const avgWTI = filteredRecords.reduce((sum, r) => sum + r.wtiUSD, 0) / filteredRecords.length;
+          const avgOPEC = filteredRecords.reduce((sum, r) => sum + r.opecUSD, 0) / filteredRecords.length;
 
           return (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -209,20 +230,50 @@ export default function BarrelVsFuel() {
 
         {/* Controls */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* View toggle */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
-            <button
-              onClick={() => setViewMode('chart')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'chart' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <LineChartIcon className="h-4 w-4" /> Chart
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <TableIcon className="h-4 w-4" /> Table
-            </button>
+          {/* View toggle & Filters */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+            <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+              <button
+                onClick={() => setViewMode('chart')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'chart' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <LineChartIcon className="h-4 w-4" /> Chart
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                <TableIcon className="h-4 w-4" /> Table
+              </button>
+            </div>
+
+            {/* Filters */}
+            <div className="flex items-center gap-2">
+              <select
+                value={filterYear}
+                onChange={(e) => {
+                  setFilterYear(e.target.value);
+                  setFilterMonth('all'); // reset month when year changes
+                }}
+                className="block rounded-md border-0 py-1.5 pl-3 pr-8 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6"
+              >
+                <option value="all">All Years</option>
+                {availableYears.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+
+              <select
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="block rounded-md border-0 py-1.5 pl-3 pr-8 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6"
+              >
+                <option value="all">All Months</option>
+                {availableMonths.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Benchmark selector */}
@@ -252,10 +303,10 @@ export default function BarrelVsFuel() {
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
           </div>
-        ) : records.length === 0 ? (
+        ) : filteredRecords.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
             <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No records yet. An admin will add them soon.</p>
+            <p className="text-gray-500">No records found for the selected criteria.</p>
           </div>
         ) : viewMode === 'chart' ? (
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
@@ -317,7 +368,7 @@ export default function BarrelVsFuel() {
             <div className="p-4 border-b border-gray-100 flex items-center gap-2">
               <TableIcon className="h-4 w-4 text-primary" />
               <h2 className="font-bold text-gray-900 text-base">Historical Snapshot Records</h2>
-              <span className="ml-auto text-xs text-gray-400">{records.length} records</span>
+              <span className="ml-auto text-xs text-gray-400">{filteredRecords.length} records</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -333,8 +384,8 @@ export default function BarrelVsFuel() {
                     <th className="text-left px-4 py-3 font-semibold">Notes</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {records.map((r, i) => (
+                <tbody className="divide-y divide-gray-100 bg-white">
+                  {filteredRecords.map((r, i) => (
                     <tr key={r.id} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                       <td className="px-4 py-3 font-semibold text-gray-900">{r.monthLabel}</td>
                       <td className="px-4 py-3 text-right font-mono text-[#0072C6] font-semibold">${r.brentUSD}</td>
