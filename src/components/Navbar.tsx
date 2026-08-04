@@ -51,11 +51,11 @@ export default function Navbar() {
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between h-20">
           <div className="flex items-center gap-2 sm:gap-4">
             <Link to="/" className="flex items-center gap-2">
               <div className="flex items-center justify-center">
-                <img src="/logo.png" alt="Salone Fuel Monitor" className="h-10 w-10 object-contain" />
+                <img src="/logo.png" alt="Salone Fuel Monitor" className="h-14 w-14 object-contain" />
               </div>
               <span className="text-xl font-bold text-surface-900 hidden sm:block">
                 Salone Fuel Monitor
