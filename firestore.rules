@@ -413,5 +413,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Barrel vs Fuel price snapshots — publicly readable, admin-managed
+    match /barrelFuelSnapshots/{docId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
   }
 }

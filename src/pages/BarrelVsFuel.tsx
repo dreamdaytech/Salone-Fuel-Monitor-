@@ -9,9 +9,8 @@ import {
 } from 'recharts';
 import {
   TrendingUp, Table as TableIcon, LineChart as LineChartIcon,
-  Settings, BarChart3, DollarSign, Fuel, ArrowRight
+  BarChart3, DollarSign, Fuel, ArrowRight
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import Footer from '../components/Footer';
 
 // ---------- types ----------
@@ -71,8 +70,6 @@ const BENCHMARK_COLORS: Record<Benchmark, string> = {
 
 // ---------- component ----------
 export default function BarrelVsFuel() {
-  const { profile } = useAuth();
-  const isAdmin = profile?.role === 'admin';
 
   const [records, setRecords] = useState<BarrelFuelSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,12 +102,19 @@ export default function BarrelVsFuel() {
   // Live data listener
   useEffect(() => {
     const q = query(collection(db, 'barrelFuelSnapshots'), orderBy('date', 'asc'));
-    const unsub = onSnapshot(q, (snap) => {
-      setRecords(
-        snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))
-      );
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setRecords(
+          snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))
+        );
+        setLoading(false);
+      },
+      (err) => {
+        console.error('barrelFuelSnapshots listener error:', err);
+        setLoading(false);
+      }
+    );
     return () => unsub();
   }, []);
 
@@ -146,15 +150,6 @@ export default function BarrelVsFuel() {
               </p>
             </div>
             <div className="flex flex-col sm:items-end gap-2 shrink-0">
-              {isAdmin && (
-                <Link
-                  to="/admin/barrel-vs-fuel"
-                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-white/30 backdrop-blur-sm"
-                >
-                  <Settings className="h-4 w-4" />
-                  Manage Records
-                </Link>
-              )}
               <Link
                 to="/price-trends"
                 className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white/80 px-4 py-2 rounded-lg text-sm transition-colors border border-white/20"
