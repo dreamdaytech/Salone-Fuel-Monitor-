@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { db, collection, query, orderBy, onSnapshot } from '../firebase';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -520,6 +521,13 @@ export default function PriceTrends() {
         </div>
         
         <div className="flex items-center gap-3">
+          <Link
+            to="/barrel-vs-fuel"
+            className="flex items-center justify-center gap-2 bg-[#0072C6] hover:bg-[#005aa0] text-white px-5 py-2.5 rounded-2xl text-sm font-semibold shadow-sm transition-all"
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Barrel vs Fuel</span>
+          </Link>
           <button
             onClick={handleExportPDF}
             disabled={isExporting || globalHistoryLoading || filteredData.length === 0}

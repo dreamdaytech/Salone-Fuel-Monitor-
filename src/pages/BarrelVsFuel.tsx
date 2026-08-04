@@ -1,0 +1,365 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  db, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, getDocs
+} from '../firebase';
+import {
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  Legend, ResponsiveContainer
+} from 'recharts';
+import {
+  TrendingUp, Table as TableIcon, LineChart as LineChartIcon,
+  Settings, BarChart3, DollarSign, Fuel, ArrowRight
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import Footer from '../components/Footer';
+
+// ---------- types ----------
+interface BarrelFuelSnapshot {
+  id: string;
+  monthLabel: string;
+  date: any;
+  brentUSD: number;
+  wtiUSD: number;
+  opecUSD: number;
+  petrolNLe: number;
+  dieselNLe: number;
+  keroseneNLe: number;
+  notes?: string;
+}
+
+// ---------- seed data ----------
+const SEED_RECORDS = [
+  {
+    monthLabel: 'May 2026',
+    date: new Date('2026-05-01'),
+    brentUSD: 110,
+    wtiUSD: 106,
+    opecUSD: 109,
+    petrolNLe: 35,
+    dieselNLe: 40,
+    keroseneNLe: 0,
+    notes: 'Backfilled record',
+  },
+  {
+    monthLabel: 'July 2026',
+    date: new Date('2026-07-01'),
+    brentUSD: 72,
+    wtiUSD: 68,
+    opecUSD: 71,
+    petrolNLe: 33,
+    dieselNLe: 35,
+    keroseneNLe: 0,
+    notes: 'Backfilled record',
+  },
+];
+
+type Benchmark = 'brentUSD' | 'wtiUSD' | 'opecUSD';
+type ViewMode = 'chart' | 'table';
+
+const BENCHMARK_LABELS: Record<Benchmark, string> = {
+  brentUSD: 'Brent Crude',
+  wtiUSD: 'WTI Crude',
+  opecUSD: 'OPEC Basket',
+};
+
+const BENCHMARK_COLORS: Record<Benchmark, string> = {
+  brentUSD: '#0072C6',
+  wtiUSD: '#10B981',
+  opecUSD: '#F59E0B',
+};
+
+// ---------- component ----------
+export default function BarrelVsFuel() {
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+
+  const [records, setRecords] = useState<BarrelFuelSnapshot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [benchmark, setBenchmark] = useState<Benchmark>('brentUSD');
+  const [viewMode, setViewMode] = useState<ViewMode>('chart');
+  const [seeded, setSeeded] = useState(false);
+
+  // Seed initial data if collection is empty
+  useEffect(() => {
+    async function seedIfEmpty() {
+      try {
+        const snap = await getDocs(collection(db, 'barrelFuelSnapshots'));
+        if (snap.empty && !seeded) {
+          setSeeded(true);
+          for (const rec of SEED_RECORDS) {
+            await addDoc(collection(db, 'barrelFuelSnapshots'), {
+              ...rec,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Seed skipped:', e);
+      }
+    }
+    seedIfEmpty();
+  }, []);
+
+  // Live data listener
+  useEffect(() => {
+    const q = query(collection(db, 'barrelFuelSnapshots'), orderBy('date', 'asc'));
+    const unsub = onSnapshot(q, (snap) => {
+      setRecords(
+        snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))
+      );
+      setLoading(false);
+    });
+    return () => unsub();
+  }, []);
+
+  // Chart data: merge barrel + fuel on same x-axis point
+  const chartData = records.map((r) => ({
+    label: r.monthLabel,
+    barrel: r[benchmark] ?? null,
+    Petrol: r.petrolNLe || null,
+    Diesel: r.dieselNLe || null,
+    Kerosene: r.keroseneNLe || null,
+  }));
+
+  return (
+    <div className="min-h-screen bg-surface-50">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A]">
+        <div className="absolute inset-0 opacity-10"
+          style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-blue-200 text-sm font-medium mb-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>Market Intelligence</span>
+                <ArrowRight className="h-3 w-3" />
+                <span>Barrel vs Fuel</span>
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold text-white mb-2">
+                Barrel vs Fuel Price Tracker
+              </h1>
+              <p className="text-blue-100 text-base max-w-xl">
+                Compare global crude oil barrel prices against Sierra Leone's pump prices at the time of each official price update.
+              </p>
+            </div>
+            <div className="flex flex-col sm:items-end gap-2 shrink-0">
+              {isAdmin && (
+                <Link
+                  to="/admin/barrel-vs-fuel"
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-white/30 backdrop-blur-sm"
+                >
+                  <Settings className="h-4 w-4" />
+                  Manage Records
+                </Link>
+              )}
+              <Link
+                to="/price-trends"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white/80 px-4 py-2 rounded-lg text-sm transition-colors border border-white/20"
+              >
+                ← Back to Price Trends
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        {/* KPI Cards */}
+        {!loading && records.length > 0 && (() => {
+          const latest = records[records.length - 1];
+          const prev = records.length > 1 ? records[records.length - 2] : null;
+          const brentDiff = prev ? latest.brentUSD - prev.brentUSD : 0;
+          const petrolDiff = prev ? latest.petrolNLe - prev.petrolNLe : 0;
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Brent Crude', value: `$${latest.brentUSD}`, unit: '/bbl', diff: brentDiff, icon: DollarSign, color: '#0072C6' },
+                { label: 'WTI Crude', value: `$${latest.wtiUSD}`, unit: '/bbl', diff: 0, icon: DollarSign, color: '#10B981' },
+                { label: 'OPEC Basket', value: `$${latest.opecUSD}`, unit: '/bbl', diff: 0, icon: DollarSign, color: '#F59E0B' },
+                { label: 'Petrol (latest)', value: `Le ${latest.petrolNLe}`, unit: '/L', diff: petrolDiff, icon: Fuel, color: '#EF4444' },
+              ].map((kpi) => (
+                <div key={kpi.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <kpi.icon className="h-4 w-4" style={{ color: kpi.color }} />
+                    <span className="text-xs text-gray-500 font-medium">{kpi.label}</span>
+                  </div>
+                  <div className="text-xl font-bold text-gray-900">{kpi.value}<span className="text-xs text-gray-400 font-normal ml-1">{kpi.unit}</span></div>
+                  {kpi.diff !== 0 && (
+                    <div className={`text-xs mt-1 font-medium ${kpi.diff > 0 ? 'text-red-500' : 'text-green-600'}`}>
+                      {kpi.diff > 0 ? '▲' : '▼'} {Math.abs(kpi.diff).toFixed(1)} vs prev
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">as of {latest.monthLabel}</div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* Controls */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* View toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+            <button
+              onClick={() => setViewMode('chart')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'chart' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <LineChartIcon className="h-4 w-4" /> Chart
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'table' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <TableIcon className="h-4 w-4" /> Table
+            </button>
+          </div>
+
+          {/* Benchmark selector */}
+          {viewMode === 'chart' && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500 font-medium shrink-0">Barrel Benchmark:</span>
+              <div className="flex items-center gap-1">
+                {(Object.keys(BENCHMARK_LABELS) as Benchmark[]).map((b) => (
+                  <button
+                    key={b}
+                    onClick={() => setBenchmark(b)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${benchmark === b ? 'text-white border-transparent shadow' : 'text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                    style={benchmark === b ? { backgroundColor: BENCHMARK_COLORS[b], borderColor: BENCHMARK_COLORS[b] } : {}}
+                  >
+                    {BENCHMARK_LABELS[b]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Main Content */}
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
+          </div>
+        ) : records.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
+            <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">No records yet. An admin will add them soon.</p>
+          </div>
+        ) : viewMode === 'chart' ? (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              <h2 className="text-base font-bold text-gray-900">
+                {BENCHMARK_LABELS[benchmark]} vs Pump Prices
+              </h2>
+              <span className="ml-auto text-xs text-gray-400">Left axis: USD/bbl · Right axis: NLe/L</span>
+            </div>
+            <ResponsiveContainer width="100%" height={380}>
+              <ComposedChart data={chartData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} />
+                <YAxis
+                  yAxisId="barrel"
+                  orientation="left"
+                  tickFormatter={(v) => `$${v}`}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  label={{ value: 'USD/bbl', angle: -90, position: 'insideLeft', offset: 10, style: { fontSize: 11, fill: '#94a3b8' } }}
+                />
+                <YAxis
+                  yAxisId="fuel"
+                  orientation="right"
+                  tickFormatter={(v) => `Le${v}`}
+                  tick={{ fontSize: 11, fill: '#64748b' }}
+                  label={{ value: 'NLe/L', angle: 90, position: 'insideRight', offset: 10, style: { fontSize: 11, fill: '#94a3b8' } }}
+                />
+                <Tooltip
+                  contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: 12 }}
+                  formatter={(value: any, name: string) => {
+                    if (name === 'barrel') return [`$${value}`, BENCHMARK_LABELS[benchmark]];
+                    return [`Le ${value}`, name];
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} formatter={(value) => value === 'barrel' ? BENCHMARK_LABELS[benchmark] : value} />
+                <Line
+                  yAxisId="barrel"
+                  type="monotone"
+                  dataKey="barrel"
+                  stroke={BENCHMARK_COLORS[benchmark]}
+                  strokeWidth={3}
+                  dot={{ r: 5, fill: BENCHMARK_COLORS[benchmark] }}
+                  activeDot={{ r: 7 }}
+                  connectNulls
+                />
+                <Line yAxisId="fuel" type="monotone" dataKey="Petrol" stroke="#EF4444" strokeWidth={2} dot={{ r: 4 }} strokeDasharray="5 3" connectNulls />
+                <Line yAxisId="fuel" type="monotone" dataKey="Diesel" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 4 }} strokeDasharray="5 3" connectNulls />
+                <Line yAxisId="fuel" type="monotone" dataKey="Kerosene" stroke="#F97316" strokeWidth={2} dot={{ r: 4 }} strokeDasharray="5 3" connectNulls />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <p className="text-xs text-gray-400 text-center mt-3">
+              Solid line = barrel price (USD/bbl) · Dashed lines = pump prices (NLe/L)
+            </p>
+          </div>
+        ) : (
+          /* Table view */
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+              <TableIcon className="h-4 w-4 text-primary" />
+              <h2 className="font-bold text-gray-900 text-base">Historical Snapshot Records</h2>
+              <span className="ml-auto text-xs text-gray-400">{records.length} records</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold">Month</th>
+                    <th className="text-right px-4 py-3 font-semibold">Brent ($/bbl)</th>
+                    <th className="text-right px-4 py-3 font-semibold">WTI ($/bbl)</th>
+                    <th className="text-right px-4 py-3 font-semibold">OPEC ($/bbl)</th>
+                    <th className="text-right px-4 py-3 font-semibold">Petrol (NLe/L)</th>
+                    <th className="text-right px-4 py-3 font-semibold">Diesel (NLe/L)</th>
+                    <th className="text-right px-4 py-3 font-semibold">Kerosene (NLe/L)</th>
+                    <th className="text-left px-4 py-3 font-semibold">Notes</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {records.map((r, i) => (
+                    <tr key={r.id} className={`hover:bg-blue-50/30 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <td className="px-4 py-3 font-semibold text-gray-900">{r.monthLabel}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#0072C6] font-semibold">${r.brentUSD}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#10B981] font-semibold">${r.wtiUSD}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#F59E0B] font-semibold">${r.opecUSD}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#EF4444]">Le {r.petrolNLe > 0 ? r.petrolNLe : '—'}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#8B5CF6]">Le {r.dieselNLe > 0 ? r.dieselNLe : '—'}</td>
+                      <td className="px-4 py-3 text-right font-mono text-[#F97316]">Le {r.keroseneNLe > 0 ? r.keroseneNLe : '—'}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs italic">{r.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Insight callout */}
+        <div className="bg-blue-50 border border-blue-100 rounded-xl p-5">
+          <div className="flex gap-3">
+            <TrendingUp className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-blue-900 mb-1">How to read this chart</p>
+              <p className="text-sm text-blue-700">
+                Each data point represents a moment when Sierra Leone officially published new fuel prices.
+                The barrel price shown is the global crude benchmark price at that exact time.
+                This allows you to track whether local fuel prices move in proportion to global crude market changes.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  );
+}

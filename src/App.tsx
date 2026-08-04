@@ -42,6 +42,8 @@ const MarketIntelligence = React.lazy(() => import('./pages/MarketIntelligence')
 const ExchangeRates = React.lazy(() => import('./pages/ExchangeRates'));
 const BlogList = React.lazy(() => import('./pages/BlogList'));
 const BlogPost = React.lazy(() => import('./pages/BlogPost'));
+const BarrelVsFuel = React.lazy(() => import('./pages/BarrelVsFuel'));
+const AdminBarrelVsFuel = React.lazy(() => import('./pages/AdminBarrelVsFuel'));
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -80,7 +82,7 @@ function AppContent() {
     };
   }, []);
 
-  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/about', '/terms', '/privacy', '/cookies'];
+  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/terms', '/privacy', '/cookies'];
   const isPublicRoute = publicRoutes.includes(location.pathname);
 
   if (loading) {
@@ -145,6 +147,8 @@ function AppContent() {
                 <Route path="/exchange-rates" element={<ExchangeRates />} />
                 <Route path="/blog" element={<BlogList />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/barrel-vs-fuel" element={<BarrelVsFuel />} />
+                <Route path="/admin/barrel-vs-fuel" element={user && profile?.role === 'admin' ? <AdminBarrelVsFuel /> : <Navigate to={user ? '/' : '/login'} />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<TermsOfService />} />
