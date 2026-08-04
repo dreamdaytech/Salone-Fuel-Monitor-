@@ -245,24 +245,24 @@ export default function BarrelVsFuel() {
         currentY += 5;
 
         const tableBody = filteredRecords.map(rec => {
-          let bValue = 0;
-          if (benchmark === 'brentUSD') bValue = rec.brentUSD;
-          else if (benchmark === 'wtiUSD') bValue = rec.wtiUSD;
-          else if (benchmark === 'opecUSD') bValue = rec.opecUSD;
-          else bValue = (rec.brentUSD + rec.wtiUSD + rec.opecUSD) / 3;
+          const avgUSD = (rec.brentUSD + rec.wtiUSD + rec.opecUSD) / 3;
 
           return [
             rec.monthLabel,
-            `${bValue.toFixed(2)}`,
+            `$${rec.brentUSD.toFixed(2)}`,
+            `$${rec.wtiUSD.toFixed(2)}`,
+            `$${rec.opecUSD.toFixed(2)}`,
+            `$${avgUSD.toFixed(2)}`,
             `Le ${rec.petrolNLe.toFixed(2)}`,
             `Le ${rec.dieselNLe.toFixed(2)}`,
+            `Le ${(rec.keroseneNLe || 0).toFixed(2)}`,
             rec.notes || '-'
           ];
         });
 
         autoTable(pdf, {
           startY: currentY,
-          head: [['Month', BENCHMARK_LABELS[benchmark], 'Petrol (NLe)', 'Diesel (NLe)', 'Notes']],
+          head: [['Month', 'Brent ($)', 'WTI ($)', 'OPEC ($)', 'Avg ($)', 'Petrol (Le)', 'Diesel (Le)', 'Kerosene (Le)', 'Notes']],
           body: tableBody,
           theme: 'striped',
           headStyles: {
