@@ -203,13 +203,12 @@ export default function BarrelVsFuel() {
           const avgDiff = prev ? latestAvg - prevAvg : 0;
 
           return (
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
                 { label: 'Brent Crude', value: `$${latest.brentUSD}`, unit: '/bbl', diff: brentDiff, icon: DollarSign, color: '#0072C6' },
                 { label: 'WTI Crude', value: `$${latest.wtiUSD}`, unit: '/bbl', diff: wtiDiff, icon: DollarSign, color: '#10B981' },
                 { label: 'OPEC Basket', value: `$${latest.opecUSD}`, unit: '/bbl', diff: opecDiff, icon: DollarSign, color: '#F59E0B' },
                 { label: 'Combined Average', value: `$${latestAvg.toFixed(2)}`, unit: '/bbl', diff: avgDiff, icon: DollarSign, color: '#8B5CF6' },
-                { label: 'Petrol (latest)', value: `Le ${latest.petrolNLe}`, unit: '/L', diff: petrolDiff, icon: Fuel, color: '#EF4444' },
               ].map((kpi) => (
                 <div key={kpi.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                   <div className="flex items-center gap-2 mb-1">
