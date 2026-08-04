@@ -107,7 +107,7 @@ export default function Contact() {
               
               <div className="space-y-8">
                 <div className="flex items-start gap-4 group">
-                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-white transition-all">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-blue-200 shrink-0 group-hover:bg-primary group-hover:text-white transition-all">
                     <Mail className="w-6 h-6" />
                   </div>
                   <div>
@@ -138,13 +138,20 @@ export default function Contact() {
               </div>
             </div>
 
-            <div className="bg-surface-900 p-8 rounded-[2rem] text-white relative overflow-hidden">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] p-8 rounded-[2rem] text-white">
+        <div 
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ 
+            backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+            backgroundSize: '60px 60px' 
+          }} 
+        />
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-6">
-                  <Clock className="w-6 h-6 text-primary" />
+                  <Clock className="w-6 h-6 text-blue-200" />
                   <h3 className="text-xl font-bold">Support Hours</h3>
                 </div>
-                <ul className="space-y-4 text-slate-400">
+                <ul className="space-y-4 text-blue-100">
                   <li className="flex justify-between items-center border-b border-white/5 pb-2">
                     <span className="text-sm font-medium">Monday - Friday</span>
                     <span className="text-sm font-bold text-white">8:00 AM - 6:00 PM</span>
@@ -168,7 +175,7 @@ export default function Contact() {
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 h-full">
               <div className="flex items-center gap-3 mb-8">
                 <div className="p-2 bg-emerald-50 rounded-xl">
-                  <MessageSquare className="w-8 h-8 text-primary" />
+                  <MessageSquare className="w-8 h-8 text-blue-200" />
                 </div>
                 <h2 className="text-2xl font-bold text-surface-900">Send us a Message</h2>
               </div>
@@ -182,7 +189,7 @@ export default function Contact() {
 
               {submitted ? (
                 <div className="h-full flex flex-col items-center justify-center text-center py-12 animate-in zoom-in-95 duration-500">
-                  <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center text-primary mb-8 shadow-inner">
+                  <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center text-blue-200 mb-8 shadow-inner">
                     <Send className="w-10 h-10" />
                   </div>
                   <h3 className="text-3xl font-bold text-surface-900 mb-3">Message Sent!</h3>
@@ -270,7 +277,7 @@ export default function Contact() {
 
                   {/* Math Captcha */}
                   <div className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100">
-                    <label className="block text-sm font-bold text-primary uppercase tracking-wider mb-3">
+                    <label className="block text-sm font-bold text-blue-200 uppercase tracking-wider mb-3">
                       Security Question: What is {captcha.a} + {captcha.b}?
                     </label>
                     <input

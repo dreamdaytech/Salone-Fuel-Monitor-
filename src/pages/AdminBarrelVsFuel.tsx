@@ -199,7 +199,14 @@ export default function AdminBarrelVsFuel() {
   return (
     <div className="min-h-screen bg-surface-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#0072C6] to-[#005aa0] shadow-md">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] shadow-md">
+        <div 
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ 
+            backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+            backgroundSize: '60px 60px' 
+          }} 
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-3 text-blue-200 text-sm mb-3">
             <Link to="/admin" className="hover:text-white transition-colors">Admin Dashboard</Link>

@@ -353,7 +353,14 @@ export default function ExchangeRates() {
   if (loading) {
     return (
       <div className="min-h-screen bg-surface-50">
-        <div className="bg-gradient-to-br from-surface-900 via-surface-800 to-emerald-900 text-white">
+        <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] text-white">
+        <div 
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ 
+            backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+            backgroundSize: '60px 60px' 
+          }} 
+        />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-emerald-500/20 p-2.5 rounded-xl border border-emerald-500/30">
@@ -384,7 +391,14 @@ export default function ExchangeRates() {
   return (
     <div className="min-h-screen bg-surface-50 pb-16">
       {/* ── Hero Header ── */}
-      <div className="bg-gradient-to-br from-surface-900 via-surface-800 to-emerald-900 text-white">
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] text-white">
+        <div 
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ 
+            backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+            backgroundSize: '60px 60px' 
+          }} 
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 mb-4">
