@@ -6,6 +6,7 @@ import { BlogPost as BlogPostType } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
 import { Calendar, User, ArrowLeft, Tag, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
+import Footer from '../components/Footer';
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -169,6 +170,7 @@ export default function BlogPost() {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </main>
+      <Footer />
     </div>
   );
 }

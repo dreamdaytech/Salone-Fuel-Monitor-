@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { BlogPost } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
 import { Calendar, User, ChevronRight, FileText } from 'lucide-react';
+import Footer from '../components/Footer';
 
 export default function BlogList() {
   useSEO({
@@ -39,8 +40,9 @@ export default function BlogList() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-surface-50 py-12 md:py-20">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen flex flex-col bg-surface-50">
+      <div className="flex-1 py-12 md:py-20">
+        <div className="max-w-6xl mx-auto px-4">
         {/* Header Section */}
         <div className="text-center mb-16">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -133,7 +135,9 @@ export default function BlogList() {
             </a>
           ))}
         </div>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }
