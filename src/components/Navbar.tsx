@@ -277,9 +277,9 @@ export default function Navbar() {
         <div className="sm:hidden border-t border-gray-100 bg-white animate-in slide-in-from-top-2 duration-200">
           <div className="px-4 pt-2 pb-4 space-y-1">
             <Link
-              to="/"
+              to="/stations"
               onClick={() => setIsMobileMenuOpen(false)}
-              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+              className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/stations') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
             >
               <MapPin className="h-5 w-5" />
               <span>Fuel Stations</span>
