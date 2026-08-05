@@ -7,6 +7,7 @@ import { useNotifications } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoriteContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import StationReviews from '../components/StationReviews';
 import StationComparisonChart from "../components/StationComparisonChart";
@@ -34,6 +35,8 @@ interface Station {
   isPublished?: boolean;
   status?: 'pending' | 'approved' | 'disapproved';
   isOutOfStock?: boolean;
+  ownerId?: string | null;
+  claimStatus?: 'unclaimed' | 'pending' | 'claimed';
 }
 
 interface Promotion {
@@ -96,6 +99,47 @@ export default function FuelStations() {
   const [historyTimeframe, setHistoryTimeframe] = useState<string>('365');
 
   const [reportStatus, setReportStatus] = useState<Record<string, 'idle' | 'reporting' | 'success' | 'error'>>({});
+
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claimStationId, setClaimStationId] = useState<string | null>(null);
+  const [claimStationName, setClaimStationName] = useState<string | null>(null);
+  const [claimContactPhone, setClaimContactPhone] = useState('');
+  const [claimProofDetails, setClaimProofDetails] = useState('');
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
+
+  const handleClaimSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      toast.error('You must be logged in to claim a station');
+      return;
+    }
+    if (!claimStationId || !claimStationName) return;
+    
+    setIsSubmittingClaim(true);
+    try {
+      await addDoc(collection(db, 'station_claims'), {
+        stationId: claimStationId,
+        stationName: claimStationName,
+        userId: user.uid,
+        userEmail: user.email,
+        contactPhone: claimContactPhone,
+        proofDetails: claimProofDetails,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      toast.success('Claim submitted successfully. An administrator will review your request.');
+      setShowClaimModal(false);
+      setClaimStationId(null);
+      setClaimStationName(null);
+      setClaimContactPhone('');
+      setClaimProofDetails('');
+    } catch (err: any) {
+      console.error('Failed to submit claim:', err);
+      toast.error('Failed to submit claim. Please try again later.');
+    } finally {
+      setIsSubmittingClaim(false);
+    }
+  };
 
   const handleReportDiscrepancy = async (station: Station, fuelType: string, listedPrice: number) => {
     const key = `${station.id}-${fuelType}`;
@@ -1640,13 +1684,40 @@ export default function FuelStations() {
                       <div>
                         <p className="text-base sm:text-lg font-bold">{viewingStation.isVerified ? 'Verified Station' : 'Pending Verification'}</p>
                         <p className="text-[10px] sm:text-xs opacity-80 font-medium">
-                          {viewingStation.isVerified 
+                  {viewingStation.isVerified 
                             ? 'This station is officially verified by Salone Fuel Monitor.' 
                             : 'This station is awaiting official verification.'}
                         </p>
                       </div>
                     </div>
                   </div>
+                  
+                  {(!viewingStation.claimStatus || viewingStation.claimStatus === 'unclaimed') && (
+                    <div className="mt-6">
+                      <div className="p-4 sm:p-6 rounded-3xl border-2 bg-blue-50 border-blue-200 text-blue-800 flex flex-col items-center text-center gap-3">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white text-blue-600 flex items-center justify-center shadow-sm">
+                          <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7" />
+                        </div>
+                        <div>
+                          <p className="text-base sm:text-lg font-bold">Are you the owner?</p>
+                          <p className="text-[10px] sm:text-xs opacity-80 font-medium mb-3">
+                            Claim this station to manage prices, hours, and promotions.
+                          </p>
+                          <Button
+                            onClick={() => {
+                              setClaimStationId(viewingStation.id);
+                              setClaimStationName(viewingStation.name);
+                              setShowClaimModal(true);
+                            }}
+                            variant="primary"
+                            className="px-4 py-2 text-xs font-bold w-full"
+                          >
+                            Claim this Station
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2035,6 +2106,65 @@ export default function FuelStations() {
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Claim Modal */}
+      {showClaimModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="fixed inset-0 bg-surface-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowClaimModal(false)}></div>
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 relative z-50 shadow-2xl animate-in zoom-in-95 duration-300">
+            <button
+              onClick={() => setShowClaimModal(false)}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-surface-900">Claim Station</h3>
+                <p className="text-sm font-medium text-gray-500">{claimStationName}</p>
+              </div>
+            </div>
+            
+            <form onSubmit={handleClaimSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Contact Phone</label>
+                <input
+                  type="text"
+                  required
+                  value={claimContactPhone}
+                  onChange={(e) => setClaimContactPhone(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all font-medium text-surface-900"
+                  placeholder="Your phone number"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Proof of Ownership</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={claimProofDetails}
+                  onChange={(e) => setClaimProofDetails(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all font-medium text-surface-900 resize-none"
+                  placeholder="Manager name, Registration number, or other proof..."
+                ></textarea>
+              </div>
+              <div className="pt-4">
+                <Button
+                  type="submit"
+                  disabled={isSubmittingClaim}
+                  showNotification={false}
+                  variant="primary"
+                  className="w-full py-4 text-sm font-bold rounded-xl"
+                >
+                  {isSubmittingClaim ? 'Submitting Request...' : 'Submit Claim Request'}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

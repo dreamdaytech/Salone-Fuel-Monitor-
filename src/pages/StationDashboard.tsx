@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, where, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, handleFirestoreError, OperationType, getDocs, orderBy, limit } from '../firebase';
-import { Plus, Edit2, Save, X, Building2, MapPin, Clock, Phone, Tag, ShieldCheck, Zap, ShieldAlert, Check, TrendingDown, Calendar, Percent, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Save, X, Building2, MapPin, Clock, Phone, Tag, ShieldCheck, Zap, ShieldAlert, Check, TrendingDown, Calendar, Percent, Trash2, Navigation, Loader2, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { NotificationService } from '../services/NotificationService';
 import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
 import { Button } from '../components/ui/Button';
@@ -23,6 +23,77 @@ interface Station {
   isPublished?: boolean;
   status: 'pending' | 'approved' | 'disapproved';
   isOutOfStock?: boolean;
+  lastUpdated?: any;
+}
+
+function SearchableDropdown({ options, value, onChange, icon: Icon, placeholder, allowAll = true }: { options: string[], value: string, onChange: (val: string) => void, icon: any, placeholder: string, allowAll?: boolean }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt => opt.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="relative min-w-[200px]" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between pl-9 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 text-sm font-medium transition-all"
+      >
+        <Icon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <span className="truncate">{(allowAll && value === 'All') ? placeholder : (value || placeholder)}</span>
+      </button>
+      
+      {isOpen && (
+        <div className="absolute z-50 mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="p-2 border-b border-gray-50 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+            <input
+              type="text"
+              autoFocus
+              className="w-full pl-8 pr-3 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-sm font-medium"
+              placeholder="Search..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+          <div className="max-h-60 overflow-y-auto p-1">
+            {allowAll && (
+              <button
+                onClick={() => { onChange('All'); setIsOpen(false); setSearch(''); }}
+                className={`w-full text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${value === 'All' ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 text-surface-900'}`}
+              >
+                {placeholder}
+              </button>
+            )}
+            {filteredOptions.map(opt => (
+              <button
+                key={opt}
+                onClick={() => { onChange(opt); setIsOpen(false); setSearch(''); }}
+                className={`w-full text-left px-3 py-2 text-sm font-medium rounded-lg transition-colors ${value === opt ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 text-surface-900'}`}
+              >
+                {opt}
+              </button>
+            ))}
+            {filteredOptions.length === 0 && (
+              <div className="px-3 py-4 text-center text-sm text-gray-500">No results</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface Promotion {
@@ -185,6 +256,7 @@ function OperatingHoursEditor({ value, onChange }: { value: string | string[], o
 export default function StationDashboard() {
   const { user, profile } = useAuth();
   const [stations, setStations] = useState<Station[]>([]);
+  const [globalBrands, setGlobalBrands] = useState<string[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [govPrices, setGovPrices] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -203,6 +275,57 @@ export default function StationDashboard() {
     stationIds: [], fuelTypes: ['Petrol'], discountAmount: 0, discountType: 'fixed',
     startTime: '', endTime: '', description: '', isActive: true
   });
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('All');
+  const [selectedBrand, setSelectedBrand] = useState('All');
+  const [sortBy, setSortBy] = useState<'updated' | 'name_asc' | 'name_desc'>('updated');
+
+  const filteredAndSortedStations = useMemo(() => {
+    let result = [...stations];
+    
+    // Search
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(s => 
+        s.name.toLowerCase().includes(term) ||
+        s.location.toLowerCase().includes(term) ||
+        s.brand?.toLowerCase().includes(term)
+      );
+    }
+    
+    // Filters
+    if (selectedDistrict !== 'All') {
+      result = result.filter(s => s.district === selectedDistrict);
+    }
+    if (selectedBrand !== 'All') {
+      result = result.filter(s => s.brand === selectedBrand);
+    }
+    
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'name_asc': return a.name.localeCompare(b.name);
+        case 'name_desc': return b.name.localeCompare(a.name);
+        case 'updated':
+        default:
+          const dateA = a.lastUpdated?.toDate?.()?.getTime() || 0;
+          const dateB = b.lastUpdated?.toDate?.()?.getTime() || 0;
+          return dateB - dateA;
+      }
+    });
+    
+    return result;
+  }, [stations, searchTerm, selectedDistrict, selectedBrand, sortBy]);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'brands'), (docSnap) => {
+      if (docSnap.exists()) {
+        setGlobalBrands(docSnap.data().list || []);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -443,6 +566,32 @@ export default function StationDashboard() {
     }
   };
 
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+    
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        }));
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        setIsGettingLocation(false);
+        alert('Failed to get location: ' + error.message);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
   const startQuickEdit = (station: Station) => {
     setQuickEditStationId(station.id);
     setQuickEditPrices({ ...station.prices });
@@ -568,13 +717,13 @@ export default function StationDashboard() {
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Brand</label>
                   <div className="relative">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
-                    <input
-                      type="text"
-                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 font-medium transition-all"
+                    <SearchableDropdown
+                      options={Array.from(new Set([...globalBrands, ...stations.map(s => s.brand)])).filter(Boolean).sort()}
                       value={formData.brand}
-                      onChange={e => setFormData({...formData, brand: e.target.value})}
-                      placeholder="e.g. TotalEnergies"
+                      onChange={(val) => setFormData({...formData, brand: val})}
+                      icon={Building2}
+                      placeholder="Select Brand"
+                      allowAll={false}
                     />
                   </div>
                 </div>
@@ -632,28 +781,46 @@ export default function StationDashboard() {
                   />
                 </div>
 
-                <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Latitude</label>
-                    <input
-                      type="number"
-                      step="0.000001"
-                      className="w-full px-4 py-2.5 sm:py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 font-medium transition-all"
-                      value={formData.latitude || ''}
-                      onChange={e => setFormData({...formData, latitude: Number(e.target.value)})}
-                      placeholder="e.g. 8.481"
-                    />
+                <div className="md:col-span-2 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">GPS Coordinates</label>
+                    <button
+                      type="button"
+                      onClick={handleGetLocation}
+                      disabled={isGettingLocation}
+                      className="text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isGettingLocation ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Navigation className="w-3.5 h-3.5" />
+                      )}
+                      {isGettingLocation ? 'Locating...' : 'Use Current Location'}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Longitude</label>
-                    <input
-                      type="number"
-                      step="0.000001"
-                      className="w-full px-4 py-2.5 sm:py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 font-medium transition-all"
-                      value={formData.longitude || ''}
-                      onChange={e => setFormData({...formData, longitude: Number(e.target.value)})}
-                      placeholder="e.g. -13.248"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Latitude</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        className="w-full px-4 py-2.5 sm:py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 font-medium transition-all"
+                        value={formData.latitude || ''}
+                        onChange={e => setFormData({...formData, latitude: Number(e.target.value)})}
+                        placeholder="e.g. 8.481"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Longitude</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        className="w-full px-4 py-2.5 sm:py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 font-medium transition-all"
+                        value={formData.longitude || ''}
+                        onChange={e => setFormData({...formData, longitude: Number(e.target.value)})}
+                        placeholder="e.g. -13.248"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -767,8 +934,54 @@ export default function StationDashboard() {
         </div>
       )}
 
+      {/* Advanced Search & Filters */}
+      {!isCreating && !editingStation && stations.length > 0 && (
+        <div className="mb-8 bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 relative z-20">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                className="w-full pl-10 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 font-medium"
+                placeholder="Search by station name, location, or brand..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-2 sm:gap-4 pb-2 sm:pb-0">
+              <SearchableDropdown
+                options={SIERRA_LEONE_DISTRICTS}
+                value={selectedDistrict}
+                onChange={setSelectedDistrict}
+                icon={Filter}
+                placeholder="All Districts"
+              />
+              <SearchableDropdown
+                options={Array.from(new Set([...globalBrands, ...stations.map(s => s.brand)])).filter(Boolean).sort()}
+                value={selectedBrand}
+                onChange={setSelectedBrand}
+                icon={Building2}
+                placeholder="All Brands"
+              />
+              <div className="relative min-w-[160px]">
+                <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <select
+                  className="w-full pl-9 pr-8 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 text-sm font-medium appearance-none cursor-pointer"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                >
+                  <option value="updated">Recently Updated</option>
+                  <option value="name_asc">Name (A-Z)</option>
+                  <option value="name_desc">Name (Z-A)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {stations.map(station => (
+        {filteredAndSortedStations.map(station => (
           <div key={station.id} className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-all group ${station.isSuspended ? 'border-rose-200' : 'border-gray-100'}`}>
             {station.isSuspended && (
               <div className="bg-rose-50 border-b border-rose-100 p-3 flex items-center gap-2 text-rose-700">
@@ -898,8 +1111,26 @@ export default function StationDashboard() {
           </div>
         ))}
 
-        {stations.length === 0 && !isCreating && (
-          <div className="col-span-full text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-200">
+      {stations.length > 0 && filteredAndSortedStations.length === 0 && (
+        <div className="col-span-full text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-100">
+          <p className="text-gray-500 font-medium">No stations match your current search or filter criteria.</p>
+          <Button
+            variant="unstyled"
+            onClick={() => {
+              setSearchTerm('');
+              setSelectedDistrict('All');
+              setSelectedBrand('All');
+            }}
+            showNotification={false}
+            className="mt-4 px-4 py-2 text-primary hover:bg-emerald-50 rounded-lg transition-colors text-sm font-bold"
+          >
+            Clear Filters
+          </Button>
+        </div>
+      )}
+
+      {stations.length === 0 && !isCreating && (
+        <div className="col-span-full text-center py-16 bg-white rounded-3xl border-2 border-dashed border-gray-200">
             <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Building2 className="h-8 w-8 text-gray-300" />
             </div>

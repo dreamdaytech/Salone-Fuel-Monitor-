@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, where, limit } from '../firebase';
-import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft, BarChart2, DollarSign, FileText } from 'lucide-react';
+import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft, BarChart2, DollarSign, FileText, Navigation, Loader2 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 import { AdminPriceTrends } from '../components/AdminPriceTrends';
@@ -11,7 +11,9 @@ import AdminTransportPriceDetails from './AdminTransportPriceDetails';
 import AdminMessages from '../components/AdminMessages';
 import AdminStationMap from '../components/AdminStationMap';
 import AdminReviews from './AdminReviews';
+import AdminStationClaims from '../components/AdminStationClaims';
 import AdminSettings from '../components/AdminSettings';
+import AdminBrands from '../components/AdminBrands';
 import AdminRegionalPrices from '../components/AdminRegionalPrices';
 import AdminMarketIntelligence from '../components/AdminMarketIntelligence';
 import AdminExchangeRates from '../components/AdminExchangeRates';
@@ -233,7 +235,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog' | 'barrel_vs_fuel'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'claims' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog' | 'barrel_vs_fuel' | 'brands'>(initialTab);
 
   useEffect(() => {
     if (activeTab !== initialTab) {
@@ -247,8 +249,8 @@ export default function AdminDashboard() {
   const [selectedDistrict, setSelectedDistrict] = useState('All');
   const [selectedBrand, setSelectedBrand] = useState('All');
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
-  const [visibleStationsCount, setVisibleStationsCount] = useState(8);
-  const [visibleUsersCount, setVisibleUsersCount] = useState(8);
+  const [visibleStationsCount, setVisibleStationsCount] = useState(50);
+  const [visibleUsersCount, setVisibleUsersCount] = useState(50);
   const [isEditingStation, setIsEditingStation] = useState(false);
   const [editFormData, setEditFormData] = useState<any>(null);
   const [isDeletingStation, setIsDeletingStation] = useState(false);
@@ -635,6 +637,26 @@ export default function AdminDashboard() {
       }
     };
 
+    const handleBulkUnverify = async () => {
+      if (selectedStationIds.length === 0 || isBulkActionLoading) return;
+      if (!window.confirm(`Are you sure you want to unverify ${selectedStationIds.length} stations?`)) return;
+      
+      setIsBulkActionLoading(true);
+      try {
+        const promises = selectedStationIds.map(id => 
+          updateDoc(doc(db, 'stations', id), { isVerified: false, lastUpdated: serverTimestamp() })
+        );
+        await Promise.all(promises);
+        setSuccessMessage(`${selectedStationIds.length} stations unverified successfully`);
+        setSelectedStationIds([]);
+      } catch (error) {
+        setErrorMessage(`Failed to unverify stations: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        handleFirestoreError(error, OperationType.UPDATE, 'stations/bulk');
+      } finally {
+        setIsBulkActionLoading(false);
+      }
+    };
+
     const handleBulkSuspend = async (suspend: boolean) => {
       if (selectedStationIds.length === 0 || isBulkActionLoading) return;
       const action = suspend ? 'suspend' : 'unsuspend';
@@ -698,6 +720,35 @@ export default function AdminDashboard() {
       } else {
         setSelectedStationIds(prev => [...new Set([...prev, ...currentVisibleIds])]);
       }
+    };
+
+    const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+    const handleGetLocation = () => {
+      if (!navigator.geolocation) {
+        toast.error('Geolocation is not supported by your browser');
+        return;
+      }
+      
+      setIsGettingLocation(true);
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (editFormData) {
+            setEditFormData(prev => ({
+              ...prev!,
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude
+            }));
+          }
+          setIsGettingLocation(false);
+          toast.success('Location updated from GPS');
+        },
+        (error) => {
+          setIsGettingLocation(false);
+          toast.error('Failed to get location: ' + error.message);
+        },
+        { enableHighAccuracy: true }
+      );
     };
 
     const handleSaveEdit = async () => {
@@ -808,7 +859,8 @@ export default function AdminDashboard() {
             status: 'approved',
             latitude: 7.5 + (Math.random() * 2), // 7.5 to 9.5
             longitude: -13.0 + (Math.random() * 2.5), // -13.0 to -10.5
-            ownerId: user.uid,
+            ownerId: null,
+            claimStatus: 'unclaimed',
           };
         });
 
@@ -1063,6 +1115,34 @@ export default function AdminDashboard() {
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Submitted Stations</span>}
             </Button>
             <Button 
+              onClick={() => { setActiveTab('brands'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'brands' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              {activeTab === 'brands' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <Building2 className={`w-5 h-5 shrink-0 ${activeTab === 'brands' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Brands</span>}
+            </Button>
+            <Button 
+              onClick={() => { setActiveTab('claims'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'claims' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              {activeTab === 'claims' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <Shield className={`w-5 h-5 shrink-0 ${activeTab === 'claims' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Station Claims</span>}
+            </Button>
+            <Button 
               onClick={() => { setActiveTab('map'); setIsMobileMenuOpen(false); }}
               showNotification={false}
               variant="ghost"
@@ -1075,20 +1155,6 @@ export default function AdminDashboard() {
               {activeTab === 'map' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
               <MapPin className={`w-5 h-5 shrink-0 ${activeTab === 'map' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Map View</span>}
-            </Button>
-            <Button 
-              onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }}
-              showNotification={false}
-              variant="ghost"
-              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
-                activeTab === 'users' 
-                  ? 'bg-white/10 text-white' 
-                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
-              }`}
-            >
-              {activeTab === 'users' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
-              <Users className={`w-5 h-5 shrink-0 ${activeTab === 'users' ? 'text-primary' : 'group-hover:text-white'}`} />
-              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Users</span>}
             </Button>
             <Button 
               onClick={() => { setActiveTab('price_trends'); setIsMobileMenuOpen(false); }}
@@ -1244,6 +1310,20 @@ export default function AdminDashboard() {
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Review Moderation</span>}
             </Button>
 
+            <Button 
+              onClick={() => { setActiveTab('users'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'users' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              {activeTab === 'users' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <Users className={`w-5 h-5 shrink-0 ${activeTab === 'users' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Users</span>}
+            </Button>
             <Button 
               onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
               showNotification={false}
@@ -1795,9 +1875,13 @@ export default function AdminDashboard() {
               <AdminExchangeRates />
             )}
 
+            {activeTab === 'brands' && (
+                <AdminBrands stations={stations} />
+              )}
+  
             {activeTab === 'settings' && (
-              <AdminSettings />
-            )}
+                <AdminSettings />
+              )}
 
             {activeTab === 'blog' && (
               <div className="p-6 sm:p-8">
@@ -1998,6 +2082,20 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {activeTab === 'claims' && (
+              <AdminStationClaims 
+                onViewStation={(stationId) => {
+                  const station = stations.find(s => s.id === stationId);
+                  if (station) {
+                    setActiveTab('stations');
+                    setSelectedStation(station);
+                  } else {
+                    toast.error('Station not found or has been deleted');
+                  }
+                }}
+              />
             )}
 
             {activeTab === 'reports' && (
@@ -2250,6 +2348,15 @@ export default function AdminDashboard() {
                             notificationMessage="Verifying selected stations..."
                           >
                             <CheckCircle className="w-4 h-4" /> Verify
+                          </Button>
+                          <Button
+                            onClick={handleBulkUnverify}
+                            disabled={isBulkActionLoading}
+                            variant="secondary"
+                            className="flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
+                            notificationMessage="Unverifying selected stations..."
+                          >
+                            <XCircle className="w-4 h-4" /> Unverify
                           </Button>
                           <Button
                             onClick={() => handleBulkSuspend(true)}
@@ -2651,7 +2758,7 @@ export default function AdminDashboard() {
                   {sortedStations.length > visibleStationsCount && (
                     <div className="p-6 border-t border-gray-100 flex justify-center">
                       <Button
-                        onClick={() => setVisibleStationsCount(prev => prev + 8)}
+                        onClick={() => setVisibleStationsCount(prev => prev + 50)}
                         variant="secondary"
                         className="px-6 py-2.5 rounded-xl font-bold transition-all active:scale-95 shadow-sm flex items-center gap-2 text-sm"
                         disableAfterClick={false}
@@ -2791,27 +2898,47 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Latitude</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-bold text-surface-900"
-                    value={editFormData.latitude || ''}
-                    onChange={e => setEditFormData({ ...editFormData, latitude: Number(e.target.value) })}
-                    placeholder="e.g. 8.481"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Longitude</label>
-                  <input
-                    type="number"
-                    step="0.000001"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-bold text-surface-900"
-                    value={editFormData.longitude || ''}
-                    onChange={e => setEditFormData({ ...editFormData, longitude: Number(e.target.value) })}
-                    placeholder="e.g. -13.248"
-                  />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">GPS Coordinates</label>
+                    <button
+                      type="button"
+                      onClick={handleGetLocation}
+                      disabled={isGettingLocation}
+                      className="text-[10px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isGettingLocation ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Navigation className="w-3 h-3" />
+                      )}
+                      {isGettingLocation ? 'Locating...' : 'Use Current Location'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Latitude</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-bold text-surface-900"
+                        value={editFormData.latitude || ''}
+                        onChange={e => setEditFormData({ ...editFormData, latitude: Number(e.target.value) })}
+                        placeholder="e.g. 8.481"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Longitude</label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none font-bold text-surface-900"
+                        value={editFormData.longitude || ''}
+                        onChange={e => setEditFormData({ ...editFormData, longitude: Number(e.target.value) })}
+                        placeholder="e.g. -13.248"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

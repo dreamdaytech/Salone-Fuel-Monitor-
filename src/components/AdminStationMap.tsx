@@ -55,6 +55,8 @@ interface Station {
   isVerified?: boolean;
   prices: Record<string, number>;
   isOutOfStock?: boolean;
+  ownerId?: string | null;
+  claimStatus?: 'unclaimed' | 'pending' | 'claimed';
 }
 
 interface AdminStationMapProps {

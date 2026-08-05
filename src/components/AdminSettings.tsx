@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, AlertCircle, CheckCircle, Smartphone, Mail, RefreshCw, Server } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Smartphone, Mail, RefreshCw, Server, Database } from 'lucide-react';
 import { Button } from './ui/Button';
 import { db, doc, setDoc, serverTimestamp } from '../firebase';
 import { toast } from 'sonner';
@@ -10,6 +10,53 @@ export default function AdminSettings() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const handleMigrateStations = async () => {
+    setIsMigrating(true);
+    try {
+      const { collection, getDocs, updateDoc, doc, db } = await import('../firebase');
+      const snapshot = await getDocs(collection(db, 'stations'));
+      const promises = snapshot.docs.map(d => updateDoc(doc(db, 'stations', d.id), { ownerId: null, claimStatus: 'unclaimed' }));
+      await Promise.all(promises);
+      toast.success('Successfully migrated ' + promises.length + ' stations');
+    } catch(e) {
+      console.error(e);
+      toast.error('Migration failed');
+    }
+    setIsMigrating(false);
+  };
+
+  const [isAssigningAdmin, setIsAssigningAdmin] = useState(false);
+  const handleAssignStationsToAdmin = async () => {
+    setIsAssigningAdmin(true);
+    try {
+      const { collection, getDocs, query, where, updateDoc, doc, db } = await import('../firebase');
+      
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('email', '==', 'slfuelmonitor@gmail.com'));
+      const userSnapshot = await getDocs(q);
+      
+      if (userSnapshot.empty) {
+        toast.error('Admin user slfuelmonitor@gmail.com not found');
+        return;
+      }
+      
+      const adminUserId = userSnapshot.docs[0].id;
+
+      const snapshot = await getDocs(collection(db, 'stations'));
+      const promises = snapshot.docs.map(d => updateDoc(doc(db, 'stations', d.id), { 
+        ownerId: adminUserId, 
+        claimStatus: 'unclaimed' // Leave as unclaimed so real owners can claim it later
+      }));
+      await Promise.all(promises);
+      toast.success(`Successfully assigned ${promises.length} stations to admin.`);
+    } catch(e) {
+      console.error(e);
+      toast.error('Failed to assign stations to admin');
+    } finally {
+      setIsAssigningAdmin(false);
+    }
+  };
   const [isConfigured, setIsConfigured] = useState(false);
 
   const [serviceAccount, setServiceAccount] = useState('');
@@ -232,6 +279,20 @@ export default function AdminSettings() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm relative overflow-hidden">
+        <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <Database className="w-5 h-5 text-primary" />
+          Data Migration & Actions
+        </h2>
+        <div className="space-y-4">
+          <Button onClick={handleMigrateStations} disabled={isMigrating} className="w-full">
+            {isMigrating ? 'Migrating...' : 'Migrate Stations for Claims'}
+          </Button>
+          <Button onClick={handleAssignStationsToAdmin} disabled={isAssigningAdmin} variant="secondary" className="w-full text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100">
+            {isAssigningAdmin ? 'Assigning...' : 'Assign All Stations to slfuelmonitor@gmail.com'}
+          </Button>
+        </div>
+      </div>
       <div>
         <h2 className="text-2xl font-bold text-surface-900">Platform Settings</h2>
         <p className="text-gray-500 mt-1">Manage external integrations and platform configuration.</p>
