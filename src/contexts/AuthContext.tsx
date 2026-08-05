@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db, googleProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber, doc, getDoc, setDoc, updateDoc, serverTimestamp, handleFirestoreError, OperationType } from '../firebase';
-import { onAuthStateChanged, User as FirebaseUser, ConfirmationResult } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser, ConfirmationResult, sendPasswordResetEmail } from 'firebase/auth';
 import { toast } from 'sonner';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -40,6 +40,7 @@ interface AuthContextType {
   logOut: () => Promise<void>;
   completeRegistration: (name: string, role: 'user' | 'station_owner', phoneNumber?: string) => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -59,6 +60,7 @@ const AuthContext = createContext<AuthContextType>({
   logOut: async () => {},
   completeRegistration: async () => {},
   updateProfile: async () => {},
+  resetPassword: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -447,8 +449,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, authError, signIn, signInWithEmail, signUpWithEmail, signInWithPhone, setupRecaptcha, recaptchaSolved, verifyOtp, linkPhone, verifyAndLinkPhone, logOut, completeRegistration, updateProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, authError, signIn, signInWithEmail, signUpWithEmail, signInWithPhone, setupRecaptcha, recaptchaSolved, verifyOtp, linkPhone, verifyAndLinkPhone, logOut, completeRegistration, updateProfile, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );

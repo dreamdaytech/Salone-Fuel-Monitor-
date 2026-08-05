@@ -7,11 +7,12 @@ import { toast } from 'sonner';
 import { ConfirmationResult } from 'firebase/auth';
 
 export default function Auth() {
-  const { signIn, signInWithEmail, signUpWithEmail, signInWithPhone, setupRecaptcha, recaptchaSolved, verifyOtp, authError } = useAuth();
+  const { signIn, signInWithEmail, signUpWithEmail, signInWithPhone, setupRecaptcha, recaptchaSolved, verifyOtp, resetPassword, authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
   const [isLogin, setIsLogin] = useState(location.pathname !== '/signup');
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email');
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [name, setName] = useState('');
@@ -26,6 +27,7 @@ export default function Auth() {
 
   useEffect(() => {
     setIsLogin(location.pathname !== '/signup');
+    setIsForgotPassword(false);
     // Reset phone auth state when switching between login/signup
     setConfirmationResult(null);
     setOtp('');
@@ -134,6 +136,27 @@ export default function Auth() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setIsSigningIn(true);
+    const toastId = toast.loading('Sending reset instructions...');
+    try {
+      await resetPassword(email.trim());
+      toast.success('Password reset email sent! Check your inbox.', { id: toastId });
+      setIsForgotPassword(false);
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        toast.error('No account found with this email.', { id: toastId });
+      } else {
+        toast.error('Failed to send reset email. Please try again.', { id: toastId });
+      }
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -144,15 +167,16 @@ export default function Auth() {
               <img src="/logo.png" alt="Salone Fuel Monitor" className="w-full h-full object-contain drop-shadow-md" />
             </Link>
             <h2 className="text-center text-3xl font-bold text-gray-900 tracking-tight">
-              {isLogin ? 'Welcome Back' : 'Join Salone Fuel Monitor'}
+              {isForgotPassword ? 'Reset Password' : isLogin ? 'Welcome Back' : 'Join Salone Fuel Monitor'}
             </h2>
             <p className="mt-2 text-center text-base text-gray-500">
-              {isLogin ? 'Monitor fuel prices in real-time.' : 'Start tracking fuel prices today.'}
+              {isForgotPassword ? 'Enter your email to receive reset instructions.' : isLogin ? 'Monitor fuel prices in real-time.' : 'Start tracking fuel prices today.'}
             </p>
           </div>
 
           {/* Auth Method Toggle */}
-          <div className="flex p-1 bg-gray-100 rounded-2xl mb-8">
+          {!isForgotPassword && (
+            <div className="flex p-1 bg-gray-100 rounded-2xl mb-8">
             <button
               onClick={() => { setAuthMethod('email'); setConfirmationResult(null); }}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-bold rounded-xl transition-all ${
@@ -173,8 +197,10 @@ export default function Auth() {
                 <span>Phone</span>
                 <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wide">Soon</span>
               </div>
+              </div>
             </button>
           </div>
+          )}
 
           {authError && (
             <div className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3 text-rose-600 text-sm">
@@ -182,7 +208,36 @@ export default function Auth() {
             </div>
           )}
 
-          {authMethod === 'email' ? (
+          {isForgotPassword ? (
+            <form onSubmit={handleResetPassword} className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <Mail className="h-5 w-5" />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="block w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 text-gray-900 font-medium transition-all placeholder:text-gray-300 placeholder:font-normal"
+                    placeholder="john@slfuelmonitor.sl"
+                  />
+                </div>
+              </div>
+              <Button type="submit" disabled={isSigningIn} className="w-full py-4 text-sm rounded-2xl font-bold shadow-xl">
+                {isSigningIn ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Send Reset Link'}
+              </Button>
+              <div className="text-center mt-6">
+                <button type="button" onClick={() => setIsForgotPassword(false)} className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                  Back to login
+                </button>
+              </div>
+            </form>
+          ) : authMethod === 'email' ? (
             <form onSubmit={handleSubmit} className="space-y-5">
               {!isLogin && (
                 <div>
@@ -230,9 +285,9 @@ export default function Auth() {
                     Password
                   </label>
                   {isLogin && (
-                    <Link to="#" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+                    <button type="button" onClick={() => setIsForgotPassword(true)} className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
                       Forgot?
-                    </Link>
+                    </button>
                   )}
                 </div>
                 <div className="relative">
