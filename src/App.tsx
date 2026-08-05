@@ -58,6 +58,7 @@ function AppContent() {
       setIsOffline(false);
       toast.success('Back online!', {
         id: 'offline-toast',
+        duration: 3000,
       });
     };
 
