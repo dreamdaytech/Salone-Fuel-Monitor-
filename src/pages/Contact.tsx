@@ -112,7 +112,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Email Us</p>
-                    <p className="text-lg font-bold text-surface-900">support@slfuelmonitor.com</p>
+                    <p className="text-lg font-bold text-surface-900">slfuelmonitor@gmail.com</p>
                   </div>
                 </div>
 
@@ -122,7 +122,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Call Us</p>
-                    <p className="text-lg font-bold text-surface-900">+232 76 000 000</p>
+                    <p className="text-lg font-bold text-surface-900">+232 76 111668</p>
                   </div>
                 </div>
 
