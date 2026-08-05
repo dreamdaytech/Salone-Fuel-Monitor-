@@ -172,6 +172,17 @@ export default function Landing() {
                       </div>
                       <span className="text-xs font-semibold px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg">/ Liter</span>
                     </div>
+
+                    <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex items-center justify-between group hover:bg-amber-50/50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-10 bg-amber-500 rounded-full" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Kerosene (DPK)</p>
+                          <p className="text-2xl font-bold text-gray-900">Le {latestFuelPrices.kerosene}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold px-2 py-1 bg-amber-100 text-amber-700 rounded-lg">/ Liter</span>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-6 text-gray-500">Price data temporarily unavailable.</div>
