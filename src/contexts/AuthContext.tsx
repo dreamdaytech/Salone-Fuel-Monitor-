@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db, googleProvider, signInWithPopup, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber, doc, getDoc, setDoc, updateDoc, serverTimestamp, handleFirestoreError, OperationType } from '../firebase';
+import { auth, db, googleProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber, doc, getDoc, setDoc, updateDoc, serverTimestamp, handleFirestoreError, OperationType } from '../firebase';
 import { onAuthStateChanged, User as FirebaseUser, ConfirmationResult, sendPasswordResetEmail } from 'firebase/auth';
 import { toast } from 'sonner';
 import firebaseConfig from '../../firebase-applet-config.json';
@@ -72,6 +72,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    getRedirectResult(auth).catch((error) => {
+      console.error('Redirect sign-in error:', error);
+      setAuthError('Sign-in failed or was cancelled. Please try again.');
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       console.log("Auth state changed:", currentUser?.email || currentUser?.phoneNumber, currentUser?.uid);
       if (currentUser) {
@@ -148,10 +153,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsSigningIn(true);
     setAuthError(null);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        // Mobile browsers often block cross-origin cookies required for popups, 
+        // which results in silent failures after the popup closes.
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+      }
     } catch (error: any) {
       if (error.code === 'auth/popup-blocked') {
-        setAuthError('The sign-in popup was blocked by your browser. Please allow popups for this site and try again.');
+        // Fallback to redirect if popup is blocked even on desktop
+        try {
+          await signInWithRedirect(auth, googleProvider);
+        } catch (redirectError) {
+          setAuthError('Sign-in popup blocked and redirect failed. Please allow popups.');
+        }
       } else if (error.code === 'auth/cancelled-popup-request') {
         console.warn('Sign-in popup request was cancelled (likely a duplicate request).');
       } else if (error.code === 'auth/popup-closed-by-user') {

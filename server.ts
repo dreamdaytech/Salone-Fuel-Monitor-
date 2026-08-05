@@ -326,6 +326,105 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
+
+    // Dynamic OG meta tag injection for blog posts (for social media crawlers)
+    const FIREBASE_PROJECT_ID = 'gen-lang-client-0373555935';
+    const FIRESTORE_DATABASE_ID = 'ai-studio-0233f303-b06f-4958-8cb3-5b709f801af6';
+    const SITE_URL = 'https://salone-fuel-monitor.onrender.com';
+    const CRAWLER_AGENTS = /whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot|googlebot|bingbot|applebot|iframely/i;
+
+    app.get('/blog/:slug', async (req, res) => {
+      const userAgent = req.headers['user-agent'] || '';
+      const isCrawler = CRAWLER_AGENTS.test(userAgent);
+
+      // For regular browser users, just serve index.html and let React handle routing
+      if (!isCrawler) {
+        return res.sendFile(path.join(distPath, 'index.html'));
+      }
+
+      // For crawlers, fetch blog post data and inject OG tags
+      try {
+        const slug = req.params.slug;
+        const restUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/blog_posts?pageSize=1&orderBy=slug&showMissing=false`;
+        const searchUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents:runQuery`;
+
+        const queryBody = {
+          structuredQuery: {
+            from: [{ collectionId: 'blog_posts' }],
+            where: {
+              fieldFilter: {
+                field: { fieldPath: 'slug' },
+                op: 'EQUAL',
+                value: { stringValue: slug }
+              }
+            },
+            limit: 1
+          }
+        };
+
+        const response = await fetch(searchUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(queryBody)
+        });
+
+        const results = await response.json();
+        const doc = results?.[0]?.document;
+
+        const indexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+
+        if (doc && doc.fields) {
+          const fields = doc.fields;
+          const title = fields.seoTitle?.stringValue || fields.title?.stringValue || 'Salone Fuel Monitor';
+          const description = fields.seoDescription?.stringValue || fields.excerpt?.stringValue || 'Sierra Leone\'s premier platform for real-time fuel prices, station locators, transport fares, market intelligence, and global barrel vs pump price analytics.';
+          const image = fields.coverImage?.stringValue || `${SITE_URL}/og-image.png`;
+          const pageUrl = `${SITE_URL}/blog/${slug}`;
+
+          const injectedHtml = indexHtml
+            .replace(
+              /<meta property="og:title" content="[^"]*" \/>/,
+              `<meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />`
+            )
+            .replace(
+              /<meta property="og:description" content="[^"]*" \/>/,
+              `<meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />`
+            )
+            .replace(
+              /<meta property="og:image" content="[^"]*" \/>/,
+              `<meta property="og:image" content="${image}" />`
+            )
+            .replace(
+              /<meta property="og:url" content="[^"]*" \/>/,
+              `<meta property="og:url" content="${pageUrl}" />`
+            )
+            .replace(
+              /<meta property="twitter:title" content="[^"]*" \/>/,
+              `<meta property="twitter:title" content="${title.replace(/"/g, '&quot;')}" />`
+            )
+            .replace(
+              /<meta property="twitter:description" content="[^"]*" \/>/,
+              `<meta property="twitter:description" content="${description.replace(/"/g, '&quot;')}" />`
+            )
+            .replace(
+              /<meta property="twitter:image" content="[^"]*" \/>/,
+              `<meta property="twitter:image" content="${image}" />`
+            )
+            .replace(
+              /<title>[^<]*<\/title>/,
+              `<title>${title} | Salone Fuel Monitor</title>`
+            );
+
+          return res.send(injectedHtml);
+        } else {
+          // Blog post not found — serve default index.html
+          return res.send(indexHtml);
+        }
+      } catch (err) {
+        console.error('Error injecting OG tags for blog post:', err);
+        return res.sendFile(path.join(distPath, 'index.html'));
+      }
+    });
+
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

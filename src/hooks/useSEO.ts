@@ -3,32 +3,37 @@ import { useEffect } from 'react';
 interface SEOProps {
   title: string;
   description?: string;
+  image?: string;
 }
 
-export function useSEO({ title, description }: SEOProps) {
-  useEffect(() => {
-    // Save original title and description to restore on unmount
-    const originalTitle = document.title;
-    let metaDescription = document.querySelector('meta[name="description"]');
-    
-    // Set new title
-    document.title = title ? `${title} | Salone Fuel Monitor` : 'Salone Fuel Monitor';
+function setMetaTag(property: string, content: string, isName = false) {
+  const attr = isName ? 'name' : 'property';
+  let tag = document.querySelector(`meta[${attr}="${property}"]`);
+  if (!tag) {
+    tag = document.createElement('meta');
+    tag.setAttribute(attr, property);
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute('content', content);
+}
 
-    // Set or create new description
+export function useSEO({ title, description, image }: SEOProps) {
+  useEffect(() => {
+    const fullTitle = title ? `${title} | Salone Fuel Monitor` : 'Salone Fuel Monitor';
+    document.title = fullTitle;
+
+    setMetaTag('og:title', fullTitle);
+    setMetaTag('twitter:title', fullTitle);
+
     if (description) {
-      if (!metaDescription) {
-        metaDescription = document.createElement('meta');
-        metaDescription.setAttribute('name', 'description');
-        document.head.appendChild(metaDescription);
-      }
-      metaDescription.setAttribute('content', description);
+      setMetaTag('description', description, true);
+      setMetaTag('og:description', description);
+      setMetaTag('twitter:description', description);
     }
 
-    return () => {
-      document.title = originalTitle;
-      // Optionally we could restore the old description here, but 
-      // typically SPAs leave the last description, or we clear it.
-      // Leaving it is usually fine.
-    };
-  }, [title, description]);
+    if (image) {
+      setMetaTag('og:image', image);
+      setMetaTag('twitter:image', image);
+    }
+  }, [title, description, image]);
 }

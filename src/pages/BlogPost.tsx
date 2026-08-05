@@ -45,7 +45,8 @@ export default function BlogPost() {
   // Hook handles SEO updates dynamically
   useSEO({
     title: post?.seoTitle || post?.title || 'Loading...',
-    description: post?.seoDescription || post?.excerpt || ''
+    description: post?.seoDescription || post?.excerpt || '',
+    image: post?.coverImage
   });
 
   if (loading) {
