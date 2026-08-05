@@ -197,7 +197,6 @@ export default function Auth() {
                 <span>Phone</span>
                 <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 uppercase tracking-wide">Soon</span>
               </div>
-              </div>
             </button>
           </div>
           )}
