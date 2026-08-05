@@ -52,10 +52,7 @@ interface Promotion {
 }
 
 const isStationOutOfStock = (station: Station) => {
-  if (station.isOutOfStock) return true;
-  const prices = Object.values(station.prices || {});
-  if (prices.length === 0) return true;
-  return prices.every(p => p === 0);
+  return station.isOutOfStock === true;
 };
 
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {

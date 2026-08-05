@@ -95,20 +95,24 @@ service cloud.firestore {
     }
 
     function isValidStation(data) {
-      return hasOnlyAllowedFields(['ownerId', 'name', 'district', 'location', 'brand', 'contact', 'operatingHours', 'fuelTypes', 'prices', 'isVerified', 'isSuspended', 'isPublished', 'status', 'lastUpdated', 'createdAt', 'latitude', 'longitude']) &&
-             data.ownerId is string && data.ownerId.size() > 0 && data.ownerId.size() < 100 &&
+      return hasOnlyAllowedFields(['ownerId', 'name', 'district', 'city', 'location', 'brand', 'contact', 'contacts', 'operatingHours', 'fuelTypes', 'prices', 'isVerified', 'isSuspended', 'isPublished', 'isOutOfStock', 'status', 'claimStatus', 'lastUpdated', 'createdAt', 'latitude', 'longitude']) &&
+             (data.ownerId == null || (data.ownerId is string && data.ownerId.size() > 0 && data.ownerId.size() < 100)) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.district is string && data.district.size() > 0 && data.district.size() < 100 &&
+             (!('city' in data) || (data.city is string && data.city.size() < 100)) &&
              data.location is string && data.location.size() > 0 && data.location.size() < 200 &&
              data.brand is string && data.brand.size() > 0 && data.brand.size() < 100 &&
              (!('contact' in data) || (data.contact is string && data.contact.size() < 100)) &&
+             (!('contacts' in data) || (data.contacts is list && data.contacts.size() <= 10)) &&
              (!('operatingHours' in data) || (data.operatingHours is string && data.operatingHours.size() < 500) || (data.operatingHours is list && data.operatingHours.size() <= 10)) &&
              data.fuelTypes is list && data.fuelTypes.size() <= 10 &&
              isValidMap(data.prices) &&
              (!('isVerified' in data) || data.isVerified is bool) &&
              (!('isSuspended' in data) || data.isSuspended is bool) &&
              (!('isPublished' in data) || data.isPublished is bool) &&
+             (!('isOutOfStock' in data) || data.isOutOfStock is bool) &&
              (!('status' in data) || data.status in ['pending', 'approved', 'disapproved']) &&
+             (!('claimStatus' in data) || data.claimStatus in ['unclaimed', 'pending', 'claimed']) &&
              (data.lastUpdated is timestamp || data.lastUpdated is string) &&
              (!('createdAt' in data) || (data.createdAt is timestamp || data.createdAt is string)) &&
              (!('latitude' in data) || data.latitude is number) &&

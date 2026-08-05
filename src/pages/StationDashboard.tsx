@@ -5,14 +5,52 @@ import { Plus, Edit2, Save, X, Building2, MapPin, Clock, Phone, Tag, ShieldCheck
 import { NotificationService } from '../services/NotificationService';
 import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
 import { Button } from '../components/ui/Button';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Helper component to fix map sizing issues
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    // Small delay to ensure container is rendered
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+}
+
+function LocationPicker({ position, onChange }: { position: { lat: number, lng: number } | null, onChange: (pos: { lat: number, lng: number }) => void }) {
+  useMapEvents({
+    click(e) {
+      onChange({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+
+  return position ? <Marker position={position} /> : null;
+}
 
 interface Station {
   id: string;
   name: string;
   district: string;
+  city?: string;
   location: string;
   brand: string;
   contact: string;
+  contacts?: string[];
   operatingHours: string | string[];
   fuelTypes: string[];
   prices: Record<string, number>;
@@ -267,8 +305,8 @@ export default function StationDashboard() {
   const [quickEditStationId, setQuickEditStationId] = useState<string | null>(null);
   const [quickEditPrices, setQuickEditPrices] = useState<Record<string, number>>({});
   const [formData, setFormData] = useState<Partial<Station>>({
-    name: '', district: '', location: '', brand: '', contact: '', operatingHours: [''],
-    fuelTypes: ['Petrol', 'Diesel'], prices: { Petrol: 0, Diesel: 0 }, isVerified: false,
+    name: '', district: '', city: '', location: '', brand: '', contact: '', contacts: [''], operatingHours: [''],
+    fuelTypes: ['Petrol', 'Diesel'], prices: {}, isVerified: false,
     latitude: 8.481, longitude: -13.248, isPublished: true, isOutOfStock: false
   });
   const [promoFormData, setPromoFormData] = useState<Partial<Promotion>>({
@@ -406,8 +444,9 @@ export default function StationDashboard() {
 
     try {
       if (isCreating) {
+        const cleanData = Object.fromEntries(Object.entries(formData).filter(([_, v]) => v !== undefined));
         const docRef = await addDoc(collection(db, 'stations'), {
-          ...formData,
+          ...cleanData,
           ownerId: user.uid,
           status: 'pending',
           createdAt: serverTimestamp(),
@@ -431,14 +470,14 @@ export default function StationDashboard() {
         const stationRef = doc(db, 'stations', editingStation.id);
         
         // Log price changes
-        const oldPrices = editingStation.prices;
+        const oldPrices = editingStation.prices || {};
         const newPrices = formData.prices || {};
         
         let priceChanged = false;
         const changedFuels: string[] = [];
 
         for (const fuelType of formData.fuelTypes || []) {
-          if (oldPrices[fuelType] !== newPrices[fuelType]) {
+          if (oldPrices[fuelType] !== newPrices[fuelType] && newPrices[fuelType] !== undefined) {
             priceChanged = true;
             changedFuels.push(fuelType);
             await addDoc(collection(db, 'price_history'), {
@@ -458,6 +497,9 @@ export default function StationDashboard() {
 
         const updateData = { ...formData };
         delete updateData.id;
+        
+        // Remove any undefined fields to prevent Firestore errors
+        Object.keys(updateData).forEach(key => updateData[key as keyof typeof updateData] === undefined && delete updateData[key as keyof typeof updateData]);
 
         await updateDoc(stationRef, {
           ...updateData,
@@ -466,8 +508,8 @@ export default function StationDashboard() {
         setEditingStation(null);
       }
       setFormData({
-        name: '', district: '', location: '', brand: '', contact: '', operatingHours: [''],
-        fuelTypes: ['Petrol', 'Diesel'], prices: { Petrol: 0, Diesel: 0 }, isVerified: false,
+        name: '', district: '', city: '', location: '', brand: '', contact: '', contacts: [''], operatingHours: [''],
+        fuelTypes: ['Petrol', 'Diesel'], prices: {}, isVerified: false,
         latitude: 8.481, longitude: -13.248, isPublished: true, isOutOfStock: false
       });
     } catch (error) {
@@ -481,7 +523,11 @@ export default function StationDashboard() {
       ...station,
       operatingHours: Array.isArray(station.operatingHours) 
         ? station.operatingHours 
-        : station.operatingHours ? [station.operatingHours] : ['']
+        : station.operatingHours ? [station.operatingHours] : [''],
+      // Populate contacts from existing contacts array, or fall back to legacy contact string
+      contacts: (station.contacts && station.contacts.length > 0)
+        ? station.contacts
+        : station.contact ? [station.contact] : ['']
     });
     setIsCreating(false);
     setQuickEditStationId(null);
@@ -756,7 +802,21 @@ export default function StationDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Location/Area</label>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">City/Town</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+                    <input
+                      type="text"
+                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 font-medium transition-all"
+                      value={formData.city || ''}
+                      onChange={e => setFormData({...formData, city: e.target.value})}
+                      placeholder="e.g. Freetown"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Address</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
                     <input
@@ -769,29 +829,7 @@ export default function StationDashboard() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Contact Number</label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
-                    <input
-                      type="text"
-                      className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-surface-900 font-medium transition-all"
-                      value={formData.contact}
-                      onChange={e => setFormData({...formData, contact: e.target.value})}
-                      placeholder="e.g. +232 77 000 000"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Operating Hours</label>
-                  <OperatingHoursEditor 
-                    value={formData.operatingHours || ['']} 
-                    onChange={val => setFormData({...formData, operatingHours: val})} 
-                  />
-                </div>
-
-                <div className="md:col-span-2 space-y-4">
+                <div className="sm:col-span-2 space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">GPS Coordinates</label>
                     <button
@@ -832,7 +870,93 @@ export default function StationDashboard() {
                       />
                     </div>
                   </div>
+                  
+                  <div className="h-[300px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-inner relative z-0">
+                    <MapContainer
+                      center={[(formData.latitude || 8.481), (formData.longitude || -13.248)]}
+                      zoom={13}
+                      scrollWheelZoom={true}
+                      className="h-full w-full"
+                    >
+                      <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      />
+                      <MapResizer />
+                      <LocationPicker 
+                        position={formData.latitude !== undefined && formData.longitude !== undefined ? { lat: formData.latitude, lng: formData.longitude } : null}
+                        onChange={(pos) => setFormData({...formData, latitude: pos.lat, longitude: pos.lng})}
+                      />
+                    </MapContainer>
+                    <div className="absolute bottom-2 left-2 right-2 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg text-xs font-medium text-surface-600 shadow-sm border border-gray-100 z-[1000] pointer-events-none">
+                      Click anywhere on the map to set coordinates
+                    </div>
+                  </div>
                 </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Contact Numbers</label>
+                  <div className="space-y-2">
+                    {(formData.contacts && formData.contacts.length > 0 ? formData.contacts : ['']).map((num, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <div className="relative flex-1 flex items-center bg-gray-50 rounded-xl focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                          <div className="flex items-center pl-3 pr-2 py-2.5 sm:py-3 text-gray-500 font-medium">
+                            <Phone className="text-gray-400 w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                            <span>+232</span>
+                          </div>
+                          <input
+                            type="text"
+                            maxLength={8}
+                            className="w-full px-2 py-2.5 sm:py-3 bg-transparent border-none focus:ring-0 text-surface-900 font-medium placeholder-gray-400"
+                            value={num.replace(/^\+232\s*/, '')}
+                            onChange={e => {
+                              const digits = e.target.value.replace(/\D/g, '').slice(0, 8);
+                              const fullNumber = digits ? `+232 ${digits}` : '';
+                              const updated = [...(formData.contacts || [''])];
+                              updated[idx] = fullNumber;
+                              setFormData({ ...formData, contacts: updated, contact: updated[0] || '' });
+                            }}
+                            placeholder="77000000"
+                          />
+                        </div>
+                        {(formData.contacts || ['']).length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = (formData.contacts || ['']).filter((_, i) => i !== idx);
+                              setFormData({ ...formData, contacts: updated, contact: updated[0] || '' });
+                            }}
+                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-red-50 hover:bg-red-100 text-red-400 hover:text-red-600 transition-colors flex-shrink-0"
+                            title="Remove number"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...(formData.contacts || ['']), ''];
+                        setFormData({ ...formData, contacts: updated });
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors mt-1"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add Another Number
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Operating Hours</label>
+                  <OperatingHoursEditor 
+                    value={formData.operatingHours || ['']} 
+                    onChange={val => setFormData({...formData, operatingHours: val})} 
+                  />
+                </div>
+
+
               </div>
 
               <div className="border-t border-gray-100 pt-6 sm:pt-8 mb-6 sm:mb-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -900,12 +1024,21 @@ export default function StationDashboard() {
                                   ? 'border-red-500 focus:ring-red-200 focus:border-red-500'
                                   : 'border-gray-100 focus:ring-primary/20 focus:border-primary'
                               }`}
-                              value={formData.prices?.[fuel] || ''}
-                              onChange={e => setFormData({
-                                ...formData,
-                                prices: { ...formData.prices, [fuel]: Number(e.target.value) }
-                              })}
-                              placeholder="0"
+                              value={formData.prices?.[fuel] === undefined || formData.prices?.[fuel] === 0 ? '' : formData.prices[fuel]}
+                              onChange={e => {
+                                const val = e.target.value;
+                                const newPrices = { ...formData.prices };
+                                if (val === '') {
+                                  delete newPrices[fuel];
+                                } else {
+                                  newPrices[fuel] = Number(val);
+                                }
+                                setFormData({
+                                  ...formData,
+                                  prices: newPrices
+                                });
+                              }}
+                              placeholder=""
                             />
                           </div>
                           {govPrices[fuel] && (
@@ -1091,7 +1224,7 @@ export default function StationDashboard() {
                       </div>
                     ) : (
                       <span className="text-lg font-bold text-surface-900">
-                        {(station.prices || {})[fuel]?.toLocaleString()} <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
+                        {(station.prices || {})[fuel] > 0 ? (station.prices || {})[fuel].toLocaleString() : ''} <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
                       </span>
                     )}
                   </div>
