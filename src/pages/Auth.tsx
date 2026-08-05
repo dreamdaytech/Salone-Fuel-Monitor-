@@ -140,11 +140,9 @@ export default function Auth() {
         <div className="bg-white py-10 px-6 shadow-sm sm:rounded-[2rem] sm:px-10 border border-gray-100">
           
           <div className="flex flex-col items-center mb-8">
-            <div className="w-20 h-20 rounded-2xl border-2 border-emerald-500/20 p-1 mb-6 flex items-center justify-center">
-              <div className="w-full h-full bg-emerald-600 rounded-xl flex items-center justify-center">
-                <Fuel className="h-8 w-8 text-white" />
-              </div>
-            </div>
+            <Link to="/" className="w-28 h-28 mb-4 hover:scale-105 transition-transform duration-200">
+              <img src="/logo.png" alt="Salone Fuel Monitor" className="w-full h-full object-contain drop-shadow-md" />
+            </Link>
             <h2 className="text-center text-3xl font-bold text-gray-900 tracking-tight">
               {isLogin ? 'Welcome Back' : 'Join Salone Fuel Monitor'}
             </h2>

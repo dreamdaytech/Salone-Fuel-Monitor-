@@ -39,9 +39,9 @@ export default function Register() {
     <div className="min-h-screen bg-surface-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <User className="w-8 h-8 text-white" />
-          </div>
+          <Link to="/" className="w-24 h-24 mb-2 hover:scale-105 transition-transform duration-200">
+            <img src="/logo.png" alt="Salone Fuel Monitor" className="w-full h-full object-contain drop-shadow-md" />
+          </Link>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-surface-900 tracking-tight">
           Complete Your Profile
