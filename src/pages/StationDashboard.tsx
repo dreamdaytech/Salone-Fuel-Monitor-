@@ -1037,22 +1037,23 @@ export default function StationDashboard() {
                     {station.location}, {station.district}
                   </div>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-2">
                   <Button
                     onClick={() => startEdit(station)}
                     showNotification={false}
-                    className="p-2 text-gray-400 hover:text-primary hover:bg-emerald-50 rounded-xl transition-all"
+                    className="w-8 h-8 rounded-full p-0 flex items-center justify-center transition-all"
                     title="Edit Station Details"
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <Edit2 className="w-4 h-4 text-white" />
                   </Button>
                   <Button
                     onClick={() => handleDeleteStation(station.id, station.name)}
                     showNotification={false}
-                    className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    variant="danger"
+                    className="w-8 h-8 rounded-full p-0 flex items-center justify-center transition-all bg-rose-500 text-white hover:bg-rose-600 border-none shadow-md shadow-rose-500/20"
                     title="Delete Station"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 text-white" />
                   </Button>
                 </div>
               </div>
