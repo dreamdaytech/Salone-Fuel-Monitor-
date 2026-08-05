@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db, collection, query, where, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, handleFirestoreError, OperationType, getDocs, orderBy, limit } from '../firebase';
+import { db, collection, query, where, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, handleFirestoreError, OperationType, getDocs, orderBy, limit } from '../firebase';
 import { Plus, Edit2, Save, X, Building2, MapPin, Clock, Phone, Tag, ShieldCheck, Zap, ShieldAlert, Check, TrendingDown, Calendar, Percent, Trash2, Navigation, Loader2, Search, Filter, ArrowUpDown } from 'lucide-react';
 import { NotificationService } from '../services/NotificationService';
 import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
@@ -485,6 +485,16 @@ export default function StationDashboard() {
     });
     setIsCreating(false);
     setQuickEditStationId(null);
+  };
+
+  const handleDeleteStation = async (stationId: string, stationName: string) => {
+    if (window.confirm(`Are you sure you want to delete ${stationName}? This action cannot be undone.`)) {
+      try {
+        await deleteDoc(doc(db, 'stations', stationId));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, 'stations');
+      }
+    }
   };
 
   const cancelEdit = () => {
@@ -1027,14 +1037,24 @@ export default function StationDashboard() {
                     {station.location}, {station.district}
                   </div>
                 </div>
-                <Button
-                  onClick={() => startEdit(station)}
-                  showNotification={false}
-                  className="p-2 text-gray-400 hover:text-primary hover:bg-emerald-50 rounded-xl transition-all"
-                  title="Edit Station Details"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    onClick={() => startEdit(station)}
+                    showNotification={false}
+                    className="p-2 text-gray-400 hover:text-primary hover:bg-emerald-50 rounded-xl transition-all"
+                    title="Edit Station Details"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => handleDeleteStation(station.id, station.name)}
+                    showNotification={false}
+                    className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    title="Delete Station"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-3">
