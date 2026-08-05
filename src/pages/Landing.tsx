@@ -131,16 +131,24 @@ export default function Landing() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="relative mx-auto w-full max-w-md lg:ml-auto"
             >
-              <div className="absolute -inset-1 bg-gradient-to-r from-white/30 to-emerald-300/30 rounded-3xl blur-lg" />
+              <motion.div 
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -inset-1 bg-gradient-to-r from-white/30 to-emerald-300/30 rounded-3xl blur-lg" 
+              />
               <div className="relative bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-white/50 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h3 className="text-xl font-bold text-gray-900">Current Pump Prices</h3>
                     <p className="text-sm text-gray-500">Official National Average</p>
                   </div>
-                  <div className="p-2.5 bg-blue-50 rounded-xl">
+                  <motion.div 
+                    animate={{ y: [0, -6, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="p-2.5 bg-blue-50 rounded-xl"
+                  >
                     <Fuel className="h-6 w-6 text-blue-600" />
-                  </div>
+                  </motion.div>
                 </div>
 
                 {loading ? (
@@ -153,7 +161,11 @@ export default function Landing() {
                   <div className="space-y-4">
                     <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex items-center justify-between group hover:bg-blue-50/50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-10 bg-red-500 rounded-full" />
+                        <motion.div 
+                          animate={{ opacity: [1, 0.4, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0 }}
+                          className="w-1.5 h-10 bg-red-500 rounded-full" 
+                        />
                         <div>
                           <p className="text-sm font-medium text-gray-500">Petrol (PMS)</p>
                           <p className="text-2xl font-bold text-gray-900">Le {latestFuelPrices.petrol}</p>
@@ -164,7 +176,11 @@ export default function Landing() {
 
                     <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex items-center justify-between group hover:bg-emerald-50/50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-10 bg-emerald-500 rounded-full" />
+                        <motion.div 
+                          animate={{ opacity: [1, 0.4, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                          className="w-1.5 h-10 bg-emerald-500 rounded-full" 
+                        />
                         <div>
                           <p className="text-sm font-medium text-gray-500">Diesel (AGO)</p>
                           <p className="text-2xl font-bold text-gray-900">Le {latestFuelPrices.diesel}</p>
@@ -175,7 +191,11 @@ export default function Landing() {
 
                     <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 flex items-center justify-between group hover:bg-amber-50/50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-10 bg-amber-500 rounded-full" />
+                        <motion.div 
+                          animate={{ opacity: [1, 0.4, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                          className="w-1.5 h-10 bg-amber-500 rounded-full" 
+                        />
                         <div>
                           <p className="text-sm font-medium text-gray-500">Kerosene (DPK)</p>
                           <p className="text-2xl font-bold text-gray-900">Le {latestFuelPrices.kerosene}</p>
