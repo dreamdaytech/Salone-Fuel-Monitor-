@@ -1996,13 +1996,13 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                     <div className="flex items-center justify-between mb-4">
                       <div className="p-3 bg-emerald-50 text-primary rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors">
                         <CheckCircle className="w-6 h-6" />
                       </div>
-                      <span className="text-[10px] font-bold text-primary bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider">+12%</span>
+                      <span className="text-[10px] font-bold text-primary bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider">Active</span>
                     </div>
                     <div className="text-3xl font-bold text-surface-900 mb-1">{stations.filter(s => s.isVerified).length}</div>
                     <div className="text-sm font-medium text-gray-500">Verified Stations</div>
@@ -2021,19 +2021,106 @@ export default function AdminDashboard() {
 
                   <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                     <div className="flex items-center justify-between mb-4">
-                      <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                      <div className="p-3 bg-rose-50 text-rose-600 rounded-2xl group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                        <ShieldAlert className="w-6 h-6" />
+                      </div>
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-full uppercase tracking-wider">Reports</span>
+                    </div>
+                    <div className="text-3xl font-bold text-surface-900 mb-1">{priceReports.filter(r => r.status === 'pending').length}</div>
+                    <div className="text-sm font-medium text-gray-500">Pending Price Reports</div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <Users className="w-6 h-6" />
                       </div>
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-wider">Active</span>
+                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full uppercase tracking-wider">Total</span>
                     </div>
                     <div className="text-3xl font-bold text-surface-900 mb-1">{users.length}</div>
-                    <div className="text-sm font-medium text-gray-500">Total Members</div>
+                    <div className="text-sm font-medium text-gray-500">Platform Members</div>
+                  </div>
+                </div>
+
+                {/* Quick Actions (Command Center) */}
+                <div>
+                  <h3 className="text-lg font-bold text-surface-900 mb-4 px-1 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Command Center
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <Button
+                      onClick={() => setActiveTab('reports')}
+                      showNotification={priceReports.filter(r => r.status === 'pending').length > 0}
+                      variant="outline"
+                      className="flex flex-col items-center justify-center gap-3 h-28 rounded-2xl bg-white border-gray-100 shadow-sm hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
+                    >
+                      <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
+                        <ShieldAlert className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-bold text-surface-900">Price Reports</span>
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('claims')}
+                      showNotification={false}
+                      variant="outline"
+                      className="flex flex-col items-center justify-center gap-3 h-28 rounded-2xl bg-white border-gray-100 shadow-sm hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
+                    >
+                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-bold text-surface-900">Station Claims</span>
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('reviews')}
+                      showNotification={false}
+                      variant="outline"
+                      className="flex flex-col items-center justify-center gap-3 h-28 rounded-2xl bg-white border-gray-100 shadow-sm hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
+                    >
+                      <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                        <Star className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-bold text-surface-900">Moderation</span>
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('market_intel')}
+                      showNotification={false}
+                      variant="outline"
+                      className="flex flex-col items-center justify-center gap-3 h-28 rounded-2xl bg-white border-gray-100 shadow-sm hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
+                    >
+                      <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                        <BarChart2 className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-bold text-surface-900">Market Intel</span>
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('price_trends')}
+                      showNotification={false}
+                      variant="outline"
+                      className="flex flex-col items-center justify-center gap-3 h-28 rounded-2xl bg-white border-gray-100 shadow-sm hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
+                    >
+                      <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                        <TrendingUp className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-bold text-surface-900">Price Trends</span>
+                    </Button>
+                    <Button
+                      onClick={() => setActiveTab('regional')}
+                      showNotification={false}
+                      variant="outline"
+                      className="flex flex-col items-center justify-center gap-3 h-28 rounded-2xl bg-white border-gray-100 shadow-sm hover:border-primary hover:shadow-md hover:-translate-y-1 transition-all"
+                    >
+                      <div className="p-3 bg-cyan-50 text-cyan-600 rounded-xl">
+                        <Globe className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-bold text-surface-900">Regional Prices</span>
+                    </Button>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Pending Verifications List */}
-                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
                     <div className="p-6 border-b border-gray-50 flex items-center justify-between">
                       <h3 className="font-bold text-surface-900 flex items-center gap-2">
                         <Shield className="w-5 h-5 text-amber-500" />
@@ -2048,7 +2135,7 @@ export default function AdminDashboard() {
                         View All
                       </Button>
                     </div>
-                    <div className="divide-y divide-gray-50">
+                    <div className="divide-y divide-gray-50 flex-1">
                       {stations.filter(s => !s.isVerified).length > 0 ? (
                         stations.filter(s => !s.isVerified).slice(0, 5).map(station => (
                           <div 
@@ -2071,11 +2158,60 @@ export default function AdminDashboard() {
                           </div>
                         ))
                       ) : (
-                        <div className="p-12 text-center">
+                        <div className="p-12 text-center h-full flex flex-col justify-center">
                           <div className="w-16 h-16 bg-emerald-50 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                             <CheckCircle className="w-8 h-8" />
                           </div>
                           <p className="text-sm font-medium text-gray-500">All stations are verified!</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Recent Price Reports List */}
+                  <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+                      <h3 className="font-bold text-surface-900 flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-rose-500" />
+                        Recent Price Reports
+                      </h3>
+                      <Button
+                        onClick={() => setActiveTab('reports')}
+                        showNotification={false}
+                        variant="ghost"
+                        className="text-xs font-bold text-primary hover:underline uppercase tracking-wider p-0 h-auto min-w-0"
+                      >
+                        View All
+                      </Button>
+                    </div>
+                    <div className="divide-y divide-gray-50 flex-1">
+                      {priceReports.filter(r => r.status === 'pending').length > 0 ? (
+                        priceReports.filter(r => r.status === 'pending').slice(0, 5).map(report => (
+                          <div 
+                            key={report.id} 
+                            className="p-5 flex items-center justify-between hover:bg-gray-50 transition-colors group cursor-pointer"
+                            onClick={() => setActiveTab('reports')}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-rose-100 group-hover:text-rose-600 transition-colors">
+                                <Fuel className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-sm text-surface-900">{report.stationName}</h4>
+                                <p className="text-xs text-gray-500">Reported {report.fuelType} at Le {report.listedPrice.toLocaleString()}</p>
+                              </div>
+                            </div>
+                            <div className="p-2 text-gray-400 group-hover:text-rose-600 group-hover:bg-rose-50 rounded-lg transition-all h-auto">
+                              <ArrowLeft className="w-4 h-4 rotate-180" />
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-12 text-center h-full flex flex-col justify-center">
+                          <div className="w-16 h-16 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <CheckCircle className="w-8 h-8" />
+                          </div>
+                          <p className="text-sm font-medium text-gray-500">No pending price reports</p>
                         </div>
                       )}
                     </div>
