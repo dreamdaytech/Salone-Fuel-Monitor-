@@ -1863,6 +1863,13 @@ export default function AdminDashboard() {
               )
             )}
 
+            {activeTab === 'blog' && (
+              <AdminBlog />
+            )}
+            {activeTab === 'partners' && (
+              <AdminPartners />
+            )}
+
             {activeTab === 'messages' && (
               <AdminMessages />
             )}
@@ -3259,10 +3266,6 @@ export default function AdminDashboard() {
                     )}
                   </div>
                 </div>
-              )}
-
-              {activeTab === 'partners' && (
-                <AdminPartners />
               )}
             </div>
 
