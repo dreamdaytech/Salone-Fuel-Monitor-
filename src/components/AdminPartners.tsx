@@ -285,7 +285,7 @@ export default function AdminPartners() {
       )}
 
       {partners.length > 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
           <ul className="divide-y divide-gray-200">
             {partners.map((partner, index) => (
               <li key={partner.id} className="p-4 hover:bg-gray-50 flex items-center gap-6 group transition-colors">
@@ -329,7 +329,7 @@ export default function AdminPartners() {
                   </button>
 
                   {openMenuId === partner.id && (
-                    <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-20 py-1 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-[9999] py-1 animate-in fade-in zoom-in-95 duration-100">
                       <button
                         onClick={() => { handleEdit(partner); setOpenMenuId(null); }}
                         className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
