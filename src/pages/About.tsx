@@ -150,7 +150,7 @@ export default function About() {
                       <img 
                         src={partner.logoUrl} 
                         alt={partner.name} 
-                        className="max-w-full max-h-full object-contain filter grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
+                        className="max-w-full max-h-full object-contain transition-all duration-300 hover:scale-105"
                       />
                       <div className="absolute -top-2 -right-2 bg-blue-100 text-blue-600 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                         <ExternalLink className="w-3 h-3" />
@@ -161,7 +161,7 @@ export default function About() {
                       <img 
                         src={partner.logoUrl} 
                         alt={partner.name} 
-                        className="max-w-full max-h-full object-contain filter grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+                        className="max-w-full max-h-full object-contain transition-all duration-300 hover:scale-105"
                       />
                     </div>
                   )}
