@@ -1030,10 +1030,10 @@ export default function AdminDashboard() {
 
         {/* Sidebar */}
         <aside 
-          className={`relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] text-blue-100 transition-all duration-300 flex flex-col fixed md:sticky top-0 h-screen z-50 md:z-40 w-64 border-r border-white/10 ${
+          className={`overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] text-blue-100 transition-all duration-300 flex flex-col fixed md:sticky top-0 h-screen z-50 md:z-40 border-r border-white/10 ${
             isSidebarCollapsed ? 'md:w-20' : 'md:w-64'
           } ${
-            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+            isMobileMenuOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 w-64'
           }`}
         >
           {/* Background Overlay */}
