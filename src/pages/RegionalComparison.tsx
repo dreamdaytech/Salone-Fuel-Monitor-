@@ -107,8 +107,21 @@ function TableView({
             const diffPct = fuel === 'petrol' ? c.petrolDiffPct : fuel === 'diesel' ? c.dieselDiffPct : c.keroseneDiffPct;
             return (
               <tr key={c.id} className={`transition-colors hover:bg-emerald-50/40 ${c.isSierraLeone ? 'bg-emerald-50/60' : ''}`}>
-                <td className="px-4 py-3.5 font-bold text-surface-900 text-sm">
-                  <span className="text-lg">{getRankMedal(c.rank)}</span>
+                <td className="px-4 py-3.5">
+                  {c.rank <= 3 ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-xl font-black ${
+                        c.rank === 1 ? 'text-amber-500' : 
+                        c.rank === 2 ? 'text-slate-400' : 
+                        'text-amber-700'
+                      }`}>
+                        #{c.rank}
+                      </span>
+                      <span className="text-xl">{getRankMedal(c.rank)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-lg font-bold text-surface-900">#{c.rank}</span>
+                  )}
                 </td>
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-2.5">
