@@ -14,4 +14,5 @@ export interface BlogPost {
   tags: string[];
   seoTitle?: string;
   seoDescription?: string;
+  views?: number;
 }

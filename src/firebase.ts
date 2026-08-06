@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber } from 'firebase/auth';
-import { initializeFirestore, enableIndexedDbPersistence, doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, orderBy, limit, getDocFromServer, terminate, writeBatch, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { initializeFirestore, enableIndexedDbPersistence, doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, orderBy, limit, getDocFromServer, terminate, writeBatch, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -83,7 +83,8 @@ export {
   onMessage,
   writeBatch,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  increment
 };
 
 export enum OperationType {

@@ -465,20 +465,21 @@ export default function AdminBlog() {
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Post</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Views</th>
                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                     <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
                     Loading posts...
                   </td>
                 </tr>
               ) : filteredPosts.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                     No posts found. Create your first blog post!
                   </td>
                 </tr>
@@ -505,6 +506,10 @@ export default function AdminBlog() {
                         {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleDateString() : 'Just now'}
                       </div>
                       <div className="text-xs text-gray-500">by {post.authorName}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold text-surface-900">{post.views || 0}</div>
+                      <div className="text-xs text-gray-500">views</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">

@@ -119,6 +119,18 @@ service cloud.firestore {
              (!('longitude' in data) || data.longitude is number);
     }
 
+    function isValidStationClaim(data) {
+      return hasOnlyAllowedFields(['stationId', 'stationName', 'userId', 'userEmail', 'contactPhone', 'proofDetails', 'status', 'createdAt']) &&
+             data.stationId is string && data.stationId.size() > 0 && data.stationId.size() < 100 &&
+             data.stationName is string && data.stationName.size() > 0 && data.stationName.size() < 200 &&
+             data.userId is string && data.userId.size() > 0 && data.userId.size() < 100 &&
+             data.userEmail is string && data.userEmail.size() > 0 && data.userEmail.size() < 100 &&
+             data.contactPhone is string && data.contactPhone.size() > 0 && data.contactPhone.size() < 50 &&
+             data.proofDetails is string && data.proofDetails.size() > 0 && data.proofDetails.size() < 2000 &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             (data.createdAt is timestamp || data.createdAt is string);
+    }
+
     function isValidGovernmentPrice(data) {
       return hasOnlyAllowedFields(['prices', 'updatedAt', 'updatedBy']) &&
              isValidMap(data.prices) &&
@@ -251,6 +263,15 @@ service cloud.firestore {
              (!('resolvedBy' in data) || (data.resolvedBy is string && data.resolvedBy.size() < 100));
     }
 
+    function isValidPartner(data) {
+      return hasOnlyAllowedFields(['name', 'logoUrl', 'websiteUrl', 'order', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.logoUrl is string && data.logoUrl.size() > 0 && data.logoUrl.size() < 1000000 &&
+             (!('websiteUrl' in data) || (data.websiteUrl is string && data.websiteUrl.size() < 200)) &&
+             data.order is number &&
+             (data.createdAt is timestamp || data.createdAt is string);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -273,7 +294,7 @@ service cloud.firestore {
       allow read: if true; // Publicly readable for comparison
       allow create: if isAuthenticated() && isValidStation(request.resource.data) &&
                     hasRequiredFields(['ownerId', 'name', 'district', 'location', 'brand', 'fuelTypes', 'prices', 'isVerified', 'status', 'createdAt', 'lastUpdated']) &&
-                    request.resource.data.ownerId == request.auth.uid &&
+                    (request.resource.data.ownerId == request.auth.uid || (isAdmin() && request.resource.data.ownerId == null)) &&
                     (isStationOwner() || isAdmin()) &&
                     (request.resource.data.isVerified == false || isAdmin()) &&
                     (request.resource.data.status == 'pending' || isAdmin()) &&
@@ -284,6 +305,17 @@ service cloud.firestore {
                     (!('createdAt' in resource.data) || request.resource.data.createdAt == resource.data.createdAt) &&
                     isRecent(request.resource.data.lastUpdated);
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.ownerId == request.auth.uid);
+    }
+    
+    match /station_claims/{claimId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && isValidStationClaim(request.resource.data) &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.status == 'pending' &&
+                    isRecent(request.resource.data.createdAt);
+      allow update: if isAdmin() && isValidStationClaim(request.resource.data) &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if isAdmin();
     }
 
     match /government_prices/{docId} {
@@ -379,15 +411,23 @@ service cloud.firestore {
       allow update: if isAdmin() && isValidPriceTrend(request.resource.data) && isRecent(request.resource.data.updatedAt);
       allow delete: if isAdmin();
     }
+
+    match /partners/{partnerId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidPartner(request.resource.data) && isRecent(request.resource.data.createdAt);
+      allow update: if isAdmin() && isValidPartner(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
     // System configuration and versioning
     match /system/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
-    
-    // API keys stored here — admins only, never public
+
+    // API keys stored here — admins only, never public (except the brands list)
     match /settings/{docId} {
-      allow read: if isAdmin();
+      allow read: if isAdmin() || (docId == 'brands');
       allow write: if isAdmin();
     }
 

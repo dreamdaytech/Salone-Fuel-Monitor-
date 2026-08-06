@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, limit } from '../firebase';
+import { collection, query, where, getDocs, limit, doc, updateDoc, increment } from '../firebase';
 import { db } from '../firebase';
 import { BlogPost as BlogPostType } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
@@ -29,7 +29,22 @@ export default function BlogPost() {
         if (snapshot.empty) {
           setPost(null);
         } else {
-          setPost({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as BlogPostType);
+          const docData = snapshot.docs[0];
+          setPost({ id: docData.id, ...docData.data() } as BlogPostType);
+          
+          // Increment views
+          const viewedKey = `viewed_post_${docData.id}`;
+          if (!sessionStorage.getItem(viewedKey)) {
+            try {
+              const postRef = doc(db, 'blog_posts', docData.id);
+              await updateDoc(postRef, {
+                views: increment(1)
+              });
+              sessionStorage.setItem(viewedKey, 'true');
+            } catch (updateErr) {
+              console.error('Error updating views:', updateErr);
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching blog post:', err);
