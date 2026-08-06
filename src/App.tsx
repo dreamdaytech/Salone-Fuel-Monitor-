@@ -84,8 +84,8 @@ function AppContent() {
     };
   }, []);
 
-  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/terms', '/privacy', '/cookies'];
-  const isPublicRoute = publicRoutes.includes(location.pathname);
+  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/terms', '/privacy', '/cookies', '/blog'];
+  const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/transport-prices/');
 
   if (loading) {
     return (
