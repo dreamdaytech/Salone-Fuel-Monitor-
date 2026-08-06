@@ -1,4 +1,4 @@
-// Hostinger entry point shim
-// Hostinger's Express preset looks for 'server.js' at the root.
-// After `npm run build`, the actual server bundle is at dist/server.cjs.
-require('./dist/server.cjs');
+// Hostinger entry point shim (ESM-compatible)
+// package.json has "type":"module" so this file runs as an ES Module.
+// Use import() instead of require() — require is not available in ESM.
+import('./dist/server.cjs');
