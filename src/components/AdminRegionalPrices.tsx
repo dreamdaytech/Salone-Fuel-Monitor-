@@ -734,7 +734,7 @@ export default function AdminRegionalPrices() {
       {/* ── Option A: Manual Entry ── */}
       {activeSubTab === 'manual' && (
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               {dirtyCount > 0 && (
                 <span className="bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold">
@@ -745,7 +745,7 @@ export default function AdminRegionalPrices() {
             <button
               onClick={handleSaveAll}
               disabled={isSaving || dirtyCount === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-xl hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-xl hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors w-full sm:w-auto"
             >
               {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save All Changes
@@ -868,23 +868,23 @@ export default function AdminRegionalPrices() {
                     entry.isDirty ? 'border-amber-300' : 'border-gray-200'
                   } ${entry.isSierraLeone ? 'ring-2 ring-emerald-200' : ''}`}
                 >
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{entry.flag}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
+                    <div className="flex items-start sm:items-center gap-3">
+                      <span className="text-2xl mt-1 sm:mt-0">{entry.flag}</span>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center flex-wrap gap-2">
                           <p className="font-bold text-surface-900 text-sm">{entry.name}</p>
                           {entry.isSierraLeone && (
-                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">LIVE DATA</span>
+                            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">LIVE DATA</span>
                           )}
                           {entry.isDirty && (
-                            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">UNSAVED</span>
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full whitespace-nowrap">UNSAVED</span>
                           )}
                         </div>
                         <p className="text-xs text-gray-400">{entry.currencyCode} ({entry.currencySymbol})</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center self-end sm:self-auto gap-2">
                       {saved && !isEditing && (
                         <span className="text-xs text-gray-400 flex items-center gap-1">
                           <CheckCircle className="w-3 h-3 text-emerald-500" />
@@ -901,7 +901,7 @@ export default function AdminRegionalPrices() {
                       {isEditing && (
                         <button
                           onClick={() => handleSaveCountry(entry)}
-                          disabled={isSaving || !entry.isDirty}
+                          disabled={isSaving}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                         >
                           <Save className="w-3.5 h-3.5" /> Save
