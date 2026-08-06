@@ -48,7 +48,7 @@ try {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(cors());
   app.use(express.json());
@@ -330,7 +330,7 @@ async function startServer() {
     // Dynamic OG meta tag injection for blog posts (for social media crawlers)
     const FIREBASE_PROJECT_ID = 'gen-lang-client-0373555935';
     const FIRESTORE_DATABASE_ID = 'ai-studio-0233f303-b06f-4958-8cb3-5b709f801af6';
-    const SITE_URL = 'https://salone-fuel-monitor.onrender.com';
+    const SITE_URL = process.env.SITE_URL || 'https://salonefuelmonitor.com';
     const CRAWLER_AGENTS = /whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot|googlebot|bingbot|applebot|iframely/i;
 
     app.get('/blog/:slug', async (req, res) => {
@@ -430,8 +430,8 @@ async function startServer() {
     });
   }
 
-  const server = app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  const server = app.listen(Number(PORT), "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
