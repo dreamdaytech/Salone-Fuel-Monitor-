@@ -1910,11 +1910,6 @@ export default function AdminDashboard() {
                 <AdminSettings />
               )}
 
-            {activeTab === 'blog' && (
-              <div className="p-6 sm:p-8">
-                <AdminBlog />
-              </div>
-            )}
 
             {activeTab === 'map' && (
               <div className="space-y-6">
