@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db, collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, writeBatch } from '../firebase';
 import { Partner } from '../types/partner';
-import { Plus, Edit2, Trash2, ArrowUp, ArrowDown, Image as ImageIcon, Link as LinkIcon, Loader2, Save, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, ArrowUp, ArrowDown, Image as ImageIcon, Link as LinkIcon, Loader2, Save, X, MoreVertical } from 'lucide-react';
 import { Button } from './ui/Button';
 import { toast } from 'sonner';
 
@@ -12,6 +12,18 @@ export default function AdminPartners() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingPartner, setDeletingPartner] = useState<{id: string, name: string} | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -307,13 +319,31 @@ export default function AdminPartners() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(partner)} className="text-blue-600 hover:bg-blue-50">
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setDeletingPartner({id: partner.id, name: partner.name})} className="text-red-600 hover:bg-red-50">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                <div className="relative" ref={openMenuId === partner.id ? menuRef : null}>
+                  <button
+                    onClick={() => setOpenMenuId(openMenuId === partner.id ? null : partner.id)}
+                    className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors"
+                    title="More options"
+                  >
+                    <MoreVertical className="h-5 w-5" />
+                  </button>
+
+                  {openMenuId === partner.id && (
+                    <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border border-gray-100 z-20 py-1 animate-in fade-in zoom-in-95 duration-100">
+                      <button
+                        onClick={() => { handleEdit(partner); setOpenMenuId(null); }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                      >
+                        <Edit2 className="h-4 w-4" /> Edit
+                      </button>
+                      <button
+                        onClick={() => { setDeletingPartner({id: partner.id, name: partner.name}); setOpenMenuId(null); }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" /> Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               </li>
             ))}
