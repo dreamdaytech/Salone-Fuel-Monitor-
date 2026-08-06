@@ -8,9 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { FavoriteProvider } from './contexts/FavoriteContext';
-import { AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
-import PageTransition from './components/PageTransition';
 import Navbar from './components/Navbar';
 import SystemUpdater from './components/SystemUpdater';
 import { usePageViewTracker } from './hooks/useAnalytics';
@@ -130,7 +128,7 @@ function AppContent() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             }>
-              <Routes location={location} key={location.pathname}>
+              <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/stations" element={<FuelStations />} />
                 <Route path="/transport-prices" element={<TransportPrices />} />

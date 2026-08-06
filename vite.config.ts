@@ -9,6 +9,25 @@ export default defineConfig(({mode}) => {
   return {
     build: {
       outDir: 'dist',
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Firebase — large, rarely changes
+            'vendor-firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/analytics', 'firebase/messaging'],
+            // Recharts — charting library
+            'vendor-recharts': ['recharts'],
+            // Leaflet / maps
+            'vendor-leaflet': ['leaflet', 'react-leaflet', 'react-leaflet-cluster'],
+            // React core
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            // Motion / animation
+            'vendor-motion': ['motion'],
+            // PDF / export
+            'vendor-pdf': ['jspdf', 'jspdf-autotable', 'html-to-image'],
+          }
+        }
+      }
     },
     plugins: [
       react(),
