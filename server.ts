@@ -377,7 +377,7 @@ async function startServer() {
           const fields = doc.fields;
           const title = fields.seoTitle?.stringValue || fields.title?.stringValue || 'Salone Fuel Monitor';
           const description = fields.seoDescription?.stringValue || fields.excerpt?.stringValue || 'Sierra Leone\'s premier platform for real-time fuel prices, station locators, transport fares, market intelligence, and global barrel vs pump price analytics.';
-          const image = fields.coverImage?.stringValue || `${SITE_URL}/og-image.png`;
+          const image = fields.coverImage?.stringValue || `${SITE_URL}/og-image.jpg`;
           const pageUrl = `${SITE_URL}/blog/${slug}`;
 
           const injectedHtml = indexHtml
