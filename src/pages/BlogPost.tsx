@@ -7,6 +7,7 @@ import { useSEO } from '../hooks/useSEO';
 import { Calendar, User, ArrowLeft, Tag, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Footer from '../components/Footer';
+import { trackBlogRead } from '../hooks/useAnalytics';
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -30,7 +31,11 @@ export default function BlogPost() {
           setPost(null);
         } else {
           const docData = snapshot.docs[0];
-          setPost({ id: docData.id, ...docData.data() } as BlogPostType);
+          const postData = { id: docData.id, ...docData.data() } as BlogPostType;
+          setPost(postData);
+
+          // Track blog read in Firebase Analytics
+          trackBlogRead(slug || '', postData.title || 'Untitled');
           
           // Increment views
           const viewedKey = `viewed_post_${docData.id}`;

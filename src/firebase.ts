@@ -2,10 +2,15 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber } from 'firebase/auth';
 import { initializeFirestore, enableIndexedDbPersistence, doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, orderBy, limit, getDocFromServer, terminate, writeBatch, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getAnalytics, logEvent, setCurrentScreen } from 'firebase/analytics';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
+
+// Initialize Firebase Analytics (browser-only)
+export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+export { logEvent, setCurrentScreen };
 
 // Use initializeFirestore with auto long-polling for better reliability in sandboxed/proxy environments
 export const db = initializeFirestore(app, {

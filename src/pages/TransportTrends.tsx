@@ -16,6 +16,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getLogoBase64, drawPdfHeader } from '../utils/pdfUtils';
 import { toCanvas } from 'html-to-image';
+import { trackPdfExport } from '../hooks/useAnalytics';
 
 interface TransportPrice {
   id: string;
@@ -234,6 +235,7 @@ export default function TransportTrends() {
   const handleExportPDF = async () => {
     try {
       setIsExporting(true);
+      trackPdfExport('Transport Trends Report');
       
       const logo = await getLogoBase64();
       const pdf = new jsPDF('p', 'mm', 'a4');

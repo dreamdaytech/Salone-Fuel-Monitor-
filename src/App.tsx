@@ -13,6 +13,7 @@ import { Toaster, toast } from 'sonner';
 import PageTransition from './components/PageTransition';
 import Navbar from './components/Navbar';
 import SystemUpdater from './components/SystemUpdater';
+import { usePageViewTracker } from './hooks/useAnalytics';
 const Landing = React.lazy(() => import('./pages/Landing'));
 const FuelStations = React.lazy(() => import('./pages/FuelStations'));
 const TransportPrices = React.lazy(() => import('./pages/TransportPrices'));
@@ -52,6 +53,9 @@ function AppContent() {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // 🔵 Firebase Analytics — auto-track every page navigation
+  usePageViewTracker();
 
   useEffect(() => {
     const handleOnline = () => {

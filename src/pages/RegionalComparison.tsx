@@ -15,6 +15,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getLogoBase64, drawPdfHeader } from '../utils/pdfUtils';
 import { toCanvas } from 'html-to-image';
+import { trackPdfExport } from '../hooks/useAnalytics';
 import {
   REGIONAL_COUNTRIES, computeRegionalData, getMockHistoricalData,
   getCountryColor, formatUSD, formatLocal, getRankMedal,
@@ -543,6 +544,7 @@ export default function RegionalComparison() {
   // ── Branded PDF Export ──────────────────────────────────────────
   const handleExportPDF = async () => {
     setIsExporting(true);
+    trackPdfExport('Regional Comparison Report');
     try {
       const logo = await getLogoBase64();
       const pdf = new jsPDF('p', 'mm', 'a4');
