@@ -885,7 +885,7 @@ export default function AdminRegionalPrices() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {saved && (
+                      {saved && !isEditing && (
                         <span className="text-xs text-gray-400 flex items-center gap-1">
                           <CheckCircle className="w-3 h-3 text-emerald-500" />
                           Saved
@@ -898,10 +898,10 @@ export default function AdminRegionalPrices() {
                         {isEditing ? <X className="w-3.5 h-3.5" /> : <Edit2 className="w-3.5 h-3.5" />}
                         {isEditing ? 'Cancel' : 'Edit'}
                       </button>
-                      {isEditing && entry.isDirty && (
+                      {isEditing && (
                         <button
                           onClick={() => handleSaveCountry(entry)}
-                          disabled={isSaving}
+                          disabled={isSaving || !entry.isDirty}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
                         >
                           <Save className="w-3.5 h-3.5" /> Save

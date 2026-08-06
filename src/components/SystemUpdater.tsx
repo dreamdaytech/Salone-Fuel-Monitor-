@@ -27,7 +27,27 @@ export default function SystemUpdater() {
                   description: 'Refresh to get the latest features and updates.',
                   action: {
                     label: 'Refresh Now',
-                    onClick: () => window.location.reload(),
+                    onClick: async () => {
+                      if ('serviceWorker' in navigator) {
+                        try {
+                          const registrations = await navigator.serviceWorker.getRegistrations();
+                          for (const registration of registrations) {
+                            await registration.unregister();
+                          }
+                        } catch (err) {
+                          console.error('Failed to unregister service workers', err);
+                        }
+                      }
+                      if ('caches' in window) {
+                        try {
+                          const cacheNames = await caches.keys();
+                          await Promise.all(cacheNames.map(name => caches.delete(name)));
+                        } catch (err) {
+                          console.error('Failed to clear caches', err);
+                        }
+                      }
+                      window.location.reload();
+                    },
                   },
                   onDismiss: () => {
                     sessionStorage.setItem('ignoredUpdateVersion', serverVersion);
