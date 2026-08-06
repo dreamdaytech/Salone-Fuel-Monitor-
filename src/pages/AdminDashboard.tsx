@@ -1374,14 +1374,18 @@ export default function AdminDashboard() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           {/* Top Header */}
           <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 md:px-8 sticky top-0 z-30">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button 
                 onClick={() => setIsMobileMenuOpen(true)}
                 showNotification={false}
-                className="md:hidden p-2 -ml-2 text-white hover:text-white rounded-lg transition-colors"
+                className="md:hidden p-2 -ml-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <Menu className="h-6 w-6" />
               </Button>
+              {/* Mobile page title */}
+              <span className="md:hidden text-sm font-bold text-surface-900 capitalize">
+                {activeTab.replace(/_/g, ' ')}
+              </span>
             </div>
             <div className="flex-1"></div>
             <div className="flex items-center gap-6">
@@ -1988,7 +1992,7 @@ export default function AdminDashboard() {
             {activeTab === 'overview' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Welcome Banner */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] rounded-3xl p-8 text-white shadow-lg shadow-blue-900/10">
+                <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-white shadow-lg shadow-blue-900/10">
                   <div 
                     className="absolute inset-0 opacity-10 pointer-events-none"
                     style={{ 
@@ -1996,19 +2000,19 @@ export default function AdminDashboard() {
                       backgroundSize: '60px 60px' 
                     }} 
                   />
-                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <h2 className="text-3xl font-bold mb-2 tracking-tight">Welcome back, {profile?.name?.split(' ')[0]}! 👋</h2>
-                      <p className="text-blue-100 max-w-md leading-relaxed">
+                      <h2 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2 tracking-tight">Welcome back, {profile?.name?.split(' ')[0]}! 👋</h2>
+                      <p className="text-blue-100 max-w-md leading-relaxed text-sm sm:text-base">
                         Here's what's happening with the Salone Fuel Monitor platform today. You have {stations.filter(s => !s.isVerified).length} stations waiting for verification.
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
+                      <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/20">
                         <div className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mb-1">System Status</div>
                         <div className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
-                          <span className="text-sm font-bold text-white">All Systems Operational</span>
+                          <span className="text-xs sm:text-sm font-bold text-white">All Systems Operational</span>
                         </div>
                       </div>
                     </div>
@@ -2019,7 +2023,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                   <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
                     <div className="flex items-center justify-between mb-4">
                       <div className="p-3 bg-emerald-50 text-primary rounded-2xl group-hover:bg-primary group-hover:text-white transition-colors">
@@ -2332,25 +2336,25 @@ export default function AdminDashboard() {
             {activeTab === 'users' && (
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="p-8 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="p-4 sm:p-8 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <h2 className="text-2xl font-bold text-surface-900">User Management</h2>
-                      <p className="text-gray-500 mt-1">Manage user roles and platform access</p>
+                      <h2 className="text-xl sm:text-2xl font-bold text-surface-900">User Management</h2>
+                      <p className="text-gray-500 mt-1 text-sm">Manage user roles and platform access</p>
                     </div>
-                    <div className="bg-emerald-50 text-primary px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+                    <div className="bg-emerald-50 text-primary px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 self-start sm:self-auto">
                       <Users className="w-4 h-4" />
                       {users.length} Total Users
                     </div>
                   </div>
                   
-                  <div className="md:overflow-visible overflow-x-auto pb-32">
-                    <table className="w-full">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[600px]">
                       <thead>
                         <tr className="bg-gray-50/50">
-                          <th className="px-8 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">User Information</th>
-                          <th className="px-8 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Role</th>
-                          <th className="px-8 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Joined Date</th>
-                          <th className="px-8 py-5 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
+                          <th className="px-4 sm:px-8 py-4 sm:py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">User Information</th>
+                          <th className="px-4 sm:px-8 py-4 sm:py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Role</th>
+                          <th className="px-4 sm:px-8 py-4 sm:py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Joined Date</th>
+                          <th className="px-4 sm:px-8 py-4 sm:py-5 text-right text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
@@ -2360,23 +2364,23 @@ export default function AdminDashboard() {
                             className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
                             onClick={() => setSelectedUser(u)}
                           >
-                            <td className="px-8 py-5">
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-primary font-bold overflow-hidden">
+                            <td className="px-4 sm:px-8 py-4 sm:py-5">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-primary font-bold overflow-hidden flex-shrink-0">
                                   {u.avatarUrl ? (
                                     <img src={u.avatarUrl} alt={u.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                   ) : (
                                     u.name?.charAt(0) || 'U'
                                   )}
                                 </div>
-                                <div>
-                                  <div className="font-bold text-surface-900">{u.name}</div>
-                                  <div className="text-xs text-gray-500 font-medium">{u.email}</div>
+                                <div className="min-w-0">
+                                  <div className="font-bold text-surface-900 truncate">{u.name}</div>
+                                  <div className="text-xs text-gray-500 font-medium truncate max-w-[120px] sm:max-w-none">{u.email}</div>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-8 py-5">
-                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            <td className="px-4 sm:px-8 py-4 sm:py-5">
+                              <span className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                                 u.role === 'admin' ? 'bg-purple-50 text-purple-700' :
                                 u.role === 'station_owner' ? 'bg-emerald-50 text-primary' :
                                 'bg-gray-50 text-gray-600'
@@ -2384,11 +2388,11 @@ export default function AdminDashboard() {
                                 {u.role?.replace('_', ' ')}
                               </span>
                             </td>
-                            <td className="px-8 py-5 text-sm font-medium text-gray-500">
+                            <td className="px-4 sm:px-8 py-4 sm:py-5 text-sm font-medium text-gray-500">
                               {u.createdAt?.toDate?.()?.toLocaleDateString() || 'Just now'}
                             </td>
-                            <td className="px-8 py-5 text-right">
-                              <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                            <td className="px-4 sm:px-8 py-4 sm:py-5 text-right">
+                              <div className="flex items-center justify-end gap-1 sm:gap-2" onClick={(e) => e.stopPropagation()}>
                                 <Button
                                   onClick={() => setSelectedUser(u)}
                                   showNotification={false}
