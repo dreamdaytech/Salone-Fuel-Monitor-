@@ -27,10 +27,6 @@ const AdminReviews = React.lazy(() => import('./pages/AdminReviews'));
 const Auth = React.lazy(() => import('./pages/Auth'));
 const Register = React.lazy(() => import('./pages/Register'));
 const Profile = React.lazy(() => import('./pages/Profile'));
-const Polls = React.lazy(() => import('./pages/Polls'));
-const Surveys = React.lazy(() => import('./pages/Surveys'));
-const Petitions = React.lazy(() => import('./pages/Petitions'));
-const Decision = React.lazy(() => import('./pages/Decision'));
 const About = React.lazy(() => import('./pages/About'));
 const Contact = React.lazy(() => import('./pages/Contact'));
 const TermsOfService = React.lazy(() => import('./pages/TermsOfService'));
@@ -145,10 +141,6 @@ function AppContent() {
                 <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
                 <Route path="/signup" element={!user ? <Auth /> : <Navigate to="/" />} />
                 <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-                <Route path="/polls" element={user ? <Polls /> : <Navigate to="/login" />} />
-                <Route path="/surveys" element={user ? <Surveys /> : <Navigate to="/login" />} />
-                <Route path="/petitions" element={user ? <Petitions /> : <Navigate to="/login" />} />
-                <Route path="/decision" element={user ? <Decision /> : <Navigate to="/login" />} />
                 <Route path="/regional-comparison" element={<RegionalComparison />} />
                 <Route path="/market-intelligence" element={<MarketIntelligence />} />
                 <Route path="/exchange-rates" element={<ExchangeRates />} />
