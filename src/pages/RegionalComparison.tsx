@@ -971,7 +971,9 @@ export default function RegionalComparison() {
                     <p className="text-2xl sm:text-3xl font-black tracking-tight leading-none">
                       #{sl.rank}
                     </p>
-                    <span className="text-2xl">{getRankMedal(sl.rank)}</span>
+                    {sl.rank <= 3 && (
+                      <span className="text-2xl">{getRankMedal(sl.rank)}</span>
+                    )}
                   </div>
                   <p className="text-blue-100/70 text-xs font-medium mt-2">
                     out of {computed.length} countries
@@ -990,7 +992,7 @@ export default function RegionalComparison() {
                   <div className="flex items-center gap-1 sm:gap-2 mb-1">
                     <span className="text-xl sm:text-2xl">{cheapest.flag}</span>
                     <p className="text-xl sm:text-2xl font-black tracking-tight leading-none truncate">
-                      {cheapest.name.split(' ')[0]}
+                      {cheapest.name}
                     </p>
                   </div>
                   <p className="text-purple-100/70 text-xs font-medium mt-2">
