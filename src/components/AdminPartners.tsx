@@ -11,6 +11,7 @@ export default function AdminPartners() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deletingPartner, setDeletingPartner] = useState<{id: string, name: string} | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -127,14 +128,16 @@ export default function AdminPartners() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to remove "${name}"?`)) return;
+  const handleDeleteConfirm = async () => {
+    if (!deletingPartner) return;
     try {
-      await deleteDoc(doc(db, 'partners', id));
+      await deleteDoc(doc(db, 'partners', deletingPartner.id));
       toast.success('Partner removed');
     } catch (error) {
       console.error('Error deleting partner:', error);
       toast.error('Failed to remove partner');
+    } finally {
+      setDeletingPartner(null);
     }
   };
 
@@ -304,11 +307,11 @@ export default function AdminPartners() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <Button variant="outline" size="sm" onClick={() => handleEdit(partner)} className="text-blue-600 hover:bg-blue-50">
                     <Edit2 className="h-4 w-4" />
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleDelete(partner.id, partner.name)} className="text-red-600 hover:bg-red-50">
+                  <Button variant="outline" size="sm" onClick={() => setDeletingPartner({id: partner.id, name: partner.name})} className="text-red-600 hover:bg-red-50">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -321,6 +324,37 @@ export default function AdminPartners() {
           <ImageIcon className="mx-auto h-12 w-12 text-gray-300 mb-3" />
           <h3 className="text-lg font-medium text-gray-900">No Partners Added Yet</h3>
           <p className="mt-1 text-gray-500">Add affiliations to display them on the About Us page.</p>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingPartner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-6">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-surface-900 mb-2">Remove Affiliation?</h3>
+            <p className="text-sm text-gray-500 mb-6">
+              Are you sure you want to remove <strong>"{deletingPartner.name}"</strong>? This action cannot be undone and will immediately remove them from the About Us page.
+            </p>
+            
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeletingPartner(null)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Yes, Remove
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
