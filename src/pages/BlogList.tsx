@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { BlogPost } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
 import { Calendar, User, ChevronRight, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 
 export default function BlogList() {
@@ -75,9 +76,9 @@ export default function BlogList() {
         {/* Blog Posts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map(post => (
-            <a 
+            <Link 
               key={post.id} 
-              href={`/#/blog/${post.slug}`}
+              to={`/blog/${post.slug}`}
               className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col"
             >
               {/* Cover Image */}
@@ -123,16 +124,16 @@ export default function BlogList() {
                 <div className="pt-6 border-t border-gray-100 flex items-center justify-between mt-auto">
                   <div className="flex items-center gap-2 text-sm font-semibold text-surface-900">
                     <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs">
-                      {post.authorName.charAt(0)}
+                      {post.authorName ? post.authorName.charAt(0) : 'A'}
                     </div>
-                    {post.authorName}
+                    {post.authorName || 'Admin'}
                   </div>
                   <div className="text-primary font-bold text-sm flex items-center gap-1 group-hover:translate-x-1 transition-transform">
                     Read <ChevronRight className="w-4 h-4" />
                   </div>
                 </div>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
         </div>

@@ -6,6 +6,7 @@ import { Plus, Edit2, Trash2, CheckCircle, XCircle, Search, Save, X, Eye, Upload
 import { toast } from 'sonner';
 import Editor from 'react-simple-wysiwyg';
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 export default function AdminBlog() {
   const { profile } = useAuth();
@@ -508,15 +509,15 @@ export default function AdminBlog() {
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         {post.isPublished && (
-                          <a 
-                            href={`/#/blog/${post.slug}`} 
+                          <Link 
+                            to={`/blog/${post.slug}`} 
                             target="_blank" 
                             rel="noreferrer"
                             title="View Post"
                             className="p-2 text-gray-400 hover:text-primary hover:bg-emerald-50 rounded-lg transition-colors"
                           >
                             <Eye className="w-5 h-5" />
-                          </a>
+                          </Link>
                         )}
                         <button
                           onClick={() => handleEdit(post)}

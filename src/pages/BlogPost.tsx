@@ -129,10 +129,10 @@ export default function BlogPost() {
           <div className="flex items-center justify-between pt-8 border-t border-gray-200">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
-                {post.authorName.charAt(0)}
+                {post.authorName ? post.authorName.charAt(0) : 'A'}
               </div>
               <div>
-                <div className="font-bold text-surface-900">{post.authorName}</div>
+                <div className="font-bold text-surface-900">{post.authorName || 'Admin'}</div>
                 <div className="text-sm font-medium text-gray-500 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" /> 
                   {post.publishedAt?.toDate ? post.publishedAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Recently'}
