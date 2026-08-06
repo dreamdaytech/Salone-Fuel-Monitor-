@@ -1,8 +1,25 @@
-import React from 'react';
-import { Info, Target, Users, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Info, Target, Users, ShieldCheck, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { db, collection, query, orderBy, onSnapshot } from '../firebase';
+import { Partner } from '../types/partner';
 
 export default function About() {
+  const [partners, setPartners] = useState<Partner[]>([]);
+
+  useEffect(() => {
+    const q = query(collection(db, 'partners'), orderBy('order', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Partner[];
+      setPartners(data);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   return (
     <div className="min-h-screen bg-surface-50">
       {/* Hero Section */}
@@ -108,6 +125,53 @@ export default function About() {
           </div>
         </div>
       </div>
+
+      {/* Strategic Affiliations Section */}
+      {partners.length > 0 && (
+        <div className="py-24 bg-surface-50 border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl font-extrabold text-surface-900 mb-4 tracking-tight">
+              Strategic Affiliations
+            </h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-16">
+              Trusted Partners & Supporters who help us make fuel data transparent and accessible across Sierra Leone.
+            </p>
+
+            <div className="flex flex-wrap justify-center gap-8 md:gap-12 items-center">
+              {partners.map(partner => (
+                <div key={partner.id} className="group relative flex flex-col items-center">
+                  {partner.websiteUrl ? (
+                    <a 
+                      href={partner.websiteUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block w-48 h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center justify-center hover:shadow-md hover:border-blue-200 transition-all"
+                    >
+                      <img 
+                        src={partner.logoUrl} 
+                        alt={partner.name} 
+                        className="max-w-full max-h-full object-contain filter grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300"
+                      />
+                      <div className="absolute -top-2 -right-2 bg-blue-100 text-blue-600 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                        <ExternalLink className="w-3 h-3" />
+                      </div>
+                    </a>
+                  ) : (
+                    <div className="block w-48 h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center justify-center hover:shadow-md transition-all">
+                      <img 
+                        src={partner.logoUrl} 
+                        alt={partner.name} 
+                        className="max-w-full max-h-full object-contain filter grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+                      />
+                    </div>
+                  )}
+                  <span className="mt-4 text-sm font-medium text-gray-600">{partner.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

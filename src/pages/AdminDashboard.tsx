@@ -19,6 +19,7 @@ import AdminMarketIntelligence from '../components/AdminMarketIntelligence';
 import AdminExchangeRates from '../components/AdminExchangeRates';
 import AdminBlog from '../components/AdminBlog';
 import AdminBarrelVsFuel from './AdminBarrelVsFuel';
+import AdminPartners from '../components/AdminPartners';
 import { Button } from '../components/ui/Button';
 import { NotificationService } from '../services/NotificationService';
 import { jsPDF } from 'jspdf';
@@ -235,7 +236,7 @@ export default function AdminDashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') as any || 'overview';
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'claims' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog' | 'barrel_vs_fuel' | 'brands'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stations' | 'submitted_stations' | 'claims' | 'map' | 'price_trends' | 'transport' | 'messages' | 'reviews' | 'reports' | 'settings' | 'regional' | 'market_intel' | 'exchange_rates' | 'blog' | 'barrel_vs_fuel' | 'brands' | 'partners'>(initialTab);
 
   useEffect(() => {
     if (activeTab !== initialTab) {
@@ -1270,6 +1271,21 @@ export default function AdminDashboard() {
               {activeTab === 'blog' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
               <FileText className={`w-5 h-5 shrink-0 ${activeTab === 'blog' ? 'text-primary' : 'group-hover:text-white'}`} />
               {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Blog Management</span>}
+            </Button>
+
+            <Button 
+              onClick={() => { setActiveTab('partners'); setIsMobileMenuOpen(false); }}
+              showNotification={false}
+              variant="ghost"
+              className={`w-full flex items-center justify-start gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
+                activeTab === 'partners' 
+                  ? 'bg-white/10 text-white' 
+                  : 'text-blue-100 hover:bg-white/10 hover:text-white'
+              }`}
+            >
+              {activeTab === 'partners' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
+              <Users className={`w-5 h-5 shrink-0 ${activeTab === 'partners' ? 'text-primary' : 'group-hover:text-white'}`} />
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Affiliations</span>}
             </Button>
 
             <Button 
@@ -3243,6 +3259,10 @@ export default function AdminDashboard() {
                     )}
                   </div>
                 </div>
+              )}
+
+              {activeTab === 'partners' && (
+                <AdminPartners />
               )}
             </div>
 
