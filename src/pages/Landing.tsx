@@ -119,7 +119,7 @@ export default function Landing() {
                 </Link>
                 <Link to="/price-trends" className="bg-white/10 hover:bg-white/20 text-white border border-white/30 px-8 py-3.5 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 backdrop-blur-sm">
                   <Activity className="h-5 w-5" />
-                  View Trends
+                  View Price Trends
                 </Link>
               </div>
             </motion.div>
@@ -208,9 +208,13 @@ export default function Landing() {
                   <div className="text-center py-6 text-gray-500">Price data temporarily unavailable.</div>
                 )}
 
-                <div className="mt-6 pt-6 border-t border-gray-100">
+                <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-4">
                   <Link to="/price-trends" className="flex items-center justify-between w-full group">
                     <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">View Detailed Price Trends</span>
+                    <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors group-hover:translate-x-1" />
+                  </Link>
+                  <Link to="/regional-comparison" className="flex items-center justify-between w-full group">
+                    <span className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">Regional Fuel Comparison</span>
                     <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-600 transition-colors group-hover:translate-x-1" />
                   </Link>
                 </div>
