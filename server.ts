@@ -428,6 +428,29 @@ async function startServer() {
     });
 
     app.get('*', (req, res) => {
+      const userAgent = req.headers['user-agent'] || '';
+      const isCrawler = CRAWLER_AGENTS.test(userAgent);
+
+      if (isCrawler) {
+        try {
+          const indexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+          const pageUrl = `${SITE_URL}${req.path}`;
+          // Inject the correct page URL so og:url matches what the crawler fetched
+          const injectedHtml = indexHtml
+            .replace(
+              /<meta property="og:url" content="[^"]*" \/>/,
+              `<meta property="og:url" content="${pageUrl}" />`
+            )
+            .replace(
+              /<meta property="twitter:url" content="[^"]*" \/>/,
+              `<meta property="twitter:url" content="${pageUrl}" />`
+            );
+          return res.send(injectedHtml);
+        } catch (err) {
+          console.error('Error injecting OG URL for crawler:', err);
+        }
+      }
+
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
