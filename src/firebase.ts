@@ -1,12 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber } from 'firebase/auth';
 import { initializeFirestore, enableIndexedDbPersistence, doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, orderBy, limit, getDocFromServer, terminate, writeBatch, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getAnalytics, logEvent, setCurrentScreen } from 'firebase/analytics';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
+
+// Initialize Firebase Storage
+export const storage = getStorage(app);
+export { storageRef, uploadBytes, getDownloadURL, deleteObject };
 
 // Initialize Firebase Analytics (browser-only)
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;

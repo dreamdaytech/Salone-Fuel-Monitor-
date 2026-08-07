@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from '../firebase';
-import { db } from '../firebase';
+import { db, storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
 import { BlogPost } from '../types/blog';
 import { Plus, Edit2, Trash2, CheckCircle, XCircle, Search, Save, X, Eye, Upload } from 'lucide-react';
 import { toast } from 'sonner';
@@ -98,7 +98,7 @@ export default function AdminBlog() {
     });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -107,39 +107,21 @@ export default function AdminBlog() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        const dataUrl = canvas.toDataURL('image/webp', 0.8);
-        setEditForm(prev => prev ? { ...prev, coverImage: dataUrl } : prev);
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+    const toastId = toast.loading('Uploading cover image...');
+    try {
+      // Upload directly to Firebase Storage — get a real HTTPS URL
+      const fileName = `blog-covers/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const fileRef = storageRef(storage, fileName);
+      await uploadBytes(fileRef, file);
+      const downloadUrl = await getDownloadURL(fileRef);
+      setEditForm(prev => prev ? { ...prev, coverImage: downloadUrl } : prev);
+      toast.success('Cover image uploaded!', { id: toastId });
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      toast.error('Failed to upload image. Check Firebase Storage rules.', { id: toastId });
+    }
+    // Reset input so same file can be re-selected
+    e.target.value = '';
   };
 
   const handleContentImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 
+const DEFAULT_OG_IMAGE = 'https://salonefuelmonitor.com/og-image.png';
+
 interface SEOProps {
   title: string;
   description?: string;
@@ -31,9 +33,9 @@ export function useSEO({ title, description, image }: SEOProps) {
       setMetaTag('twitter:description', description);
     }
 
-    if (image) {
-      setMetaTag('og:image', image);
-      setMetaTag('twitter:image', image);
-    }
+    // Use provided image if it's a real HTTPS URL, otherwise fallback to og-image.png
+    const ogImage = (image && !image.startsWith('data:')) ? image : DEFAULT_OG_IMAGE;
+    setMetaTag('og:image', ogImage);
+    setMetaTag('twitter:image', ogImage);
   }, [title, description, image]);
 }
