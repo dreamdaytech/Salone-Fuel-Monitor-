@@ -40,6 +40,7 @@ const BlogList = React.lazy(() => import('./pages/BlogList'));
 const BlogPost = React.lazy(() => import('./pages/BlogPost'));
 const BarrelVsFuel = React.lazy(() => import('./pages/BarrelVsFuel'));
 const AdminBarrelVsFuel = React.lazy(() => import('./pages/AdminBarrelVsFuel'));
+const MyGarage = React.lazy(() => import('./pages/MyGarage'));
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -156,6 +157,8 @@ function AppContent() {
                 <Route path="/dashboard" element={user && (profile?.role === 'station_owner' || profile?.role === 'admin') ? <StationDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
                 <Route path="/admin" element={user && profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
                 <Route path="/admin/transport-prices/:id" element={user && profile?.role === 'admin' ? <AdminTransportPriceDetails /> : <Navigate to={user ? "/" : "/login"} />} />
+                {/* My Garage — personal dispatch & fuel tracker (any authenticated user) */}
+                <Route path="/my-garage" element={user ? <MyGarage /> : <Navigate to="/login" />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </React.Suspense>

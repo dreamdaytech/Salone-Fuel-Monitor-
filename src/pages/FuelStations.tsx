@@ -83,6 +83,10 @@ export default function FuelStations() {
   const [sortBy, setSortBy] = useState<'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'updated' | 'proximity'>('updated');
   const [loading, setLoading] = useState(true);
   const [isOffline, setIsOffline] = useState(false);
+
+  // My Garage integration banner state (useEffect is near searchParams declaration below)
+  const [garageFilterBanner, setGarageFilterBanner] = useState<string | null>(null);
+
   const [viewingStation, setViewingStation] = useState<Station | null>(null);
   const [priceHistory, setPriceHistory] = useState<any[]>([]);
   const [rawPriceHistory, setRawPriceHistory] = useState<any[]>([]);
@@ -352,8 +356,18 @@ export default function FuelStations() {
   const historyChartRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
+
   const targetStationId = searchParams.get('station');
+
+  // ── My Garage integration: auto-filter by primary vehicle fuel type ──
+  useEffect(() => {
+    const fuelParam = searchParams.get('fuel');
+    if (fuelParam && ['Petrol', 'Diesel', 'Kerosene'].includes(fuelParam)) {
+      setSelectedFuel(fuelParam);
+      setGarageFilterBanner(`Showing stations with ${fuelParam} — filtered by your My Garage primary vehicle.`);
+    }
+  }, [searchParams]);
+  // ─────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -754,6 +768,22 @@ export default function FuelStations() {
           <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider">Live Updates Active</span>
         </div>
       </div>
+
+      {/* My Garage integration banner */}
+      {garageFilterBanner && (
+        <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-3.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-lg">🚗</span>
+            <p className="text-sm font-medium text-emerald-800">{garageFilterBanner}</p>
+          </div>
+          <button
+            onClick={() => { setGarageFilterBanner(null); setSelectedFuel('All'); }}
+            className="text-emerald-600 hover:text-emerald-800 p-1 rounded-lg hover:bg-emerald-100 transition-colors shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       {!targetStationId ? (

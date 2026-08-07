@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { 
-  Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, 
+  Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, Car,
   ChevronDown, LayoutGrid, Activity, ClipboardList, 
   PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
   Menu, X, TrendingUp, Calculator, Globe, BarChart3, DollarSign, FileText
@@ -100,7 +100,7 @@ export default function Navbar() {
               <div className="relative" ref={toolsMenuRef}>
                 <button
                   onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}
-                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors py-2 ${(isActive('/calculator') || isActive('/market-intelligence') || isActive('/exchange-rates')) ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors py-2 ${(isActive('/calculator') || isActive('/market-intelligence') || isActive('/exchange-rates') || isActive('/my-garage')) ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                   <span>Our Tools</span>
@@ -108,7 +108,7 @@ export default function Navbar() {
                 </button>
                 
                 {isToolsMenuOpen && (
-                  <div className="absolute top-full left-0 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full left-0 w-52 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="py-2">
                       <Link
                         to="/market-intelligence"
@@ -134,6 +134,20 @@ export default function Navbar() {
                         <Calculator className="h-4 w-4" />
                         <span>Calculator</span>
                       </Link>
+                      {/* My Garage — only shown when logged in */}
+                      {user && (
+                        <>
+                          <div className="mx-4 my-1.5 border-t border-gray-100" />
+                          <Link
+                            to="/my-garage"
+                            onClick={() => setIsToolsMenuOpen(false)}
+                            className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isActive('/my-garage') ? 'bg-emerald-50 text-primary font-bold' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+                          >
+                            <Car className="h-4 w-4" />
+                            <span>My Garage</span>
+                          </Link>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -217,6 +231,17 @@ export default function Navbar() {
                             <span className="font-semibold text-sm">Stations</span>
                           </Link>
                         )}
+
+                        <Link
+                          to="/my-garage"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-3 p-2 rounded-xl text-gray-700 hover:bg-gray-50 transition-colors group"
+                        >
+                          <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center text-gray-500 group-hover:bg-emerald-50 group-hover:text-primary transition-colors">
+                            <Car className="w-4.5 h-4.5" />
+                          </div>
+                          <span className="font-semibold text-sm">My Garage</span>
+                        </Link>
 
                         <Link
                           to="/profile"
@@ -336,6 +361,17 @@ export default function Navbar() {
                 <Calculator className="h-5 w-5" />
                 <span>Fuel Calculator</span>
               </Link>
+              {/* My Garage — inside Our Tools, auth-gated */}
+              {user && (
+                <Link
+                  to="/my-garage"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/my-garage') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+                >
+                  <Car className="h-5 w-5" />
+                  <span>My Garage</span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
