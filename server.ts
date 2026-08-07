@@ -333,6 +333,57 @@ async function startServer() {
     const SITE_URL = process.env.SITE_URL || 'https://salonefuelmonitor.com';
     const CRAWLER_AGENTS = /whatsapp|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|discordbot|googlebot|bingbot|applebot|iframely/i;
 
+
+    // Blog cover image endpoint — converts base64 stored images into real HTTP image responses
+    // This allows social crawlers (WhatsApp, Facebook) to fetch blog cover images
+    app.get('/api/blog-image/:slug', async (req, res) => {
+      try {
+        const slug = req.params.slug;
+        const searchUrl = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents:runQuery`;
+        const queryBody = {
+          structuredQuery: {
+            from: [{ collectionId: 'blog_posts' }],
+            where: {
+              fieldFilter: {
+                field: { fieldPath: 'slug' },
+                op: 'EQUAL',
+                value: { stringValue: slug }
+              }
+            },
+            limit: 1,
+            select: { fields: [{ fieldPath: 'coverImage' }] }
+          }
+        };
+        const response = await fetch(searchUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(queryBody)
+        });
+        const results = await response.json();
+        const coverImage = results?.[0]?.document?.fields?.coverImage?.stringValue;
+
+        if (coverImage && coverImage.startsWith('data:')) {
+          // Parse: data:image/webp;base64,XXXXXX
+          const commaIdx = coverImage.indexOf(',');
+          const meta = coverImage.substring(5, commaIdx); // e.g. image/webp;base64
+          const mimeType = meta.split(';')[0]; // e.g. image/webp
+          const base64Data = coverImage.substring(commaIdx + 1);
+          const imageBuffer = Buffer.from(base64Data, 'base64');
+          res.setHeader('Content-Type', mimeType || 'image/webp');
+          res.setHeader('Cache-Control', 'public, max-age=86400');
+          return res.send(imageBuffer);
+        } else if (coverImage && coverImage.startsWith('http')) {
+          // Firebase Storage URL — redirect
+          return res.redirect(301, coverImage);
+        }
+        // No cover image found — serve og-image.png
+        return res.redirect('/og-image.png');
+      } catch (err) {
+        console.error('Error serving blog image:', err);
+        return res.redirect('/og-image.png');
+      }
+    });
+
     app.get('/blog/:slug', async (req, res) => {
       const userAgent = req.headers['user-agent'] || '';
       const isCrawler = CRAWLER_AGENTS.test(userAgent);
@@ -378,8 +429,15 @@ async function startServer() {
           const title = fields.seoTitle?.stringValue || fields.title?.stringValue || 'Salone Fuel Monitor';
           const description = fields.seoDescription?.stringValue || fields.excerpt?.stringValue || 'Sierra Leone\'s premier platform for real-time fuel prices, station locators, transport fares, market intelligence, and global barrel vs pump price analytics.';
           const rawImage = fields.coverImage?.stringValue || '';
-          // Social platforms cannot fetch base64 data URLs — use og-image.png as fallback
-          const image = (rawImage && !rawImage.startsWith('data:')) ? rawImage : `${SITE_URL}/og-image.png`;
+          // Route base64 images through /api/blog-image/:slug so crawlers get a real HTTP image
+          let image: string;
+          if (rawImage && rawImage.startsWith('data:')) {
+            image = `${SITE_URL}/api/blog-image/${slug}`;
+          } else if (rawImage && rawImage.startsWith('http')) {
+            image = rawImage;
+          } else {
+            image = `${SITE_URL}/og-image.png`;
+          }
           const pageUrl = `${SITE_URL}/blog/${slug}`;
 
           const injectedHtml = indexHtml
