@@ -3,6 +3,7 @@ import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, serverT
 import { db } from '../firebase';
 import { BlogPost } from '../types/blog';
 import { useEditor, EditorContent } from '@tiptap/react';
+import ImageExtension from '@tiptap/extension-image';
 import StarterKit from '@tiptap/starter-kit';
 import LinkExtension from '@tiptap/extension-link';
 import UnderlineExtension from '@tiptap/extension-underline';
@@ -69,6 +70,50 @@ const MenuBar = ({ editor }: { editor: any }) => {
       {/* Links */}
       <ToolBtn title="Add Link" onClick={setLink} active={editor.isActive('link')}><LinkIcon className="w-4 h-4" /></ToolBtn>
       <ToolBtn title="Remove Link" onClick={() => editor.chain().focus().unsetLink().run()} disabled={!editor.isActive('link')}><Unlink className="w-4 h-4" /></ToolBtn>
+      
+      <label 
+        className="cursor-pointer flex items-center gap-1.5 px-2 py-1 rounded text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20" 
+        title="Insert Image into content"
+      >
+        <Upload className="w-3.5 h-3.5" />
+        <span>Insert Image</span>
+        <input 
+          type="file" 
+          accept="image/*" 
+          className="hidden" 
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) {
+              toast.error('Image must be less than 5MB');
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                if (width > height) { if (width > 800) { height *= 800 / width; width = 800; } }
+                else { if (height > 800) { width *= 800 / height; height = 800; } }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(img, 0, 0, width, height);
+                  editor.chain().focus().setImage({ src: canvas.toDataURL('image/webp', 0.8) }).run();
+                  toast.success('Image inserted!');
+                }
+              };
+              img.src = event.target?.result as string;
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+          }} 
+        />
+      </label>
+
       <Divider />
       {/* History */}
       <ToolBtn title="Undo" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}><Undo className="w-4 h-4" /></ToolBtn>
@@ -81,6 +126,7 @@ const TiptapEditor = ({ value, onChange }: { value: string, onChange: (val: stri
   const editor = useEditor({
     extensions: [
       StarterKit,
+      ImageExtension.configure({ inline: false, allowBase64: true }),
       UnderlineExtension,
       LinkExtension.configure({ openOnClick: false, HTMLAttributes: { class: 'text-primary underline cursor-pointer', rel: 'noopener noreferrer', target: '_blank' } })
     ],
@@ -94,6 +140,12 @@ const TiptapEditor = ({ value, onChange }: { value: string, onChange: (val: stri
       }
     }
   });
+
+  useEffect(() => {
+    if (editor && value !== editor.getHTML()) {
+      editor.commands.setContent(value, { emitUpdate: false });
+    }
+  }, [value, editor]);
 
   return (
     <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
@@ -231,48 +283,6 @@ export default function AdminBlog() {
           const dataUrl = canvas.toDataURL('image/webp', 0.82);
           setEditForm(prev => prev ? { ...prev, coverImage: dataUrl } : prev);
           toast.success('Cover image ready!');
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
-
-  const handleContentImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-        } else {
-          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/webp', 0.8);
-          const imgTag = `<br/><img src="${dataUrl}" alt="Blog content image" style="max-width: 100%; border-radius: 8px; margin: 1rem 0;" /><br/>`;
-          setEditForm(prev => prev ? { ...prev, content: (prev.content || '') + imgTag } : prev);
-          toast.success('Image added to content!');
         }
       };
       img.src = event.target?.result as string;
@@ -438,10 +448,6 @@ export default function AdminBlog() {
           <div className="space-y-2">
             <label className="text-sm font-semibold text-surface-900 flex justify-between items-center">
               <span>Content *</span>
-              <label className="cursor-pointer text-primary hover:text-primary/80 flex items-center gap-1.5 text-xs bg-primary/10 px-3 py-1.5 rounded-md transition-colors">
-                <Upload className="w-3.5 h-3.5" /> Insert Local Image
-                <input type="file" accept="image/*" className="hidden" onChange={handleContentImageUpload} />
-              </label>
             </label>
             <div className="prose-editor">
               <TiptapEditor

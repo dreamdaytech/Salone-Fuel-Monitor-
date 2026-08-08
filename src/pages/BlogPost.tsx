@@ -185,7 +185,7 @@ export default function BlogPost() {
       {/* Article Body */}
       <main className={`max-w-3xl mx-auto px-4 pb-24 ${!post.coverImage ? 'pt-12' : ''}`}>
         <article 
-          className="prose prose-lg md:prose-xl max-w-none prose-headings:font-bold prose-headings:text-surface-900 prose-a:text-primary prose-img:rounded-2xl"
+          className="blog-content text-surface-900 text-lg leading-relaxed max-w-none"
           // We use dangerouslySetInnerHTML to render HTML content that admins provide.
           // Since only trusted admins can create posts, this is safe.
           dangerouslySetInnerHTML={{ __html: post.content }}
