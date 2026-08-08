@@ -1,12 +1,109 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, orderBy, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from '../firebase';
-import { db, storage, storageRef, uploadBytes, getDownloadURL } from '../firebase';
+import { db } from '../firebase';
 import { BlogPost } from '../types/blog';
-import { Plus, Edit2, Trash2, CheckCircle, XCircle, Search, Save, X, Eye, Upload } from 'lucide-react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import LinkExtension from '@tiptap/extension-link';
+import UnderlineExtension from '@tiptap/extension-underline';
+import {
+  Bold, Italic, Underline as UnderlineIcon, Strikethrough, Code2, List, ListOrdered,
+  Quote, Minus, Link as LinkIcon, Unlink, Undo, Redo,
+  Heading1, Heading2, Heading3,
+  Plus, Edit2, Trash2, CheckCircle, XCircle, Search, Save, X, Eye, Upload
+} from 'lucide-react';
 import { toast } from 'sonner';
-import Editor from 'react-simple-wysiwyg';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+
+const ToolBtn = ({ onClick, active, disabled, children, title }: {
+  onClick: () => void; active?: boolean; disabled?: boolean; children: React.ReactNode; title?: string;
+}) => (
+  <button
+    type="button"
+    title={title}
+    onClick={onClick}
+    disabled={disabled}
+    className={`p-1.5 rounded text-sm font-medium transition-colors ${active ? 'bg-primary/20 text-primary' : 'text-gray-600 hover:bg-gray-200'} disabled:opacity-30 disabled:cursor-not-allowed`}
+  >
+    {children}
+  </button>
+);
+
+const Divider = () => <div className="w-px h-5 bg-gray-300 mx-0.5 self-center" />;
+
+const MenuBar = ({ editor }: { editor: any }) => {
+  if (!editor) return null;
+
+  const setLink = () => {
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('Enter URL', previousUrl ?? 'https://');
+    if (url === null) return;
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url, target: '_blank' }).run();
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-gray-200 bg-gray-50 px-2 py-1.5 rounded-t-lg sticky top-0 z-10 shadow-sm">
+      {/* Headings */}
+      <ToolBtn title="Heading 1" onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })}><Heading1 className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Heading 2" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })}><Heading2 className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Heading 3" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })}><Heading3 className="w-4 h-4" /></ToolBtn>
+      <Divider />
+      {/* Text styles */}
+      <ToolBtn title="Bold" onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')}><Bold className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Italic" onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')}><Italic className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Underline" onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')}><UnderlineIcon className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Strikethrough" onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')}><Strikethrough className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Inline Code" onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive('code')}><Code2 className="w-4 h-4" /></ToolBtn>
+      <Divider />
+      {/* Lists */}
+      <ToolBtn title="Bullet List" onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')}><List className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Numbered List" onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')}><ListOrdered className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Blockquote" onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')}><Quote className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Horizontal Rule" onClick={() => editor.chain().focus().setHorizontalRule().run()}><Minus className="w-4 h-4" /></ToolBtn>
+      <Divider />
+      {/* Links */}
+      <ToolBtn title="Add Link" onClick={setLink} active={editor.isActive('link')}><LinkIcon className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Remove Link" onClick={() => editor.chain().focus().unsetLink().run()} disabled={!editor.isActive('link')}><Unlink className="w-4 h-4" /></ToolBtn>
+      <Divider />
+      {/* History */}
+      <ToolBtn title="Undo" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}><Undo className="w-4 h-4" /></ToolBtn>
+      <ToolBtn title="Redo" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}><Redo className="w-4 h-4" /></ToolBtn>
+    </div>
+  );
+};
+
+const TiptapEditor = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      UnderlineExtension,
+      LinkExtension.configure({ openOnClick: false, HTMLAttributes: { class: 'text-primary underline cursor-pointer', rel: 'noopener noreferrer', target: '_blank' } })
+    ],
+    content: value,
+    onUpdate: ({ editor }) => {
+      onChange(editor.getHTML());
+    },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[300px] p-4'
+      }
+    }
+  });
+
+  return (
+    <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
+      <MenuBar editor={editor} />
+      <div className="bg-surface-50 overflow-y-auto max-h-[500px]">
+        <EditorContent editor={editor} />
+      </div>
+    </div>
+  );
+};
 
 export default function AdminBlog() {
   const { profile } = useAuth();
@@ -98,7 +195,7 @@ export default function AdminBlog() {
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -107,20 +204,38 @@ export default function AdminBlog() {
       return;
     }
 
-    const toastId = toast.loading('Uploading cover image...');
-    try {
-      // Upload directly to Firebase Storage — get a real HTTPS URL
-      const fileName = `blog-covers/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-      const fileRef = storageRef(storage, fileName);
-      await uploadBytes(fileRef, file);
-      const downloadUrl = await getDownloadURL(fileRef);
-      setEditForm(prev => prev ? { ...prev, coverImage: downloadUrl } : prev);
-      toast.success('Cover image uploaded!', { id: toastId });
-    } catch (err) {
-      console.error('Image upload failed:', err);
-      toast.error('Failed to upload image. Check Firebase Storage rules.', { id: toastId });
-    }
-    // Reset input so same file can be re-selected
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height *= MAX_WIDTH / width;
+          width = MAX_WIDTH;
+        }
+        if (height > MAX_HEIGHT) {
+          width *= MAX_HEIGHT / height;
+          height = MAX_HEIGHT;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/webp', 0.82);
+          setEditForm(prev => prev ? { ...prev, coverImage: dataUrl } : prev);
+          toast.success('Cover image ready!');
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
     e.target.value = '';
   };
 
@@ -144,31 +259,25 @@ export default function AdminBlog() {
         let height = img.height;
 
         if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
+          if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
         } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
+          if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
         }
 
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-
-        const dataUrl = canvas.toDataURL('image/webp', 0.8);
-        const imgTag = `<br/><img src="${dataUrl}" alt="Blog content image" style="max-width: 100%; border-radius: 8px; margin: 1rem 0;" /><br/>`;
-        setEditForm(prev => prev ? { ...prev, content: (prev.content || '') + imgTag } : prev);
-        toast.success('Image added to content');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/webp', 0.8);
+          const imgTag = `<br/><img src="${dataUrl}" alt="Blog content image" style="max-width: 100%; border-radius: 8px; margin: 1rem 0;" /><br/>`;
+          setEditForm(prev => prev ? { ...prev, content: (prev.content || '') + imgTag } : prev);
+          toast.success('Image added to content!');
+        }
       };
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
-    // Reset input so the same file can be selected again
     e.target.value = '';
   };
 
@@ -335,10 +444,9 @@ export default function AdminBlog() {
               </label>
             </label>
             <div className="prose-editor">
-              <Editor
+              <TiptapEditor
                 value={editForm.content || ''}
-                onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-                className="w-full bg-surface-50 rounded-lg min-h-[300px]"
+                onChange={(content) => setEditForm({ ...editForm, content })}
               />
             </div>
           </div>

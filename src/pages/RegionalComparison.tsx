@@ -830,8 +830,12 @@ export default function RegionalComparison() {
   const countries = useMemo<RegionalCountry[]>(() => {
     return REGIONAL_COUNTRIES.map(c => {
       if (c.isSierraLeone && slPrices) {
+        // Use admin-saved exchange rate for SL if available, otherwise fall back to static
+        const savedSL = regionalPrices['SL'];
+        const liveRate = savedSL?.exchangeRateToUSD ?? c.exchangeRateToUSD;
         return {
           ...c,
+          exchangeRateToUSD: liveRate,
           prices: {
             petrol: slPrices.Petrol || c.prices.petrol,
             diesel: slPrices.Diesel || c.prices.diesel,

@@ -205,8 +205,9 @@ export default function Landing() {
               </Link>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full shadow-inner">
-                <MapPin className="w-40 h-40 text-blue-300 drop-shadow-lg" strokeWidth={1} />
+              <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
+                <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
+                <img src="/images/fuel_stations_sl.png" alt="Fuel Stations in Sierra Leone" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
           </div>
@@ -218,8 +219,9 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
-              <div className="bg-white/10 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full border border-white/10">
-                <Activity className="w-40 h-40 text-emerald-300 drop-shadow-lg" strokeWidth={1} />
+              <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white/10">
+                <div className="absolute inset-0 bg-emerald-900/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
+                <img src="/images/price_trends_sl.png" alt="Price Trends Data" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
@@ -261,8 +263,9 @@ export default function Landing() {
               </Link>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full shadow-inner">
-                <Bus className="w-40 h-40 text-purple-300 drop-shadow-lg" strokeWidth={1} />
+              <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
+                <div className="absolute inset-0 bg-purple-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
+                <img src="/images/transport_prices_sl.png" alt="Transport Fares" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
           </div>
@@ -274,8 +277,9 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
-              <div className="bg-white/10 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full border border-white/10">
-                <Globe className="w-40 h-40 text-yellow-300 drop-shadow-lg" strokeWidth={1} />
+              <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-[#3B1F00]/30">
+                <div className="absolute inset-0 bg-[#6B1212]/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
+                <img src="/images/regional_comparison_wa.png" alt="West Africa Regional Comparison" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
@@ -317,8 +321,9 @@ export default function Landing() {
               </Link>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
-              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full shadow-inner">
-                <TrendingUp className="w-40 h-40 text-indigo-300 drop-shadow-lg" strokeWidth={1} />
+              <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
+                <div className="absolute inset-0 bg-indigo-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
+                <img src="/images/barrel_vs_fuel_sl.png" alt="Barrel vs Fuel Analysis" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
           </div>
@@ -330,8 +335,9 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
-              <div className="bg-white/10 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full border border-white/10">
-                <Calculator className="w-40 h-40 text-teal-300 drop-shadow-lg" strokeWidth={1} />
+              <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white/10">
+                <div className="absolute inset-0 bg-teal-900/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
+                <img src="/images/fuel_calculator_sl.png" alt="Fuel Calculator" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
