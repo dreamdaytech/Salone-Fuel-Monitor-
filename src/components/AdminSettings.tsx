@@ -151,10 +151,12 @@ export default function AdminSettings() {
   const handlePublishUpdate = async () => {
     setIsPublishingUpdate(true);
     try {
+      const versionString = `v${Date.now()}`;
       await setDoc(doc(db, 'system', 'version'), {
+        version: versionString,
         updatedAt: serverTimestamp(),
         publishedBy: 'admin',
-      });
+      }, { merge: true });
       toast.success('Update notification published to all active users!');
     } catch (error) {
       console.error('Failed to publish update:', error);
