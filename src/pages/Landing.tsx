@@ -189,7 +189,7 @@ export default function Landing() {
       <div className="bg-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-last lg:order-first">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-bold mb-5"><MapPin className="w-4 h-4" /> Fuel Stations</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-5">Find Verified Stations<br /><span className="text-blue-600">Near You, Right Now</span></h2>
               <p className="text-gray-500 text-lg mb-8 leading-relaxed">Browse an interactive map of verified fuel stations across Sierra Leone. Check live stock availability before you drive.</p>
@@ -204,7 +204,7 @@ export default function Landing() {
                 <MapPin className="h-5 w-5" /> Find Fuel Stations <ArrowRight className="h-4 w-4" />
               </Link>
             </motion.div>
-            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-first lg:order-last">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img src="/images/fuel_stations_sl.png" alt="Fuel Stations in Sierra Leone" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -218,13 +218,13 @@ export default function Landing() {
       <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-first lg:order-1">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white/10">
                 <div className="absolute inset-0 bg-emerald-900/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img src="/images/price_trends_sl.png" alt="Price Trends Data" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
-            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-last lg:order-2">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-bold mb-5"><Activity className="w-4 h-4" /> Price Trends</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-5">Track Every Price Change<br /><span className="text-emerald-300">Since Day One</span></h2>
               <p className="text-gray-300 text-lg mb-8 leading-relaxed">Follow the complete history of Sierra Leone's official fuel prices. Spot patterns, understand policy impacts, and export full PDF reports.</p>
@@ -247,7 +247,7 @@ export default function Landing() {
       <div className="bg-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-last lg:order-first">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-sm font-bold mb-5"><Bus className="w-4 h-4" /> Transport Prices</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-5">Know Your Official<br /><span className="text-purple-600">Transport Fares</span></h2>
               <p className="text-gray-500 text-lg mb-8 leading-relaxed">Access official public transport fares across all districts in Sierra Leone. Never be overcharged again — know your rights before you board.</p>
@@ -262,7 +262,7 @@ export default function Landing() {
                 <Bus className="h-5 w-5" /> View Transport Fares <ArrowRight className="h-4 w-4" />
               </Link>
             </motion.div>
-            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-first lg:order-last">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-purple-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img src="/images/transport_prices_sl.png" alt="Transport Fares" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -276,13 +276,13 @@ export default function Landing() {
       <div className="bg-gradient-to-br from-[#6B1212] via-[#3B1F00] to-[#1A4D2E] py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-first lg:order-1">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-[#3B1F00]/30">
                 <div className="absolute inset-0 bg-[#6B1212]/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img src="/images/regional_comparison_wa.png" alt="West Africa Regional Comparison" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
-            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-last lg:order-2">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-400/20 text-yellow-300 text-sm font-bold mb-5"><Globe className="w-4 h-4" /> Regional Comparison</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-5">How Does Sierra Leone<br /><span className="text-yellow-300">Compare to West Africa?</span></h2>
               <p className="text-gray-300 text-lg mb-8 leading-relaxed">Compare Sierra Leone's pump prices against 8 neighboring West African countries in real-time. See rankings, medal charts, and price gaps at a glance.</p>
@@ -305,7 +305,7 @@ export default function Landing() {
       <div className="bg-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-last lg:order-first">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-sm font-bold mb-5"><TrendingUp className="w-4 h-4" /> Barrel vs Fuel</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-5">Global Crude Oil vs<br /><span className="text-indigo-600">Your Local Pump Price</span></h2>
               <p className="text-gray-500 text-lg mb-8 leading-relaxed">Understand the direct relationship between global crude oil barrel prices and what you pay at the pump. Spot price trends before they hit locally.</p>
@@ -320,7 +320,7 @@ export default function Landing() {
                 <TrendingUp className="h-5 w-5" /> Explore Analysis <ArrowRight className="h-4 w-4" />
               </Link>
             </motion.div>
-            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-first lg:order-last">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-indigo-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img src="/images/barrel_vs_fuel_sl.png" alt="Barrel vs Fuel Analysis" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -334,13 +334,13 @@ export default function Landing() {
       <div className="bg-gradient-to-br from-teal-900 via-cyan-900 to-teal-800 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-first lg:order-1">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white/10">
                 <div className="absolute inset-0 bg-teal-900/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img src="/images/fuel_calculator_sl.png" alt="Fuel Calculator" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
-            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-last lg:order-2">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/20 text-teal-300 text-sm font-bold mb-5"><Calculator className="w-4 h-4" /> Fuel Calculator</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-5">Plan Your Journey,<br /><span className="text-teal-300">Know Your Fuel Cost</span></h2>
               <p className="text-gray-300 text-lg mb-8 leading-relaxed">Enter your vehicle's fuel efficiency and distance to instantly calculate how much fuel you need and what it will cost at today's official prices.</p>
