@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { collection, query, where, getDocs, limit, doc, updateDoc, increment } from '../firebase';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { collection, query, where, getDocs, limit, doc, updateDoc, increment, orderBy } from '../firebase';
 import { db } from '../firebase';
 import { BlogPost as BlogPostType } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
-import { Calendar, User, ArrowLeft, Tag, Share2 } from 'lucide-react';
+import { Calendar, User, ArrowLeft, Tag, Share2, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import Footer from '../components/Footer';
 import { trackBlogRead } from '../hooks/useAnalytics';
@@ -13,6 +13,7 @@ export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [post, setPost] = useState<BlogPostType | null>(null);
+  const [recommendedPosts, setRecommendedPosts] = useState<BlogPostType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,12 +51,31 @@ export default function BlogPost() {
               console.error('Error updating views:', updateErr);
             }
           }
+          // Fetch recommended posts (latest published, excluding current)
+          try {
+            const recQ = query(
+              collection(db, 'blog_posts'),
+              where('isPublished', '==', true),
+              orderBy('publishedAt', 'desc'),
+              limit(4) // Fetch 4 in case current post is one of them
+            );
+            const recSnap = await getDocs(recQ);
+            const recs = recSnap.docs
+              .map(d => ({ id: d.id, ...d.data() } as BlogPostType))
+              .filter(p => p.id !== docData.id)
+              .slice(0, 3);
+            setRecommendedPosts(recs);
+          } catch (recErr) {
+            console.error('Error fetching recommendations:', recErr);
+          }
         }
       } catch (err) {
         console.error('Error fetching blog post:', err);
         toast.error('Failed to load post');
       } finally {
         setLoading(false);
+        // Scroll to top when post changes
+        window.scrollTo(0, 0);
       }
     };
 
@@ -191,6 +211,56 @@ export default function BlogPost() {
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </main>
+
+      {/* More To Explore Section */}
+      {recommendedPosts.length > 0 && (
+        <section className="bg-surface-50 py-16 border-t border-gray-100">
+          <div className="max-w-5xl mx-auto px-4">
+            <h3 className="text-2xl font-black text-surface-900 mb-8">More To Explore</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {recommendedPosts.map(rec => (
+                <Link 
+                  key={rec.id} 
+                  to={`/blog/${rec.slug}`}
+                  className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 hover:-translate-y-1 flex flex-col"
+                >
+                  <div className="relative h-48 bg-gray-100 overflow-hidden">
+                    {rec.coverImage ? (
+                      <img 
+                        src={rec.coverImage} 
+                        alt={rec.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-primary/5 text-primary">
+                        <Tag className="w-8 h-8 opacity-50" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+                      <Calendar className="w-3 h-3" />
+                      {rec.publishedAt?.toDate ? rec.publishedAt.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
+                    </div>
+                    <h4 className="text-lg font-bold text-surface-900 mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                      {rec.title}
+                    </h4>
+                    <div className="pt-4 border-t border-gray-100 mt-auto flex items-center justify-between">
+                      <div className="text-xs font-semibold text-gray-500">
+                        {rec.authorName || 'Admin'}
+                      </div>
+                      <div className="text-primary font-bold text-xs flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        Read <ChevronRight className="w-3 h-3" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
     </div>
   );
 }
