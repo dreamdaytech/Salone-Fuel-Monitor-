@@ -86,6 +86,11 @@ function AppContent() {
   const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/contact', '/terms', '/privacy', '/cookies', '/blog', '/stations'];
   const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/transport-prices/');
 
+  // Scroll to top on every route change — must be before any conditional returns
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface-50">
@@ -94,19 +99,6 @@ function AppContent() {
     );
   }
 
-  if (user && !profile) {
-    const policyRoutes = ['/terms', '/privacy', '/cookies'];
-    if (!policyRoutes.includes(location.pathname)) {
-      return <Register />;
-    }
-  }
-
-  if (user && profile && !profile.onboardingCompleted && location.pathname !== '/onboarding') {
-    const policyRoutes = ['/terms', '/privacy', '/cookies'];
-    if (!policyRoutes.includes(location.pathname)) {
-      return <Navigate to="/onboarding" />;
-    }
-  }
 
   return (
     <FavoriteProvider>
@@ -139,7 +131,9 @@ function AppContent() {
                 <Route path="/transport-trends" element={<TransportTrends />} />
                 <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
                 <Route path="/signup" element={!user ? <Auth /> : <Navigate to="/" />} />
-                <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
+                {/* Registration gate: show Register page if user has no profile yet */}
+                <Route path="/register" element={user && !profile ? <Register /> : <Navigate to="/" />} />
+                <Route path="/profile" element={user ? (profile && !profile.onboardingCompleted ? <Navigate to="/onboarding" /> : <Profile />) : <Navigate to="/login" />} />
                 <Route path="/regional-comparison" element={<RegionalComparison />} />
                 <Route path="/market-intelligence" element={<MarketIntelligence />} />
                 <Route path="/exchange-rates" element={<ExchangeRates />} />
@@ -159,7 +153,10 @@ function AppContent() {
                 <Route path="/admin/transport-prices/:id" element={user && profile?.role === 'admin' ? <AdminTransportPriceDetails /> : <Navigate to={user ? "/" : "/login"} />} />
                 {/* My Garage — personal dispatch & fuel tracker (any authenticated user) */}
                 <Route path="/my-garage" element={user ? <MyGarage /> : <Navigate to="/login" />} />
-                <Route path="*" element={<Navigate to="/" />} />
+                {/* Admin reviews */}
+                <Route path="/admin/reviews" element={user && profile?.role === 'admin' ? <AdminReviews /> : <Navigate to={user ? "/" : "/login"} />} />
+                {/* Catch-all: if user is logged in but has no profile, send them to register */}
+                <Route path="*" element={user && !profile ? <Register /> : <Navigate to="/" />} />
               </Routes>
             </React.Suspense>
           </main>
