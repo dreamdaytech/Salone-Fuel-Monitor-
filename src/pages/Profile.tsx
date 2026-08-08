@@ -174,7 +174,8 @@ export default function Profile() {
         phoneNumber,
         alertDistricts,
         alertFuelTypes,
-        priceThresholds
+        priceThresholds,
+        onboardingCompleted: true
       });
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
     } catch (error) {

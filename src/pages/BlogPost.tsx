@@ -86,7 +86,9 @@ export default function BlogPost() {
   useSEO({
     title: post?.seoTitle || post?.title || 'Loading...',
     description: post?.seoDescription || post?.excerpt || '',
-    image: post?.coverImage
+    image: post?.coverImage,
+    type: 'article',
+    url: window.location.href,
   });
 
   if (loading) {

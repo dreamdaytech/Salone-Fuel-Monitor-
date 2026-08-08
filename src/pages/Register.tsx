@@ -44,7 +44,7 @@ export default function Register() {
           </Link>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-surface-900 tracking-tight">
-          Complete Your Profile
+          Basic Information
         </h2>
         <p className="mt-2 text-center text-sm text-gray-500">
           Tell us a little bit about yourself

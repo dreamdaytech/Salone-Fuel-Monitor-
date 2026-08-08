@@ -200,10 +200,10 @@ export default function Onboarding() {
             <Bell className="w-8 h-8 text-primary" />
           </div>
           <h2 className="text-3xl font-extrabold text-surface-900 tracking-tight">
-            Stay Informed
+            Welcome, {profile?.name?.split(' ')[0] || 'there'}!
           </h2>
           <p className="text-gray-500 leading-relaxed">
-            How would you like to receive fuel price updates and alerts?
+            Let's set up your preferences. How would you like to receive fuel price updates and alerts?
           </p>
 
           <div className="space-y-4 pt-4">
@@ -264,8 +264,8 @@ export default function Onboarding() {
             
             <div className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">
-                  Station Name <span className="text-rose-500">*</span>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
+                  Fuel Station / Business Name <span className="text-rose-500">*</span>
                 </label>
                 <input 
                   type="text" 
