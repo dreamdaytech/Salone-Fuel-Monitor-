@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { 
   MapPin, Activity, Bus, Globe, DollarSign, Calculator, 
-  TrendingUp, ArrowRight, ShieldCheck, Fuel, Newspaper
+  TrendingUp, ArrowRight, ShieldCheck, Fuel, Newspaper,
+  Car, Gauge, Receipt, Wrench, Navigation, BarChart3
 } from 'lucide-react';
 import { db, collection, query, orderBy, limit, getDocs } from '../firebase';
 
@@ -32,57 +33,6 @@ export default function Landing() {
     }
     fetchLatestPrices();
   }, []);
-
-  const features = [
-    {
-      title: 'Fuel Stations',
-      description: 'Find verified fuel stations, check stock availability, and navigate to the nearest pumps.',
-      icon: MapPin,
-      link: '/stations',
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-    },
-    {
-      title: 'Price Trends',
-      description: 'Track historical fuel prices in Sierra Leone and export detailed PDF reports.',
-      icon: Activity,
-      link: '/price-trends',
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
-    },
-    {
-      title: 'Transport Prices',
-      description: 'View official public transport fares across districts to avoid overcharging.',
-      icon: Bus,
-      link: '/transport-prices',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-    },
-    {
-      title: 'Regional Comparison',
-      description: 'Compare Sierra Leone pump prices with neighboring West African countries.',
-      icon: Globe,
-      link: '/regional-comparison',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-    },
-    {
-      title: 'Barrel vs Fuel',
-      description: 'Analyze the relationship between global crude oil prices and local pump prices.',
-      icon: TrendingUp,
-      link: '/barrel-vs-fuel',
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
-    },
-    {
-      title: 'Fuel Calculator',
-      description: 'Calculate fuel costs based on your vehicle efficiency and distance.',
-      icon: Calculator,
-      link: '/calculator',
-      color: 'text-teal-600',
-      bgColor: 'bg-teal-50',
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-surface-50">
@@ -224,37 +174,327 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* Feature Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Powerful Tools for Citizens</h2>
-          <p className="text-gray-500 max-w-2xl mx-auto">Access a comprehensive suite of tools designed to bring transparency to the fuel and transport sector in Sierra Leone.</p>
+      {/* ── Platform Tools Intro ── */}
+      <div className="bg-white py-16 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+            <span className="inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-bold uppercase tracking-wider mb-4">Platform Tools</span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4">Everything You Need, In One Place</h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto">A comprehensive suite of tools designed to bring transparency, insight, and control to fuel and transport in Sierra Leone.</p>
+          </motion.div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {features.map((feature, idx) => (
-            <motion.div
-              key={feature.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: idx * 0.1 }}
-            >
-              <Link to={feature.link} className="block group h-full">
-                <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 h-full flex flex-col">
-                  <div className={`w-14 h-14 rounded-2xl ${feature.bgColor} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                    <feature.icon className={`w-7 h-7 ${feature.color}`} />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">{feature.title}</h3>
-                  <p className="text-gray-500 flex-grow">{feature.description}</p>
-                  
-                  <div className="mt-6 flex items-center text-sm font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
-                    Explore feature <ArrowRight className="ml-1 w-4 h-4" />
-                  </div>
-                </div>
+      {/* ── 1. Fuel Stations ── */}
+      <div className="bg-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 text-sm font-bold mb-5"><MapPin className="w-4 h-4" /> Fuel Stations</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-5">Find Verified Stations<br /><span className="text-blue-600">Near You, Right Now</span></h2>
+              <p className="text-gray-500 text-lg mb-8 leading-relaxed">Browse an interactive map of verified fuel stations across Sierra Leone. Check live stock availability before you drive.</p>
+              <ul className="space-y-3 mb-10">
+                {['Live fuel stock status at every station', 'Interactive map with directions', 'Filter by fuel type — Petrol, Diesel, Kerosene', 'Verified station data from official sources'].map(pt => (
+                  <li key={pt} className="flex items-start gap-3 text-gray-700 text-sm">
+                    <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>{pt}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/stations" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-base transition-all shadow-lg shadow-blue-600/20 hover:-translate-y-0.5">
+                <MapPin className="h-5 w-5" /> Find Fuel Stations <ArrowRight className="h-4 w-4" />
               </Link>
             </motion.div>
-          ))}
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full shadow-inner">
+                <MapPin className="w-40 h-40 text-blue-300 drop-shadow-lg" strokeWidth={1} />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 2. Price Trends ── */}
+      <div className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-teal-900 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
+              <div className="bg-white/10 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full border border-white/10">
+                <Activity className="w-40 h-40 text-emerald-300 drop-shadow-lg" strokeWidth={1} />
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-emerald-300 text-sm font-bold mb-5"><Activity className="w-4 h-4" /> Price Trends</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-5">Track Every Price Change<br /><span className="text-emerald-300">Since Day One</span></h2>
+              <p className="text-gray-300 text-lg mb-8 leading-relaxed">Follow the complete history of Sierra Leone's official fuel prices. Spot patterns, understand policy impacts, and export full PDF reports.</p>
+              <ul className="space-y-3 mb-10">
+                {['Full historical price chart going back years', 'Petrol, Diesel & Kerosene tracked separately', 'Export branded PDF reports in one click', 'Compare price changes month over month'].map(pt => (
+                  <li key={pt} className="flex items-start gap-3 text-gray-300 text-sm">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/30 text-emerald-300 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>{pt}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/price-trends" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-base transition-all shadow-lg shadow-emerald-500/25 hover:-translate-y-0.5">
+                <Activity className="h-5 w-5" /> View Price Trends <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. Transport Prices ── */}
+      <div className="bg-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-sm font-bold mb-5"><Bus className="w-4 h-4" /> Transport Prices</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-5">Know Your Official<br /><span className="text-purple-600">Transport Fares</span></h2>
+              <p className="text-gray-500 text-lg mb-8 leading-relaxed">Access official public transport fares across all districts in Sierra Leone. Never be overcharged again — know your rights before you board.</p>
+              <ul className="space-y-3 mb-10">
+                {['Official fares for all districts & routes', 'Poda-poda, taxi & intercity prices', 'Updated whenever government revises fares', 'Easy-to-browse by origin and destination'].map(pt => (
+                  <li key={pt} className="flex items-start gap-3 text-gray-700 text-sm">
+                    <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>{pt}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/transport-prices" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-base transition-all shadow-lg shadow-purple-600/20 hover:-translate-y-0.5">
+                <Bus className="h-5 w-5" /> View Transport Fares <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full shadow-inner">
+                <Bus className="w-40 h-40 text-purple-300 drop-shadow-lg" strokeWidth={1} />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4. Regional Comparison ── */}
+      <div className="bg-gradient-to-br from-[#6B1212] via-[#3B1F00] to-[#1A4D2E] py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
+              <div className="bg-white/10 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full border border-white/10">
+                <Globe className="w-40 h-40 text-yellow-300 drop-shadow-lg" strokeWidth={1} />
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-400/20 text-yellow-300 text-sm font-bold mb-5"><Globe className="w-4 h-4" /> Regional Comparison</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-5">How Does Sierra Leone<br /><span className="text-yellow-300">Compare to West Africa?</span></h2>
+              <p className="text-gray-300 text-lg mb-8 leading-relaxed">Compare Sierra Leone's pump prices against 8 neighboring West African countries in real-time. See rankings, medal charts, and price gaps at a glance.</p>
+              <ul className="space-y-3 mb-10">
+                {['Live comparison with 8 West African nations', 'Card, Table, Map & Chart views', 'USD and local currency modes', 'World average benchmark included'].map(pt => (
+                  <li key={pt} className="flex items-start gap-3 text-gray-300 text-sm">
+                    <span className="w-5 h-5 rounded-full bg-yellow-400/25 text-yellow-300 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>{pt}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/regional-comparison" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-green-600 hover:bg-green-500 text-white font-bold text-base transition-all shadow-lg shadow-green-900/40 hover:-translate-y-0.5">
+                <Globe className="h-5 w-5" /> Compare Prices <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5. Barrel vs Fuel ── */}
+      <div className="bg-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-sm font-bold mb-5"><TrendingUp className="w-4 h-4" /> Barrel vs Fuel</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-5">Global Crude Oil vs<br /><span className="text-indigo-600">Your Local Pump Price</span></h2>
+              <p className="text-gray-500 text-lg mb-8 leading-relaxed">Understand the direct relationship between global crude oil barrel prices and what you pay at the pump. Spot price trends before they hit locally.</p>
+              <ul className="space-y-3 mb-10">
+                {['Crude oil price vs pump price overlay charts', 'Brent & WTI benchmark tracking', 'Historical correlation analysis', 'Export reports in PDF format'].map(pt => (
+                  <li key={pt} className="flex items-start gap-3 text-gray-700 text-sm">
+                    <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>{pt}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/barrel-vs-fuel" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base transition-all shadow-lg shadow-indigo-600/20 hover:-translate-y-0.5">
+                <TrendingUp className="h-5 w-5" /> Explore Analysis <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }}>
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full shadow-inner">
+                <TrendingUp className="w-40 h-40 text-indigo-300 drop-shadow-lg" strokeWidth={1} />
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 6. Fuel Calculator ── */}
+      <div className="bg-gradient-to-br from-teal-900 via-cyan-900 to-teal-800 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-2 lg:order-1">
+              <div className="bg-white/10 rounded-3xl p-12 flex items-center justify-center aspect-square max-w-sm mx-auto lg:max-w-full border border-white/10">
+                <Calculator className="w-40 h-40 text-teal-300 drop-shadow-lg" strokeWidth={1} />
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-1 lg:order-2">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/20 text-teal-300 text-sm font-bold mb-5"><Calculator className="w-4 h-4" /> Fuel Calculator</span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-5">Plan Your Journey,<br /><span className="text-teal-300">Know Your Fuel Cost</span></h2>
+              <p className="text-gray-300 text-lg mb-8 leading-relaxed">Enter your vehicle's fuel efficiency and distance to instantly calculate how much fuel you need and what it will cost at today's official prices.</p>
+              <ul className="space-y-3 mb-10">
+                {['Instant cost estimate based on live prices', 'Supports Petrol, Diesel & Kerosene', 'Input distance, efficiency & fuel type', 'Great for trip planning & budgeting'].map(pt => (
+                  <li key={pt} className="flex items-start gap-3 text-gray-300 text-sm">
+                    <span className="w-5 h-5 rounded-full bg-teal-500/30 text-teal-300 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">✓</span>{pt}
+                  </li>
+                ))}
+              </ul>
+              <Link to="/calculator" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-teal-500 hover:bg-teal-400 text-white font-bold text-base transition-all shadow-lg shadow-teal-500/25 hover:-translate-y-0.5">
+                <Calculator className="h-5 w-5" /> Open Calculator <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── My Garage Section ── */}
+      <div className="bg-gradient-to-br from-gray-950 via-slate-900 to-gray-900 py-20 overflow-hidden relative">
+        {/* Background glows */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-14">
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold mb-4"
+              >
+                <Car className="h-4 w-4" />
+                Personal Fleet Manager
+              </motion.div>
+              <motion.h2
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white leading-tight"
+              >
+                Track Every Kilometer,<br />
+                <span className="text-emerald-400">Every Drop of Fuel</span>
+              </motion.h2>
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="mt-4 text-gray-400 text-lg max-w-xl"
+              >
+                My Garage gives you a personal command center for your vehicles — log trips, track fill-ups, monitor maintenance, and export full reports.
+              </motion.p>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+            >
+              <Link
+                to="/my-garage"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-base transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5 whitespace-nowrap"
+              >
+                <Car className="h-5 w-5" />
+                Open My Garage
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
+          </div>
+
+          {/* Feature Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+            {[
+              {
+                icon: Car,
+                title: 'My Vehicles',
+                desc: 'Add and manage your personal fleet. Track make, model, fuel type and set a primary vehicle.',
+                color: 'text-blue-400',
+                bg: 'bg-blue-500/10',
+                border: 'border-blue-500/20',
+                glow: 'group-hover:shadow-blue-500/20',
+              },
+              {
+                icon: Navigation,
+                title: 'Trip Dispatches',
+                desc: 'Log every trip with odometer readings, destination, and purpose. Track active vs completed runs.',
+                color: 'text-purple-400',
+                bg: 'bg-purple-500/10',
+                border: 'border-purple-500/20',
+                glow: 'group-hover:shadow-purple-500/20',
+              },
+              {
+                icon: Gauge,
+                title: 'Fuel Logs',
+                desc: 'Record every fill-up with liters, cost, station and payment method. See charts and export PDF reports.',
+                color: 'text-emerald-400',
+                bg: 'bg-emerald-500/10',
+                border: 'border-emerald-500/20',
+                glow: 'group-hover:shadow-emerald-500/20',
+              },
+              {
+                icon: Wrench,
+                title: 'Maintenance',
+                desc: 'Log service records, repair costs and mechanic visits. Never miss a scheduled service again.',
+                color: 'text-amber-400',
+                bg: 'bg-amber-500/10',
+                border: 'border-amber-500/20',
+                glow: 'group-hover:shadow-amber-500/20',
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
+                <Link to="/my-garage" className="group block h-full">
+                  <div className={`h-full bg-white/5 border ${item.border} rounded-2xl p-6 hover:bg-white/8 transition-all duration-300 hover:shadow-xl ${item.glow}`}>
+                    <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
+                      <item.icon className={`w-6 h-6 ${item.color}`} />
+                    </div>
+                    <h3 className="text-white font-bold text-lg mb-2">{item.title}</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed">{item.desc}</p>
+                    <div className={`mt-5 inline-flex items-center gap-1 text-xs font-semibold ${item.color} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                      Get started <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Stats strip */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="grid grid-cols-2 sm:grid-cols-4 gap-4"
+          >
+            {[
+              { icon: Car, label: 'Vehicles tracked', value: 'Unlimited', color: 'text-blue-400' },
+              { icon: Receipt, label: 'Fuel logs', value: 'Full history', color: 'text-emerald-400' },
+              { icon: BarChart3, label: 'Cost charts', value: 'Visual insights', color: 'text-purple-400' },
+              { icon: Navigation, label: 'PDF export', value: 'Reports ready', color: 'text-amber-400' },
+            ].map((stat) => (
+              <div key={stat.label} className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                <stat.icon className={`w-5 h-5 ${stat.color} flex-shrink-0`} />
+                <div>
+                  <p className="text-white font-bold text-sm">{stat.value}</p>
+                  <p className="text-gray-500 text-xs">{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </div>
 

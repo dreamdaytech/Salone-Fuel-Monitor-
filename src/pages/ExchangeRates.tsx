@@ -361,7 +361,7 @@ export default function ExchangeRates() {
             backgroundSize: '60px 60px' 
           }} 
         />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-10 sm:py-16">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-emerald-500/20 p-2.5 rounded-xl border border-emerald-500/30">
                 <DollarSign className="w-6 h-6 text-emerald-400" />
@@ -376,7 +376,7 @@ export default function ExchangeRates() {
             </p>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-28 rounded-2xl bg-gray-200 animate-pulse" />
@@ -399,7 +399,7 @@ export default function ExchangeRates() {
             backgroundSize: '60px 60px' 
           }} 
         />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+        <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 py-10 sm:py-16">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-emerald-500/20 p-2.5 rounded-xl border border-emerald-500/30">
@@ -433,7 +433,7 @@ export default function ExchangeRates() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 sm:-mt-8 relative z-10 space-y-6 sm:space-y-8">
+      <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 lg:px-6 -mt-6 sm:-mt-8 relative z-10 space-y-6 sm:space-y-8">
 
         {/* ── Error Banner ── */}
         {error && (

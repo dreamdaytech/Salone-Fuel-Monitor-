@@ -145,13 +145,13 @@ export default function AdminMessages() {
           <h2 className="text-2xl font-bold text-gray-900">Support Messages</h2>
           <p className="text-gray-500 mt-1">Manage and respond to user inquiries</p>
         </div>
-        <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-gray-100 shadow-sm overflow-x-auto w-full md:w-auto custom-scrollbar">
           {(['all', 'new', 'read', 'replied', 'archived'] as const).map((f) => (
             <Button
               key={f}
               onClick={() => setFilter(f)}
               variant="unstyled"
-              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap flex-1 sm:flex-none text-center ${
                 filter === f 
                   ? 'bg-emerald-500 text-white shadow-md' 
                   : 'text-gray-500 hover:bg-gray-50'
@@ -166,7 +166,7 @@ export default function AdminMessages() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Messages List */}
-        <div className="lg:col-span-1 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-[600px] max-h-[800px]">
+        <div className={`lg:col-span-1 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex-col min-h-[600px] max-h-[800px] ${selectedMessage ? 'hidden lg:flex' : 'flex'}`}>
           <div className="p-4 border-b border-gray-50">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -204,8 +204,8 @@ export default function AdminMessages() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="text-xs text-gray-500 truncate">{msg.category}</div>
-                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider border ${getStatusBadge(msg.status).className}`}>
+                    <div className="text-xs text-gray-500 truncate min-w-0 flex-1">{msg.category}</div>
+                    <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider border shrink-0 ${getStatusBadge(msg.status).className}`}>
                       {getStatusBadge(msg.status).icon}
                       {getStatusBadge(msg.status).label}
                     </div>
@@ -227,20 +227,28 @@ export default function AdminMessages() {
         </div>
 
         {/* Message Detail */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col min-h-[600px]">
+        <div className={`lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex-col min-h-[600px] ${!selectedMessage ? 'hidden lg:flex' : 'flex'}`}>
           {selectedMessage ? (
             <div className="flex flex-col h-full">
-              <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-600 font-bold text-lg border border-gray-100">
+              <div className="p-4 sm:p-6 border-b border-gray-50 flex items-center justify-between gap-4 bg-gray-50/30">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <Button
+                    onClick={() => setSelectedMessage(null)}
+                    variant="ghost"
+                    showNotification={false}
+                    className="p-2 lg:hidden text-gray-500 hover:text-gray-700 bg-white border border-gray-100 shadow-sm rounded-xl shrink-0 min-w-0 h-auto"
+                  >
+                    <ChevronRight className="w-5 h-5 rotate-180" />
+                  </Button>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-600 font-bold text-lg border border-gray-100 shrink-0">
                     {selectedMessage.name.charAt(0)}
                   </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900">{selectedMessage.name}</h3>
-                    <p className="text-sm text-gray-500">{selectedMessage.email}</p>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-gray-900 truncate">{selectedMessage.name}</h3>
+                    <p className="text-xs sm:text-sm text-gray-500 truncate">{selectedMessage.email}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <Button
                     onClick={() => handleDeleteMessage(selectedMessage.id)}
                     disabled={!!actionLoading}

@@ -1790,11 +1790,11 @@ export default function AdminDashboard() {
             </div>
             
             <div className="p-6 sm:p-8 border-t border-gray-100 flex flex-col sm:flex-row sm:justify-between gap-4 bg-gray-50/50">
-              <div className="flex gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                 <Button
                   onClick={() => handleDeleteStation(selectedStation.id)}
                   variant="danger"
-                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
                   showNotification={false}
                 >
                   <Trash2 className="w-4 h-4" /> Delete
@@ -1802,7 +1802,7 @@ export default function AdminDashboard() {
                 <Button
                   onClick={() => handleToggleSuspend(selectedStation.id, selectedStation.isSuspended)}
                   variant="secondary"
-                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
                   showNotification={false}
                 >
                   {selectedStation.isSuspended ? (
@@ -1812,13 +1812,13 @@ export default function AdminDashboard() {
                   )}
                 </Button>
               </div>
-              <div className="flex gap-2 sm:gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                 <Button
                   onClick={() => {
                     handleUpdateStationPublished(selectedStation.id, selectedStation.isPublished === false ? true : false);
                   }}
                   variant={selectedStation.isPublished === false ? "primary" : "secondary"}
-                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
                   showNotification={false}
                 >
                   {selectedStation.isPublished === false ? (
@@ -1830,7 +1830,7 @@ export default function AdminDashboard() {
                 <Button
                   onClick={() => startEditStation(selectedStation)}
                   variant="secondary"
-                  className="flex-1 sm:flex-none px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
                   disableAfterClick={false}
                   showNotification={false}
                 >
@@ -1841,7 +1841,7 @@ export default function AdminDashboard() {
                     handleUpdateStationVerification(selectedStation.id, !selectedStation.isVerified);
                   }}
                   variant={selectedStation.isVerified ? "danger" : "primary"}
-                  className="flex-1 sm:flex-none px-4 sm:px-8 py-3 sm:py-4 rounded-2xl font-bold transition-all shadow-lg text-sm sm:text-base"
+                  className="w-full sm:w-auto px-4 sm:px-8 py-3 sm:py-4 rounded-2xl font-bold transition-all shadow-lg text-sm sm:text-base flex items-center justify-center"
                   showNotification={false}
                 >
                   {selectedStation.isVerified ? 'Revoke' : 'Verify'}
@@ -2497,7 +2497,7 @@ export default function AdminDashboard() {
                             <p className="text-xs text-gray-500 font-medium">Choose an action to apply to all selected stations</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                           <Button
                             onClick={handleBulkVerify}
                             disabled={isBulkActionLoading}

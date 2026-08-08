@@ -1259,8 +1259,8 @@ const FuelLogsTab = ({ fuelLogs, vehicles, dispatches, onAdd, onEdit, onDelete }
             { label: 'Total Spent', value: `Le ${fmt(totalCost)}`, icon: CreditCard, color: 'text-blue-600', bg: 'bg-blue-50' },
             { label: 'Avg Cost/L', value: `Le ${fmt(avgCostPerL)}`, icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-50' },
           ].map(({ label, value, icon: Icon, color, bg }) => (
-            <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
-              <div className={`${bg} rounded-xl p-2.5`}>
+            <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-3 sm:px-4 py-3 flex flex-col sm:flex-row items-center justify-center sm:justify-start text-center sm:text-left gap-2 sm:gap-3">
+              <div className={`${bg} rounded-xl p-2.5 shrink-0`}>
                 <Icon className={`w-5 h-5 ${color}`} />
               </div>
               <div>
@@ -2026,7 +2026,7 @@ export default function MyGarage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
       {/* Page Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-surface-900 flex items-center gap-3">
               <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-2.5 shadow-sm">
@@ -2036,14 +2036,14 @@ export default function MyGarage() {
             </h1>
             <p className="text-gray-500 mt-1.5">Track your personal vehicles, trips, and fuel spend</p>
           </div>
-          <div className="hidden sm:flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button onClick={() => setShowMasterExportModal(true)}
-              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
+              className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors flex-1 sm:flex-none justify-center whitespace-nowrap">
               <Download className="w-4 h-4" /> Master Export
             </button>
             {primaryVeh && (
               <Link to={`/stations?fuel=${primaryVeh.fuelType}`}
-                className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-100 transition-colors">
+                className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-100 transition-colors flex-1 sm:flex-none justify-center whitespace-nowrap">
                 <MapPin className="w-4 h-4" /> Find {primaryVeh.fuelType} Stations <ExternalLink className="w-3.5 h-3.5" />
               </Link>
             )}
@@ -2059,8 +2059,8 @@ export default function MyGarage() {
               { label: 'Total km Driven', value: `${fmt(totalKm)} km`, icon: Gauge, color: 'text-blue-600', bg: 'bg-blue-50' },
               { label: 'Fuel Spend', value: `Le ${fmt(totalFuelSpend)}`, icon: CreditCard, color: 'text-purple-600', bg: 'bg-purple-50' },
             ].map(({ label, value, icon: Icon, color, bg }) => (
-              <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
-                <div className={`${bg} rounded-xl p-2`}>
+              <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm px-3 sm:px-4 py-3 flex flex-col sm:flex-row items-center justify-center sm:justify-start text-center sm:text-left gap-2 sm:gap-3">
+                <div className={`${bg} rounded-xl p-2 shrink-0`}>
                   <Icon className={`w-5 h-5 ${color}`} />
                 </div>
                 <div>

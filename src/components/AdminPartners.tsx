@@ -195,12 +195,12 @@ export default function AdminPartners() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-surface-900">Strategic Affiliations</h2>
           <p className="text-sm text-gray-500 mt-1">Manage trusted partners and supporters displayed on the About Us page.</p>
         </div>
-        <Button onClick={() => { resetForm(); setIsFormOpen(true); }} className="gap-2">
+        <Button onClick={() => { resetForm(); setIsFormOpen(true); }} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" /> Add Partner
         </Button>
       </div>
@@ -306,17 +306,19 @@ export default function AdminPartners() {
                   </button>
                 </div>
                 
-                <div className="w-32 h-16 bg-gray-50 border border-gray-100 rounded flex items-center justify-center p-2 flex-shrink-0">
-                  <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" />
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-lg font-bold text-gray-900 truncate">{partner.name}</h4>
-                  {partner.websiteUrl && (
-                    <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1">
-                      <LinkIcon className="h-3 w-3" /> {partner.websiteUrl}
-                    </a>
-                  )}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 flex-1 min-w-0">
+                  <div className="w-32 h-16 bg-gray-50 border border-gray-100 rounded flex items-center justify-center p-2 flex-shrink-0">
+                    <img src={partner.logoUrl} alt={partner.name} className="max-w-full max-h-full object-contain" />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0 w-full">
+                    <h4 className="text-lg font-bold text-gray-900 truncate">{partner.name}</h4>
+                    {partner.websiteUrl && (
+                      <a href={partner.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-1 mt-1 truncate">
+                        <LinkIcon className="h-3 w-3 flex-shrink-0" /> <span className="truncate">{partner.websiteUrl}</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 <div className="relative" ref={openMenuId === partner.id ? menuRef : null}>

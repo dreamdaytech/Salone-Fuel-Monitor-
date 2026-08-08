@@ -110,16 +110,7 @@ function TableView({
               <tr key={c.id} className={`transition-colors hover:bg-emerald-50/40 ${c.isSierraLeone ? 'bg-emerald-50/60' : ''}`}>
                 <td className="px-4 py-3.5">
                   {c.rank <= 3 ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-xl font-black ${
-                        c.rank === 1 ? 'text-amber-500' : 
-                        c.rank === 2 ? 'text-slate-400' : 
-                        'text-amber-700'
-                      }`}>
-                        #{c.rank}
-                      </span>
-                      <span className="text-xl">{getRankMedal(c.rank)}</span>
-                    </div>
+                    <span className="text-3xl">{getRankMedal(c.rank)}</span>
                   ) : (
                     <span className="text-lg font-bold text-surface-900">#{c.rank}</span>
                   )}
@@ -241,11 +232,16 @@ function CardView({
             key={c.id}
             className={`bg-gradient-to-br ${colors.bg} rounded-2xl p-5 text-white shadow-lg relative overflow-hidden transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 ${
               c.isSierraLeone ? 'ring-2 ring-white/50' : ''
+            } ${
+              c.rank <= 3 ? 'ring-2 ring-white/30 shadow-2xl' : ''
             }`}
           >
             {/* Background decoration */}
             <div className="absolute -right-4 -top-4 w-24 h-24 rounded-full bg-white/5" />
             <div className="absolute -right-2 bottom-2 w-16 h-16 rounded-full bg-white/5" />
+            {c.rank <= 3 && (
+              <div className="absolute -left-6 -bottom-6 w-32 h-32 rounded-full bg-white/5" />
+            )}
 
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
@@ -258,16 +254,20 @@ function CardView({
                   )}
                 </div>
                 <div className="text-right">
-                  <span className="text-xl">{getRankMedal(c.rank)}</span>
+                  <span className={c.rank <= 3 ? 'text-4xl' : 'text-2xl'}>{getRankMedal(c.rank)}</span>
                 </div>
               </div>
 
               {/* Primary fuel price */}
               <div className="mb-4">
-                <p className="text-3xl font-black tracking-tight leading-none">
+                <p className={`font-black tracking-tight leading-none ${
+                  c.rank <= 3 ? 'text-5xl sm:text-6xl drop-shadow-lg' : 'text-3xl'
+                }`}>
                   {currency === 'usd' ? formatUSD(fuelUSD) : formatLocal(fuelLocal, c.currencySymbol)}
                 </p>
-                <p className="text-white/70 text-xs mt-1.5">
+                <p className={`text-white/70 mt-2 ${
+                  c.rank <= 3 ? 'text-sm font-semibold' : 'text-xs'
+                }`}>
                   {currency === 'usd' ? formatLocal(fuelLocal, c.currencySymbol) : formatUSD(fuelUSD)} • {fuel.toUpperCase()}
                 </p>
               </div>
@@ -278,9 +278,13 @@ function CardView({
                   const usdVal = ft.id === 'petrol' ? c.petrolUSD : ft.id === 'diesel' ? c.dieselUSD : c.keroseneUSD;
                   const localVal = ft.id === 'petrol' ? c.prices.petrol : ft.id === 'diesel' ? c.prices.diesel : c.prices.kerosene;
                   return (
-                    <div key={ft.id} className={`rounded-lg p-2 text-center ${fuel === ft.id ? 'bg-white/20 ring-1 ring-white/30' : 'bg-white/5'}`}>
+                    <div key={ft.id} className={`rounded-lg p-2 text-center ${
+                      fuel === ft.id ? 'bg-white/20 ring-1 ring-white/30' : 'bg-white/5'
+                    }`}>
                       <p className="text-[9px] text-white/70 font-bold uppercase tracking-wider">{ft.label}</p>
-                      <p className="text-xs font-bold text-white">
+                      <p className={`font-bold text-white ${
+                        c.rank <= 3 && fuel === ft.id ? 'text-sm' : 'text-xs'
+                      }`}>
                         {currency === 'usd' ? formatUSD(usdVal) : formatLocal(localVal, c.currencySymbol)}
                       </p>
                     </div>

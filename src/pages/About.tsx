@@ -128,16 +128,16 @@ export default function About() {
 
       {/* Strategic Affiliations Section */}
       {partners.length > 0 && (
-        <div className="py-24 bg-surface-50 border-t border-gray-100">
+        <div className="py-12 sm:py-16 md:py-24 bg-surface-50 border-t border-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl font-extrabold text-surface-900 mb-4 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-surface-900 mb-3 tracking-tight">
               Strategic Affiliations
             </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto mb-16">
-              Trusted Partners & Supporters who help us make fuel data transparent and accessible across Sierra Leone.
+            <p className="text-sm sm:text-base md:text-lg text-gray-500 max-w-2xl mx-auto mb-8 sm:mb-12 md:mb-16 px-2">
+              Trusted Partners &amp; Supporters who help us make fuel data transparent and accessible across Sierra Leone.
             </p>
 
-            <div className="flex flex-wrap justify-center gap-8 md:gap-12 items-center">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap justify-center gap-4 sm:gap-6 md:gap-10 items-center">
               {partners.map(partner => (
                 <div key={partner.id} className="group relative flex flex-col items-center">
                   {partner.websiteUrl ? (
@@ -145,7 +145,7 @@ export default function About() {
                       href={partner.websiteUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="block w-48 h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center justify-center hover:shadow-md hover:border-blue-200 transition-all"
+                      className="block w-full h-24 sm:w-48 sm:h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex items-center justify-center hover:shadow-md hover:border-blue-200 transition-all"
                     >
                       <img 
                         src={partner.logoUrl} 
@@ -157,7 +157,7 @@ export default function About() {
                       </div>
                     </a>
                   ) : (
-                    <div className="block w-48 h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center justify-center hover:shadow-md transition-all">
+                    <div className="w-full h-24 sm:w-48 sm:h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex items-center justify-center hover:shadow-md transition-all">
                       <img 
                         src={partner.logoUrl} 
                         alt={partner.name} 
@@ -165,7 +165,7 @@ export default function About() {
                       />
                     </div>
                   )}
-                  <span className="mt-4 text-sm font-medium text-gray-600">{partner.name}</span>
+                  <span className="mt-2 sm:mt-4 text-xs sm:text-sm font-medium text-gray-600">{partner.name}</span>
                 </div>
               ))}
             </div>
