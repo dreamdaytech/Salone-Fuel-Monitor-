@@ -207,7 +207,7 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-first lg:order-last">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
-                <img src="/images/fuel_stations_sl.png" alt="Fuel Stations in Sierra Leone" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img src="/images/fuel_stations_sl_new.png" alt="Fuel Stations in Sierra Leone" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
             </motion.div>
           </div>
