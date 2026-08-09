@@ -12,6 +12,7 @@ interface TransportPrice {
   vehicleType: string;
   categoryId: string;
   price: number;
+  isNegotiable?: boolean;
   date: string;
   lastUpdated: any;
   updatedBy: string;
@@ -23,6 +24,8 @@ interface TransportCategory {
   description?: string;
   icon?: string;
   order?: number;
+  routes?: string[];
+  vehicleTypes?: string[];
   createdAt: any;
   updatedAt?: any;
 }
@@ -98,17 +101,21 @@ export default function AdminTransportPrices() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<TransportCategory | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
-  const [categoryFormData, setCategoryFormData] = useState({
+  const [categoryFormData, setCategoryFormData] = useState<{name: string, description: string, icon: string, routes: string[], vehicleTypes: string[]}>({
     name: '',
     description: '',
-    icon: 'Bus'
+    icon: 'Bus',
+    routes: [],
+    vehicleTypes: []
   });
+  const [newCategoryRoute, setNewCategoryRoute] = useState('');
 
   const [formData, setFormData] = useState({
     route: '',
     vehicleType: 'Car',
     categoryId: '',
     price: '',
+    isNegotiable: false,
     date: new Date().toISOString().split('T')[0]
   });
 
@@ -215,7 +222,8 @@ export default function AdminTransportPrices() {
         route: price.route,
         vehicleType: price.vehicleType,
         categoryId: price.categoryId || (categories[0]?.id ?? ''),
-        price: price.price.toString(),
+        price: price.isNegotiable ? '' : price.price.toString(),
+        isNegotiable: price.isNegotiable || false,
         date: price.date || new Date().toISOString().split('T')[0]
       });
       setIsNewRoute(false);
@@ -226,6 +234,7 @@ export default function AdminTransportPrices() {
         vehicleType: vehicleTypes.length > 0 ? vehicleTypes[0].name : 'Car',
         categoryId: categories[0]?.id ?? '',
         price: '',
+        isNegotiable: false,
         date: new Date().toISOString().split('T')[0]
       });
       setIsNewRoute(uniqueRoutes.length === 0);
@@ -237,18 +246,20 @@ export default function AdminTransportPrices() {
   const handleOpenCategoryModal = (cat?: TransportCategory) => {
     if (cat) {
       setEditingCategory(cat);
-      setCategoryFormData({ name: cat.name, description: cat.description || '', icon: cat.icon || 'Bus' });
+      setCategoryFormData({ name: cat.name, description: cat.description || '', icon: cat.icon || 'Bus', routes: cat.routes || [], vehicleTypes: cat.vehicleTypes || [] });
     } else {
       setEditingCategory(null);
-      setCategoryFormData({ name: '', description: '', icon: 'Bus' });
+      setCategoryFormData({ name: '', description: '', icon: 'Bus', routes: [], vehicleTypes: [] });
     }
+    setNewCategoryRoute('');
     setIsCategoryModalOpen(true);
   };
 
   const handleCloseCategoryModal = () => {
     setIsCategoryModalOpen(false);
     setEditingCategory(null);
-    setCategoryFormData({ name: '', description: '', icon: 'Bus' });
+    setCategoryFormData({ name: '', description: '', icon: 'Bus', routes: [], vehicleTypes: [] });
+    setNewCategoryRoute('');
   };
 
   const handleCategorySubmit = async (e: React.FormEvent) => {
@@ -262,6 +273,8 @@ export default function AdminTransportPrices() {
         name: categoryFormData.name,
         description: categoryFormData.description,
         icon: categoryFormData.icon,
+        routes: categoryFormData.routes,
+        vehicleTypes: categoryFormData.vehicleTypes,
         order: editingCategory ? (editingCategory.order ?? categories.length) : categories.length,
         updatedAt: serverTimestamp(),
         ...(editingCategory ? {} : { createdAt: serverTimestamp() })
@@ -363,10 +376,11 @@ export default function AdminTransportPrices() {
         route: formData.route,
         vehicleType: formData.vehicleType,
         categoryId: formData.categoryId,
-        price: Number(formData.price),
+        price: formData.isNegotiable ? 0 : Number(formData.price),
+        isNegotiable: formData.isNegotiable,
         date: formData.date,
+        updatedBy: user.uid,
         lastUpdated: serverTimestamp(),
-        updatedBy: user.uid
       };
 
       if (editingPrice) {
@@ -798,22 +812,23 @@ export default function AdminTransportPrices() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredPrices.length > 0 ? (
-                filteredPrices.slice(0, visibleCount).map(price => {
-                  const cat = categories.find(c => c.id === price.categoryId);
-                  return (
+                filteredPrices.slice(0, visibleCount).map(price => (
                   <tr 
                     key={price.id} 
                     className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
                     onClick={() => setSearchParams({ tab: 'transport', id: price.id })}
                   >
                     <td className="px-8 py-5">
-                      {cat ? (
-                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
-                          {cat.name}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-400 italic">Uncategorised</span>
-                      )}
+                      {(() => {
+                        const cat = categories.find(c => c.id === price.categoryId);
+                        return cat ? (
+                          <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
+                            {cat.name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 italic">Uncategorised</span>
+                        );
+                      })()}
                     </td>
                     <td className="px-8 py-5">
                       <div className="font-bold text-gray-900">{price.route}</div>
@@ -832,7 +847,11 @@ export default function AdminTransportPrices() {
                       </div>
                     </td>
                     <td className="px-8 py-5">
-                      <div className="text-lg font-bold text-gray-900">Le {price.price.toLocaleString()}</div>
+                      {price.isNegotiable ? (
+                        <div className="text-lg font-bold text-emerald-600">Negotiable</div>
+                      ) : (
+                        <div className="text-lg font-bold text-gray-900">Le {price.price.toLocaleString()}</div>
+                      )}
                     </td>
                     <td className="px-8 py-5 text-sm text-gray-500 font-medium">{price.date || 'N/A'}</td>
                     <td className="px-8 py-5">
@@ -864,8 +883,7 @@ export default function AdminTransportPrices() {
                       </div>
                     </td>
                   </tr>
-                  );
-                }))
+                ))
               ) : (
                 <tr>
                   <td colSpan={7} className="px-8 py-20 text-center">
@@ -1113,125 +1131,130 @@ export default function AdminTransportPrices() {
                 </div>
                 <div className="space-y-2">
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Route Name</label>
-                  {!isNewRoute && uniqueRoutes.length > 0 ? (
-                    <div className="relative" ref={routeDropdownRef}>
-                      <div 
-                        className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold flex justify-between items-center cursor-pointer focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all"
-                        onClick={() => setIsRouteDropdownOpen(!isRouteDropdownOpen)}
-                      >
-                        <span className={formData.route ? 'text-gray-900' : 'text-gray-500'}>
-                          {formData.route || 'Select a route'}
-                        </span>
-                        <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isRouteDropdownOpen ? 'rotate-180' : ''}`} />
-                      </div>
-                      
-                      {isRouteDropdownOpen && (
-                        <div className="absolute z-[100] top-full mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                          <div className="p-2 border-b border-gray-100">
-                            <input 
-                              type="text"
-                              placeholder="Search routes..."
-                              className="w-full px-4 py-2.5 bg-gray-50 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-emerald-500/20"
-                              value={routeSearchTerm}
-                              onChange={(e) => setRouteSearchTerm(e.target.value)}
-                              onClick={(e) => e.stopPropagation()}
-                              autoFocus
-                            />
-                          </div>
-                          <ul className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
-                            {uniqueRoutes.filter(route => route.toLowerCase().includes(routeSearchTerm.toLowerCase())).map(route => (
-                              <li 
-                                key={route}
-                                className={`px-4 py-3 rounded-xl text-sm cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between ${formData.route === route ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-gray-700'}`}
-                                onClick={() => {
-                                  setFormData({ ...formData, route });
-                                  setIsRouteDropdownOpen(false);
-                                  setRouteSearchTerm('');
-                                }}
-                              >
-                                {route}
-                                {formData.route === route && <CheckCircle className="w-4 h-4" />}
-                              </li>
-                            ))}
-                            {uniqueRoutes.filter(route => route.toLowerCase().includes(routeSearchTerm.toLowerCase())).length === 0 && (
-                              <li className="px-4 py-4 text-sm text-gray-500 text-center font-medium">No routes found</li>
-                            )}
-                            <li 
-                              className="px-4 py-3 rounded-xl text-sm cursor-pointer hover:bg-emerald-50 text-emerald-600 font-bold mt-1 border-t border-gray-50 flex items-center gap-2"
-                              onClick={() => {
-                                setIsNewRoute(true);
-                                setFormData({ ...formData, route: '' });
-                                setIsRouteDropdownOpen(false);
-                                setRouteSearchTerm('');
-                              }}
-                            >
-                              <Plus className="w-4 h-4" /> Add New Route
-                            </li>
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        required
-                        className="flex-1 px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                        placeholder="e.g., Lumley to PZ"
-                        value={formData.route}
-                        onChange={(e) => setFormData({ ...formData, route: e.target.value })}
-                        autoFocus
-                      />
-                      {uniqueRoutes.length > 0 && (
-                        <Button 
-                          type="button" 
-                          variant="ghost" 
-                          onClick={() => {
-                            setIsNewRoute(false);
-                            setFormData({ ...formData, route: uniqueRoutes[0] || '' });
-                          }}
-                          className="px-4 shrink-0 rounded-2xl"
+                  {(() => {
+                    const selectedCategory = categories.find(c => c.id === formData.categoryId);
+                    const catRoutes = selectedCategory?.routes || [];
+                    
+                    if (!formData.categoryId) {
+                       return <div className="text-sm text-gray-500 italic px-5 py-3.5 sm:py-4 bg-gray-50 rounded-2xl">Please select a category first.</div>;
+                    }
+                    if (catRoutes.length === 0) {
+                       return <div className="text-sm text-amber-600 font-medium bg-amber-50 p-4 rounded-2xl border border-amber-200">No routes defined for this category. Go to the Categories tab to add some.</div>;
+                    }
+
+                    return (
+                      <div className="relative" ref={routeDropdownRef}>
+                        <div 
+                          className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold flex justify-between items-center cursor-pointer focus-within:ring-2 focus-within:ring-blue-500/20 transition-all"
+                          onClick={() => setIsRouteDropdownOpen(!isRouteDropdownOpen)}
                         >
-                          Cancel
-                        </Button>
-                      )}
-                    </div>
-                  )}
+                          <span className={formData.route ? 'text-gray-900' : 'text-gray-500'}>
+                            {formData.route || 'Select a route'}
+                          </span>
+                          <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isRouteDropdownOpen ? 'rotate-180' : ''}`} />
+                        </div>
+                        
+                        {isRouteDropdownOpen && (
+                          <div className="absolute z-[100] top-full mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                            <div className="p-2 border-b border-gray-100">
+                              <input 
+                                type="text"
+                                placeholder="Search routes..."
+                                className="w-full px-4 py-2.5 bg-gray-50 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20"
+                                value={routeSearchTerm}
+                                onChange={(e) => setRouteSearchTerm(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                autoFocus
+                              />
+                            </div>
+                            <ul className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
+                              {catRoutes.filter(route => route.toLowerCase().includes(routeSearchTerm.toLowerCase())).map(route => (
+                                <li 
+                                  key={route}
+                                  className={`px-4 py-3 rounded-xl text-sm cursor-pointer hover:bg-gray-50 transition-colors flex items-center justify-between ${formData.route === route ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-700'}`}
+                                  onClick={() => {
+                                    setFormData({ ...formData, route });
+                                    setIsRouteDropdownOpen(false);
+                                    setRouteSearchTerm('');
+                                  }}
+                                >
+                                  {route}
+                                  {formData.route === route && <CheckCircle className="w-4 h-4" />}
+                                </li>
+                              ))}
+                              {catRoutes.filter(route => route.toLowerCase().includes(routeSearchTerm.toLowerCase())).length === 0 && (
+                                <li className="px-4 py-4 text-sm text-gray-500 text-center font-medium">No routes found in this category</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Vehicle Type</label>
-                    <select
-                      required
-                      className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 transition-all appearance-none cursor-pointer"
-                      value={formData.vehicleType}
-                      onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                    >
-                      {vehicleTypes.length > 0 ? (
-                        vehicleTypes.map(type => (
-                          <option key={type.id} value={type.name}>{type.name}</option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="Car">Car</option>
-                          <option value="Bus">Bus</option>
-                          <option value="Poda Poda">Poda Poda</option>
-                          <option value="Keke">Keke</option>
-                          <option value="Okada">Okada</option>
-                          <option value="Ferry">Ferry</option>
-                        </>
-                      )}
-                    </select>
+                    {(() => {
+                      const selectedCategory = categories.find(c => c.id === formData.categoryId);
+                      const allowedTypes = selectedCategory?.vehicleTypes || [];
+                      
+                      if (!formData.categoryId) {
+                         return <div className="text-sm text-gray-500 italic px-5 py-3.5 sm:py-4 bg-gray-50 rounded-2xl">Select category first.</div>;
+                      }
+                      
+                      // For backwards compatibility or empty config, if allowedTypes is empty, show all vehicle types.
+                      // But ideally they should configure it. Let's warn them if it's strictly empty.
+                      if (allowedTypes.length === 0) {
+                        return <div className="text-sm text-amber-600 font-medium bg-amber-50 p-4 rounded-2xl border border-amber-200">No vehicle types allowed for this category. Go to Categories tab to configure.</div>;
+                      }
+
+                      const optionsToRender = vehicleTypes.filter(t => allowedTypes.includes(t.name));
+
+                      return (
+                        <select
+                          required
+                          className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                          value={formData.vehicleType}
+                          onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
+                        >
+                          <option value="" disabled>Select vehicle type</option>
+                          {optionsToRender.map(type => (
+                            <option key={type.id} value={type.name}>{type.name}</option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Price (SLL)</label>
+                    <div className="flex justify-between items-center ml-1">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price (SLL)</label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500/20"
+                          checked={formData.isNegotiable}
+                          onChange={(e) => {
+                            setFormData({
+                              ...formData,
+                              isNegotiable: e.target.checked,
+                              price: e.target.checked ? '' : formData.price
+                            });
+                          }}
+                        />
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Negotiable</span>
+                      </label>
+                    </div>
                     <input
                       type="number"
-                      required
+                      required={!formData.isNegotiable}
+                      disabled={formData.isNegotiable}
                       min="0"
-                      className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                      placeholder="5000"
-                      value={formData.price}
+                      className={`w-full px-5 py-3.5 sm:py-4 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 transition-all ${
+                        formData.isNegotiable ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-50 text-gray-900'
+                      }`}
+                      placeholder={formData.isNegotiable ? "Negotiable" : "5000"}
+                      value={formData.isNegotiable ? '' : formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     />
                   </div>
@@ -1380,7 +1403,11 @@ export default function AdminTransportPrices() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price</label>
-                    <div className="text-lg sm:text-xl font-black text-emerald-600">Le {viewingPrice.price.toLocaleString()}</div>
+                    {viewingPrice.isNegotiable ? (
+                      <div className="text-lg sm:text-xl font-black text-emerald-600">Negotiable</div>
+                    ) : (
+                      <div className="text-lg sm:text-xl font-black text-emerald-600">Le {viewingPrice.price.toLocaleString()}</div>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
@@ -1694,6 +1721,94 @@ export default function AdminTransportPrices() {
                     value={categoryFormData.description}
                     onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
                   />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Predefined Routes</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      className="flex-1 px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      placeholder="e.g. Lumley - Regent Road"
+                      value={newCategoryRoute}
+                      onChange={(e) => setNewCategoryRoute(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newCategoryRoute.trim() && !categoryFormData.routes.includes(newCategoryRoute.trim())) {
+                            setCategoryFormData(prev => ({ ...prev, routes: [...prev.routes, newCategoryRoute.trim()] }));
+                            setNewCategoryRoute('');
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (newCategoryRoute.trim() && !categoryFormData.routes.includes(newCategoryRoute.trim())) {
+                          setCategoryFormData(prev => ({ ...prev, routes: [...prev.routes, newCategoryRoute.trim()] }));
+                          setNewCategoryRoute('');
+                        }
+                      }}
+                      variant="secondary"
+                      className="px-5 rounded-2xl font-bold transition-all bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center gap-2"
+                      showNotification={false}
+                    >
+                      <Plus className="w-5 h-5" /> Add
+                    </Button>
+                  </div>
+                  {categoryFormData.routes.length > 0 ? (
+                    <div className="flex flex-col gap-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar p-1">
+                      {categoryFormData.routes.map((route, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
+                          <span className="text-sm font-bold text-gray-700">{route}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCategoryFormData(prev => ({ ...prev, routes: prev.routes.filter(r => r !== route) }));
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 italic mt-2 ml-1">No routes defined. Add routes for this category.</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Allowed Vehicle Types</label>
+                  <div className="flex flex-wrap gap-2">
+                    {vehicleTypes.map((type) => {
+                      const isSelected = categoryFormData.vehicleTypes.includes(type.name);
+                      return (
+                        <button
+                          key={type.id}
+                          type="button"
+                          onClick={() => {
+                            setCategoryFormData(prev => {
+                              const newTypes = isSelected
+                                ? prev.vehicleTypes.filter(t => t !== type.name)
+                                : [...prev.vehicleTypes, type.name];
+                              return { ...prev, vehicleTypes: newTypes };
+                            });
+                          }}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold transition-all border ${
+                            isSelected
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'
+                              : 'bg-white text-gray-500 border-gray-200 hover:border-emerald-200 hover:text-emerald-600'
+                          }`}
+                        >
+                          <VehicleIcon name={type.icon} className="w-4 h-4" />
+                          {type.name}
+                        </button>
+                      );
+                    })}
+                    {vehicleTypes.length === 0 && (
+                      <p className="text-xs text-gray-500 italic ml-1">No vehicle types defined in the system.</p>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Select Icon</label>

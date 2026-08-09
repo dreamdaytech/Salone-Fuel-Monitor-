@@ -11,6 +11,7 @@ interface TransportPrice {
   vehicleType: string;
   categoryId: string;
   price: number;
+  isNegotiable?: boolean;
   date: string;
   lastUpdated: any;
   updatedBy: string;
@@ -545,12 +546,16 @@ export default function TransportPrices() {
                         </div>
                       </td>
                       <td className="px-8 py-5 whitespace-nowrap">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-base font-bold text-surface-900">
-                            {price.price.toLocaleString()}
-                          </span>
-                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
-                        </div>
+                        {price.isNegotiable ? (
+                          <span className="text-base font-bold text-emerald-600">Negotiable</span>
+                        ) : (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-base font-bold text-surface-900">
+                              {price.price.toLocaleString()}
+                            </span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
+                          </div>
+                        )}
                       </td>
                       <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-gray-500">
                         {price.date || 'N/A'}
@@ -604,10 +609,14 @@ export default function TransportPrices() {
                       <Banknote className="w-4 h-4" />
                       <span className="text-xs font-bold uppercase tracking-wider">Price</span>
                     </div>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-bold text-surface-900">{price.price.toLocaleString()}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
-                    </div>
+                    {price.isNegotiable ? (
+                      <span className="text-lg font-bold text-emerald-600">Negotiable</span>
+                    ) : (
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-surface-900">{price.price.toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center justify-between">

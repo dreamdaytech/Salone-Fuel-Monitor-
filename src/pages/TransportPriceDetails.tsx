@@ -20,6 +20,7 @@ interface TransportPrice {
   route: string;
   vehicleType: string;
   price: number;
+  isNegotiable?: boolean;
   date: string;
   lastUpdated: any;
 }
@@ -356,9 +357,15 @@ export default function TransportPriceDetails() {
           
           <div className="bg-emerald-50 px-6 py-4 rounded-2xl border border-emerald-100 text-right w-full md:w-auto">
             <p className="text-xs font-bold text-emerald-600 uppercase tracking-wider mb-1">Current Price</p>
-            <div className="text-3xl font-black text-primary">
-              Le {priceDetails.price.toLocaleString()}
-            </div>
+            {priceDetails.isNegotiable ? (
+              <div className="text-3xl font-black text-primary">
+                Negotiable
+              </div>
+            ) : (
+              <div className="text-3xl font-black text-primary">
+                Le {priceDetails.price.toLocaleString()}
+              </div>
+            )}
             {priceDetails.lastUpdated && (
               <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-wider mt-2 flex items-center justify-end gap-1">
                 <Clock className="w-3 h-3" />
