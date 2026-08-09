@@ -145,23 +145,25 @@ export default function About() {
                       href={partner.websiteUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="block w-full h-24 sm:w-48 sm:h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex items-center justify-center hover:shadow-md hover:border-blue-200 transition-all"
+                      className="block w-full h-24 sm:w-48 sm:h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 flex items-center justify-center hover:shadow-md hover:border-blue-200 transition-all"
                     >
                       <img 
                         src={partner.logoUrl} 
                         alt={partner.name} 
-                        className="max-w-full max-h-full object-contain transition-all duration-300 hover:scale-105"
+                        className="w-full h-full object-contain transition-all duration-300 hover:scale-105"
+                        style={{ minHeight: '48px' }}
                       />
                       <div className="absolute -top-2 -right-2 bg-blue-100 text-blue-600 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
                         <ExternalLink className="w-3 h-3" />
                       </div>
                     </a>
                   ) : (
-                    <div className="w-full h-24 sm:w-48 sm:h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 flex items-center justify-center hover:shadow-md transition-all">
+                    <div className="w-full h-24 sm:w-48 sm:h-32 md:w-56 md:h-36 bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-4 flex items-center justify-center hover:shadow-md transition-all">
                       <img 
                         src={partner.logoUrl} 
                         alt={partner.name} 
-                        className="max-w-full max-h-full object-contain transition-all duration-300 hover:scale-105"
+                        className="w-full h-full object-contain transition-all duration-300 hover:scale-105"
+                        style={{ minHeight: '48px' }}
                       />
                     </div>
                   )}
