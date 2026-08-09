@@ -9,10 +9,19 @@ interface TransportPrice {
   id: string;
   route: string;
   vehicleType: string;
+  categoryId: string;
   price: number;
   date: string;
   lastUpdated: any;
   updatedBy: string;
+}
+
+interface TransportCategory {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  order?: number;
 }
 
 interface FuelStation {
@@ -33,6 +42,8 @@ export default function TransportPrices() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVehicleType, setSelectedVehicleType] = useState('All');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [categories, setCategories] = useState<TransportCategory[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>((location.state as any)?.viewMode || 'cards');
   const [sortField, setSortField] = useState<'route' | 'price' | 'date' | 'lastUpdated'>('route');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -78,6 +89,17 @@ export default function TransportPrices() {
     };
   }, []);
 
+  // Load categories
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'transport_categories'), orderBy('order')),
+      (snapshot) => {
+        setCategories(snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as TransportCategory[]);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
   const vehicleTypes = ['All', ...Array.from(new Set(prices.map(p => p.vehicleType)))].sort();
 
   const handleSort = (field: 'route' | 'price' | 'date' | 'lastUpdated') => {
@@ -101,6 +123,7 @@ export default function TransportPrices() {
   };
 
   const filteredPrices = prices.filter(price => {
+    const matchesCategory = activeCategory === 'all' || price.categoryId === activeCategory;
     const matchesSearch = price.route.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesVehicleType = selectedVehicleType === 'All' || price.vehicleType === selectedVehicleType;
     
@@ -120,7 +143,7 @@ export default function TransportPrices() {
       }
     }
 
-    return matchesSearch && matchesVehicleType && matchesMinPrice && matchesMaxPrice && matchesDate;
+    return matchesCategory && matchesSearch && matchesVehicleType && matchesMinPrice && matchesMaxPrice && matchesDate;
   }).sort((a, b) => {
     let aValue: any = a[sortField];
     let bValue: any = b[sortField];
@@ -202,6 +225,52 @@ export default function TransportPrices() {
           </Button>
         </div>
       </div>
+
+      {/* Category Tabs */}
+      {categories.length > 0 && (
+        <div className="mb-6 overflow-x-auto">
+          <div className="flex gap-2 min-w-max pb-1">
+            <button
+              onClick={() => { setActiveCategory('all'); setSearchTerm(''); setSelectedVehicleType('All'); }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${
+                activeCategory === 'all'
+                  ? 'bg-primary text-white shadow-md shadow-primary/20'
+                  : 'bg-white text-gray-600 border border-gray-200 hover:border-primary/30 hover:text-primary'
+              }`}
+            >
+              <Bus className="w-4 h-4" />
+              All Routes
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                activeCategory === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {prices.length}
+              </span>
+            </button>
+            {categories.map(cat => {
+              const count = prices.filter(p => p.categoryId === cat.id).length;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => { setActiveCategory(cat.id); setSearchTerm(''); setSelectedVehicleType('All'); }}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${
+                    activeCategory === cat.id
+                      ? 'bg-primary text-white shadow-md shadow-primary/20'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-primary/30 hover:text-primary'
+                  }`}
+                >
+                  <MapPin className="w-4 h-4" />
+                  {cat.name}
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                    activeCategory === cat.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 space-y-6">

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, serverTimestamp, db, handleFirestoreError, OperationType, where, limit } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown, ChevronUp, ArrowUpDown, RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown, ChevronUp, ArrowUpDown, RotateCcw, SlidersHorizontal, MapPin } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Button } from './ui/Button';
 
@@ -10,10 +10,21 @@ interface TransportPrice {
   id: string;
   route: string;
   vehicleType: string;
+  categoryId: string;
   price: number;
   date: string;
   lastUpdated: any;
   updatedBy: string;
+}
+
+interface TransportCategory {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  order?: number;
+  createdAt: any;
+  updatedAt?: any;
 }
 
 interface PriceHistory {
@@ -45,7 +56,7 @@ export default function AdminTransportPrices() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'prices' | 'vehicles'>('prices');
+  const [activeTab, setActiveTab] = useState<'prices' | 'vehicles' | 'categories'>('prices');
   const [prices, setPrices] = useState<TransportPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,9 +94,20 @@ export default function AdminTransportPrices() {
     icon: 'Car'
   });
 
+  const [categories, setCategories] = useState<TransportCategory[]>([]);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<TransportCategory | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    description: '',
+    icon: 'Bus'
+  });
+
   const [formData, setFormData] = useState({
     route: '',
     vehicleType: 'Car',
+    categoryId: '',
     price: '',
     date: new Date().toISOString().split('T')[0]
   });
@@ -159,6 +181,25 @@ export default function AdminTransportPrices() {
     return () => unsubscribe();
   }, []);
 
+  // Load transport categories
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'transport_categories'), orderBy('order')),
+      (snapshot) => {
+        const catData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as TransportCategory[];
+        setCategories(catData);
+        if (catData.length > 0 && !formData.categoryId) {
+          setFormData(prev => ({ ...prev, categoryId: catData[0].id }));
+        }
+      },
+      (error) => handleFirestoreError(error, OperationType.LIST, 'transport_categories')
+    );
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     return () => {
       if (historyUnsubscribe) {
@@ -173,6 +214,7 @@ export default function AdminTransportPrices() {
       setFormData({
         route: price.route,
         vehicleType: price.vehicleType,
+        categoryId: price.categoryId || (categories[0]?.id ?? ''),
         price: price.price.toString(),
         date: price.date || new Date().toISOString().split('T')[0]
       });
@@ -182,12 +224,64 @@ export default function AdminTransportPrices() {
       setFormData({
         route: uniqueRoutes.length > 0 ? uniqueRoutes[0] : '',
         vehicleType: vehicleTypes.length > 0 ? vehicleTypes[0].name : 'Car',
+        categoryId: categories[0]?.id ?? '',
         price: '',
         date: new Date().toISOString().split('T')[0]
       });
       setIsNewRoute(uniqueRoutes.length === 0);
     }
     setIsModalOpen(true);
+  };
+
+  // Category CRUD
+  const handleOpenCategoryModal = (cat?: TransportCategory) => {
+    if (cat) {
+      setEditingCategory(cat);
+      setCategoryFormData({ name: cat.name, description: cat.description || '', icon: cat.icon || 'Bus' });
+    } else {
+      setEditingCategory(null);
+      setCategoryFormData({ name: '', description: '', icon: 'Bus' });
+    }
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleCloseCategoryModal = () => {
+    setIsCategoryModalOpen(false);
+    setEditingCategory(null);
+    setCategoryFormData({ name: '', description: '', icon: 'Bus' });
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      const docRef = editingCategory
+        ? doc(db, 'transport_categories', editingCategory.id)
+        : doc(collection(db, 'transport_categories'));
+      await setDoc(docRef, {
+        name: categoryFormData.name,
+        description: categoryFormData.description,
+        icon: categoryFormData.icon,
+        order: editingCategory ? (editingCategory.order ?? categories.length) : categories.length,
+        updatedAt: serverTimestamp(),
+        ...(editingCategory ? {} : { createdAt: serverTimestamp() })
+      }, { merge: true });
+      setSuccessMessage(`Category ${editingCategory ? 'updated' : 'created'} successfully!`);
+      handleCloseCategoryModal();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'transport_categories');
+    }
+  };
+
+  const confirmCategoryDelete = async () => {
+    if (!categoryToDelete) return;
+    try {
+      await deleteDoc(doc(db, 'transport_categories', categoryToDelete));
+      setSuccessMessage('Category deleted.');
+      setCategoryToDelete(null);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `transport_categories/${categoryToDelete}`);
+    }
   };
 
   const handleOpenViewModal = (price: TransportPrice) => {
@@ -268,6 +362,7 @@ export default function AdminTransportPrices() {
       const priceData = {
         route: formData.route,
         vehicleType: formData.vehicleType,
+        categoryId: formData.categoryId,
         price: Number(formData.price),
         date: formData.date,
         lastUpdated: serverTimestamp(),
@@ -468,7 +563,7 @@ export default function AdminTransportPrices() {
       )}
 
       {/* Tabs */}
-      <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 w-fit">
+      <div className="flex bg-white rounded-2xl p-1 shadow-sm border border-gray-100 w-fit flex-wrap gap-1">
         <button
           onClick={() => setActiveTab('prices')}
           className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
@@ -479,6 +574,17 @@ export default function AdminTransportPrices() {
         >
           <Bus className="w-4 h-4" />
           Transport Prices
+        </button>
+        <button
+          onClick={() => setActiveTab('categories')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'categories'
+              ? 'bg-blue-50 text-blue-700 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <MapPin className="w-4 h-4" />
+          Categories
         </button>
         <button
           onClick={() => setActiveTab('vehicles')}
@@ -619,6 +725,9 @@ export default function AdminTransportPrices() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50/50">
+                <th className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                  Category
+                </th>
                 <th 
                   className="px-8 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 cursor-pointer hover:text-emerald-600 transition-colors"
                   onClick={() => handleSort('route')}
@@ -689,12 +798,23 @@ export default function AdminTransportPrices() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filteredPrices.length > 0 ? (
-                filteredPrices.slice(0, visibleCount).map(price => (
+                filteredPrices.slice(0, visibleCount).map(price => {
+                  const cat = categories.find(c => c.id === price.categoryId);
+                  return (
                   <tr 
                     key={price.id} 
                     className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
                     onClick={() => setSearchParams({ tab: 'transport', id: price.id })}
                   >
+                    <td className="px-8 py-5">
+                      {cat ? (
+                        <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
+                          {cat.name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">Uncategorised</span>
+                      )}
+                    </td>
                     <td className="px-8 py-5">
                       <div className="font-bold text-gray-900">{price.route}</div>
                     </td>
@@ -744,10 +864,11 @@ export default function AdminTransportPrices() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                }))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-8 py-20 text-center">
+                  <td colSpan={7} className="px-8 py-20 text-center">
                     <div className="w-20 h-20 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Bus className="w-10 h-10" />
                     </div>
@@ -771,6 +892,100 @@ export default function AdminTransportPrices() {
             </Button>
           </div>
         )}
+      </div>
+      )}
+
+      {/* Categories Tab */}
+      {activeTab === 'categories' && (
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-8 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                <MapPin className="w-6 h-6" />
+              </div>
+              Transport Categories
+            </h2>
+            <p className="text-gray-500 mt-1">Organise routes into groups: Freetown Routes, Provincial, Ferries, etc.</p>
+          </div>
+          <Button
+            onClick={() => handleOpenCategoryModal()}
+            variant="primary"
+            className="w-full sm:w-auto px-8 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+            showNotification={false}
+          >
+            <Plus className="w-5 h-5" /> Add Category
+          </Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50/50">
+                <th className="px-8 py-5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Icon</th>
+                <th className="px-8 py-5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Name</th>
+                <th className="px-8 py-5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Description</th>
+                <th className="px-8 py-5 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Routes</th>
+                <th className="px-8 py-5 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {categories.length > 0 ? (
+                categories.map((cat) => (
+                  <tr key={cat.id} className="group hover:bg-gray-50/50 transition-colors">
+                    <td className="px-8 py-5">
+                      <div className="p-2 bg-blue-50 text-blue-600 rounded-lg w-fit">
+                        <VehicleIcon name={cat.icon} className="w-5 h-5" />
+                      </div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="text-sm font-bold text-gray-900">{cat.name}</div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <div className="text-sm text-gray-500">{cat.description || '—'}</div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold">
+                        {prices.filter(p => p.categoryId === cat.id).length} routes
+                      </span>
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          onClick={() => handleOpenCategoryModal(cat)}
+                          variant="ghost"
+                          className="p-2 rounded-xl transition-all"
+                          title="Edit Category"
+                          showNotification={false}
+                        >
+                          <Edit2 className="w-5 h-5 text-blue-600" />
+                        </Button>
+                        <Button
+                          onClick={() => setCategoryToDelete(cat.id)}
+                          variant="ghost"
+                          className="p-2 rounded-xl transition-all"
+                          title="Delete Category"
+                          showNotification={false}
+                        >
+                          <Trash2 className="w-5 h-5 text-red-600" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-8 py-16 text-center">
+                    <div className="w-16 h-16 bg-blue-50 text-blue-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MapPin className="w-8 h-8" />
+                    </div>
+                    <p className="text-gray-500 font-medium">No categories yet.</p>
+                    <p className="text-gray-400 text-sm mt-1">Create your first category (e.g. "Freetown Routes") to get started.</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
       )}
 
@@ -865,9 +1080,9 @@ export default function AdminTransportPrices() {
             <div className="px-6 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
               <div>
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                  {editingPrice ? 'Edit Price' : 'Add New Price'}
+                  {editingPrice ? 'Edit Transport Fare' : 'Add Transport Fare'}
                 </h3>
-                <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">Transport Fare Details</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">Category · Route · Vehicle · Price · Date</p>
               </div>
               <Button onClick={handleCloseModal} variant="unstyled" className="p-2 hover:bg-gray-200 rounded-xl transition-all text-gray-400" showNotification={false}>
                 <X className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -875,6 +1090,27 @@ export default function AdminTransportPrices() {
             </div>
             <div className="overflow-y-auto flex-1 custom-scrollbar">
               <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-4 sm:space-y-6">
+                {/* Category selector */}
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Category</label>
+                  {categories.length > 0 ? (
+                    <select
+                      required
+                      className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
+                      value={formData.categoryId}
+                      onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                    >
+                      <option value="" disabled>Select a category</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="w-full px-5 py-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-sm text-amber-700 font-medium">
+                      ⚠️ No categories yet. Go to the <strong>Categories</strong> tab to create one first.
+                    </div>
+                  )}
+                </div>
                 <div className="space-y-2">
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Route Name</label>
                   {!isNewRoute && uniqueRoutes.length > 0 ? (
@@ -1379,6 +1615,129 @@ export default function AdminTransportPrices() {
               >
                 Confirm Delete
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Delete Confirm Modal */}
+      {categoryToDelete && (
+        <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4 animate-in fade-in duration-300" onClick={() => setCategoryToDelete(null)}>
+          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-md w-full p-6 sm:p-8 animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-6">
+              <Trash2 className="w-6 h-6 sm:w-8 sm:h-8" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Delete Category?</h3>
+            <p className="text-sm sm:text-base text-gray-500 mb-2">
+              Are you sure you want to delete this category?
+            </p>
+            <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-8">
+              ⚠️ Routes assigned to this category will appear as "Uncategorised" on the public page.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <Button
+                onClick={() => setCategoryToDelete(null)}
+                variant="secondary"
+                className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all order-2 sm:order-1"
+                showNotification={false}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmCategoryDelete}
+                variant="danger"
+                className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 order-1 sm:order-2"
+                notificationMessage="Deleting category..."
+              >
+                Confirm Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Create/Edit Modal */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 bg-[#0F172A]/80 backdrop-blur-sm flex items-center justify-center z-[80] p-4 animate-in fade-in duration-300" onClick={handleCloseCategoryModal}>
+          <div className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
+              <div>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+                  {editingCategory ? 'Edit Category' : 'Add Category'}
+                </h3>
+                <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">Transport Route Group</p>
+              </div>
+              <Button onClick={handleCloseCategoryModal} variant="unstyled" className="p-2 hover:bg-gray-200 rounded-xl transition-all text-gray-400" showNotification={false}>
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              </Button>
+            </div>
+            <div className="overflow-y-auto flex-1 custom-scrollbar">
+              <form onSubmit={handleCategorySubmit} className="p-6 sm:p-8 space-y-5">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Category Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    placeholder="e.g. Freetown Routes"
+                    value={categoryFormData.name}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Description (Optional)</label>
+                  <input
+                    type="text"
+                    className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all"
+                    placeholder="e.g. Routes within Freetown city"
+                    value={categoryFormData.description}
+                    onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Select Icon</label>
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                    {Object.keys(ICON_MAP).map((iconName) => (
+                      <Button
+                        key={iconName}
+                        type="button"
+                        onClick={() => setCategoryFormData({ ...categoryFormData, icon: iconName })}
+                        variant="unstyled"
+                        className={`p-3 rounded-xl flex items-center justify-center transition-all ${
+                          categoryFormData.icon === iconName
+                            ? 'bg-blue-500 text-white shadow-lg shadow-blue-200'
+                            : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                        }`}
+                        title={iconName}
+                        showNotification={false}
+                      >
+                        <VehicleIcon name={iconName} className="w-5 h-5" />
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div className="pt-4 flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <Button
+                    type="button"
+                    onClick={handleCloseCategoryModal}
+                    variant="secondary"
+                    className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all order-2 sm:order-1"
+                    showNotification={false}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 order-1 sm:order-2"
+                    notificationMessage={editingCategory ? 'Updating category...' : 'Saving category...'}
+                  >
+                    <Save className="w-5 h-5" />
+                    {editingCategory ? 'Update Category' : 'Save Category'}
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
