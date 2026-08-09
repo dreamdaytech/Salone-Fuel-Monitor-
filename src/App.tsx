@@ -12,35 +12,63 @@ import { Toaster, toast } from 'sonner';
 import Navbar from './components/Navbar';
 import SystemUpdater from './components/SystemUpdater';
 import { usePageViewTracker } from './hooks/useAnalytics';
-const Landing = React.lazy(() => import('./pages/Landing'));
-const FuelStations = React.lazy(() => import('./pages/FuelStations'));
-const TransportPrices = React.lazy(() => import('./pages/TransportPrices'));
-const TransportPriceDetails = React.lazy(() => import('./pages/TransportPriceDetails'));
-const AdminTransportPriceDetails = React.lazy(() => import('./pages/AdminTransportPriceDetails'));
-const PriceTrends = React.lazy(() => import('./pages/PriceTrends'));
-const TransportTrends = React.lazy(() => import('./pages/TransportTrends'));
-const StationDashboard = React.lazy(() => import('./pages/StationDashboard'));
-const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
-const AdminReviews = React.lazy(() => import('./pages/AdminReviews'));
-const Auth = React.lazy(() => import('./pages/Auth'));
-const Register = React.lazy(() => import('./pages/Register'));
-const Profile = React.lazy(() => import('./pages/Profile'));
-const About = React.lazy(() => import('./pages/About'));
-const Contact = React.lazy(() => import('./pages/Contact'));
-const TermsOfService = React.lazy(() => import('./pages/TermsOfService'));
-const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy'));
-const CookiePolicy = React.lazy(() => import('./pages/CookiePolicy'));
-const CalculatorPage = React.lazy(() => import('./pages/Calculator'));
-const Onboarding = React.lazy(() => import('./pages/Onboarding'));
-const LocationPickerPage = React.lazy(() => import('./pages/LocationPickerPage'));
-const RegionalComparison = React.lazy(() => import('./pages/RegionalComparison'));
-const MarketIntelligence = React.lazy(() => import('./pages/MarketIntelligence'));
-const ExchangeRates = React.lazy(() => import('./pages/ExchangeRates'));
-const BlogList = React.lazy(() => import('./pages/BlogList'));
-const BlogPost = React.lazy(() => import('./pages/BlogPost'));
-const BarrelVsFuel = React.lazy(() => import('./pages/BarrelVsFuel'));
-const AdminBarrelVsFuel = React.lazy(() => import('./pages/AdminBarrelVsFuel'));
-const MyGarage = React.lazy(() => import('./pages/MyGarage'));
+
+/**
+ * Wraps React.lazy() with automatic reload on stale-chunk errors.
+ * When a new deployment replaces hashed JS filenames, old browser tabs
+ * will fail to fetch the old chunk URLs. This catches that error and
+ * reloads the page once so the user gets the latest version seamlessly.
+ */
+function lazyWithRetry<T extends React.ComponentType<unknown>>(
+  factory: () => Promise<{ default: T }>
+): React.LazyExoticComponent<T> {
+  return React.lazy(() =>
+    factory().catch((err: Error) => {
+      const msg = err?.message?.toLowerCase() ?? '';
+      const isChunkError =
+        msg.includes('failed to fetch dynamically imported module') ||
+        msg.includes('importing a module script failed') ||
+        msg.includes('error loading chunk');
+      if (isChunkError) {
+        console.warn('[SFM] Stale chunk on lazy import — reloading for update:', err.message);
+        window.location.reload();
+        // Return a never-resolving promise so React doesn't try to render
+        return new Promise(() => {})  as Promise<{ default: T }>;
+      }
+      throw err;
+    })
+  );
+}
+
+const Landing = lazyWithRetry(() => import('./pages/Landing'));
+const FuelStations = lazyWithRetry(() => import('./pages/FuelStations'));
+const TransportPrices = lazyWithRetry(() => import('./pages/TransportPrices'));
+const TransportPriceDetails = lazyWithRetry(() => import('./pages/TransportPriceDetails'));
+const AdminTransportPriceDetails = lazyWithRetry(() => import('./pages/AdminTransportPriceDetails'));
+const PriceTrends = lazyWithRetry(() => import('./pages/PriceTrends'));
+const TransportTrends = lazyWithRetry(() => import('./pages/TransportTrends'));
+const StationDashboard = lazyWithRetry(() => import('./pages/StationDashboard'));
+const AdminDashboard = lazyWithRetry(() => import('./pages/AdminDashboard'));
+const AdminReviews = lazyWithRetry(() => import('./pages/AdminReviews'));
+const Auth = lazyWithRetry(() => import('./pages/Auth'));
+const Register = lazyWithRetry(() => import('./pages/Register'));
+const Profile = lazyWithRetry(() => import('./pages/Profile'));
+const About = lazyWithRetry(() => import('./pages/About'));
+const Contact = lazyWithRetry(() => import('./pages/Contact'));
+const TermsOfService = lazyWithRetry(() => import('./pages/TermsOfService'));
+const PrivacyPolicy = lazyWithRetry(() => import('./pages/PrivacyPolicy'));
+const CookiePolicy = lazyWithRetry(() => import('./pages/CookiePolicy'));
+const CalculatorPage = lazyWithRetry(() => import('./pages/Calculator'));
+const Onboarding = lazyWithRetry(() => import('./pages/Onboarding'));
+const LocationPickerPage = lazyWithRetry(() => import('./pages/LocationPickerPage'));
+const RegionalComparison = lazyWithRetry(() => import('./pages/RegionalComparison'));
+const MarketIntelligence = lazyWithRetry(() => import('./pages/MarketIntelligence'));
+const ExchangeRates = lazyWithRetry(() => import('./pages/ExchangeRates'));
+const BlogList = lazyWithRetry(() => import('./pages/BlogList'));
+const BlogPost = lazyWithRetry(() => import('./pages/BlogPost'));
+const BarrelVsFuel = lazyWithRetry(() => import('./pages/BarrelVsFuel'));
+const AdminBarrelVsFuel = lazyWithRetry(() => import('./pages/AdminBarrelVsFuel'));
+const MyGarage = lazyWithRetry(() => import('./pages/MyGarage'));
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
