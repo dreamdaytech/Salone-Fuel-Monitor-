@@ -102,9 +102,9 @@ export default function Landing() {
                 </div>
 
                 {loading ? (
-                  <div className="space-y-4 animate-pulse">
-                    {[1, 2].map(i => (
-                      <div key={i} className="h-16 bg-gray-100 rounded-xl" />
+                  <div className="space-y-4" style={{ minHeight: '232px' }}>
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="h-[68px] bg-gray-100 rounded-xl animate-pulse" />
                     ))}
                   </div>
                 ) : latestFuelPrices ? (
@@ -207,7 +207,14 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-first lg:order-last">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
-                <img src="/images/fuel_stations_sl_new.png" alt="Fuel Stations in Sierra Leone" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img
+                  src="/images/fuel_stations_sl_new.png"
+                  alt="Fuel Stations in Sierra Leone"
+                  width="600"
+                  height="600"
+                  fetchPriority="high"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
             </motion.div>
           </div>
@@ -221,7 +228,14 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-first lg:order-1">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white/10">
                 <div className="absolute inset-0 bg-emerald-900/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
-                <img src="/images/price_trends_sl.png" alt="Price Trends Data" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img
+                  src="/images/price_trends_sl.png"
+                  alt="Price Trends Data"
+                  width="600"
+                  height="600"
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-last lg:order-2">
@@ -265,7 +279,14 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-first lg:order-last">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-purple-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
-                <img src="/images/transport_prices_sl.png" alt="Transport Fares" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img
+                  src="/images/transport_prices_sl.png"
+                  alt="Transport Fares"
+                  width="600"
+                  height="600"
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
             </motion.div>
           </div>
@@ -279,7 +300,14 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-first lg:order-1">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-[#3B1F00]/30">
                 <div className="absolute inset-0 bg-[#6B1212]/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
-                <img src="/images/regional_comparison_wa.png" alt="West Africa Regional Comparison" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img
+                  src="/images/regional_comparison_wa.png"
+                  alt="West Africa Regional Comparison"
+                  width="600"
+                  height="600"
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-last lg:order-2">
@@ -323,7 +351,14 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-first lg:order-last">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-indigo-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
-                <img src="/images/barrel_vs_fuel_sl.png" alt="Barrel vs Fuel Analysis" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img
+                  src="/images/barrel_vs_fuel_sl.png"
+                  alt="Barrel vs Fuel Analysis"
+                  width="600"
+                  height="600"
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
             </motion.div>
           </div>
@@ -337,7 +372,14 @@ export default function Landing() {
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-first lg:order-1">
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white/10">
                 <div className="absolute inset-0 bg-teal-900/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
-                <img src="/images/fuel_calculator_sl.png" alt="Fuel Calculator" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <img
+                  src="/images/fuel_calculator_sl.png"
+                  alt="Fuel Calculator"
+                  width="600"
+                  height="600"
+                  loading="lazy"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.15 }} className="order-last lg:order-2">

@@ -6,6 +6,14 @@
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="shortcut icon" href="/logo.png" />
+
+    <!-- Preload critical first-visible image for LCP -->
+    <link rel="preload" as="image" href="/images/fuel_stations_sl_new.png" />
+
+    <!-- DNS prefetch for external services -->
+    <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+    <link rel="dns-prefetch" href="https://identitytoolkit.googleapis.com" />
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin="anonymous" />
     <title>Salone Fuel Monitor — Real-Time Fuel Prices in Sierra Leone</title>
 
     <!-- Primary Meta Tags -->
