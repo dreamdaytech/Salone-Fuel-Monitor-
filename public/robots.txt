@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Block admin/private routes from crawlers
+Disallow: /admin
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /onboarding
+Disallow: /profile
+Disallow: /my-garage
+Disallow: /location-picker
+Disallow: /login
+Disallow: /signup
+Disallow: /register
+
+# Sitemap location
+Sitemap: https://salonefuelmonitor.com/sitemap.xml

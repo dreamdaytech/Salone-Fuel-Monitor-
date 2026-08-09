@@ -21,6 +21,16 @@ function setMetaTag(property: string, content: string, isName = false) {
   tag.setAttribute('content', content);
 }
 
+function setCanonical(url: string) {
+  let tag = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+  if (!tag) {
+    tag = document.createElement('link');
+    tag.setAttribute('rel', 'canonical');
+    document.head.appendChild(tag);
+  }
+  tag.setAttribute('href', url);
+}
+
 export function useSEO({ title, description, image, url, type = 'website' }: SEOProps) {
   useEffect(() => {
     const fullTitle = title ? `${title} | Salone Fuel Monitor` : 'Salone Fuel Monitor';
@@ -33,6 +43,7 @@ export function useSEO({ title, description, image, url, type = 'website' }: SEO
     const currentUrl = url || window.location.href;
     setMetaTag('og:url', currentUrl);
     setMetaTag('twitter:url', currentUrl);
+    setCanonical(currentUrl);
 
     if (description) {
       setMetaTag('description', description, true);
