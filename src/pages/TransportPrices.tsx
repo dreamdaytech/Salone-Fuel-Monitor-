@@ -45,7 +45,7 @@ export default function TransportPrices() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [categories, setCategories] = useState<TransportCategory[]>([]);
   const [globalPriceHistory, setGlobalPriceHistory] = useState<any[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>((location.state as any)?.viewMode || (window.innerWidth >= 1024 ? 'list' : 'cards'));
+  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>((location.state as any)?.viewMode || 'list');
   const [sortField, setSortField] = useState<'route' | 'price' | 'date' | 'lastUpdated'>('route');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
