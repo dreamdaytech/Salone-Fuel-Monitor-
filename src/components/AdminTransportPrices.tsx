@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, serverTimestamp, db, handleFirestoreError, OperationType, where, limit, getDocs, addDoc, updateDoc, auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, TrendingDown, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown, ChevronUp, ArrowUpDown, RotateCcw, SlidersHorizontal, MapPin, ClipboardPaste, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, TrendingDown, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown, ChevronUp, ArrowUpDown, RotateCcw, SlidersHorizontal, MapPin, ClipboardPaste, AlertTriangle, ArrowRight, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Button } from './ui/Button';
 
@@ -103,7 +103,7 @@ export default function AdminTransportPrices() {
   const [priceToDelete, setPriceToDelete] = useState<string | null>(null);
   const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(8);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const [vehicleTypes, setVehicleTypes] = useState<VehicleType[]>([]);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
@@ -832,12 +832,16 @@ export default function AdminTransportPrices() {
   });
 
   useEffect(() => {
-    setVisibleCount(8);
+    setCurrentPage(1);
   }, [searchTerm, selectedVehicleType, selectedCategoryFilter, showNegotiableOnly, minPrice, maxPrice, startDate, endDate]);
 
   if (loading) {
     return <div className="p-8 text-center">Loading transport fares...</div>;
   }
+
+  const ITEMS_PER_PAGE = 50;
+  const totalPages = Math.ceil(filteredPrices.length / ITEMS_PER_PAGE);
+  const paginatedPrices = filteredPrices.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 relative">
@@ -1118,8 +1122,8 @@ export default function AdminTransportPrices() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filteredPrices.length > 0 ? (
-                filteredPrices.slice(0, visibleCount).map(price => (
+              {paginatedPrices.length > 0 ? (
+                paginatedPrices.map(price => (
                   <tr 
                     key={price.id} 
                     className="hover:bg-gray-50/80 transition-colors group cursor-pointer"
@@ -1217,16 +1221,53 @@ export default function AdminTransportPrices() {
           </table>
         </div>
 
-        {filteredPrices.length > visibleCount && (
-          <div className="flex justify-center mt-8 mb-8">
-            <Button
-              onClick={() => setVisibleCount(prev => prev + 8)}
-              variant="secondary"
-              className="px-8 py-3 rounded-xl font-bold transition-all active:scale-95 shadow-sm"
-              showNotification={false}
-            >
-              Show More Fares
-            </Button>
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex items-center justify-between bg-white px-4 py-3 sm:px-6 rounded-2xl shadow-sm border border-gray-100">
+            <div className="flex flex-1 justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+            <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-bold">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="font-bold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredPrices.length)}</span> of{' '}
+                  <span className="font-bold">{filteredPrices.length}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                  >
+                    <span className="sr-only">Previous</span>
+                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                  >
+                    <span className="sr-only">Next</span>
+                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         )}
       </div>
