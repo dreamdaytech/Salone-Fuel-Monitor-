@@ -29,7 +29,7 @@ import { toCanvas } from 'html-to-image';
 import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
 
 export default function AdminDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, logOut } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [stations, setStations] = useState<any[]>([]);
   const [priceReports, setPriceReports] = useState<any[]>([]);
@@ -1359,7 +1359,7 @@ export default function AdminDashboard() {
           {/* Bottom Actions */}
           <div className="p-4 border-t border-surface-800">
             <Button 
-              onClick={() => window.location.href = '#/'}
+              onClick={async () => { await logOut(); }}
               showNotification={false}
               variant="ghost"
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-100 hover:bg-white/10 hover:text-white transition-all duration-200"
