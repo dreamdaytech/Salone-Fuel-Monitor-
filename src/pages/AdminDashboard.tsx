@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useSearchParams, Link } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db, collection, query, onSnapshot, doc, setDoc, updateDoc, addDoc, deleteDoc, serverTimestamp, handleFirestoreError, OperationType, orderBy, where, limit } from '../firebase';
 import { Shield, ShieldAlert, Download, Save, Users, Building2, TrendingUp, TrendingDown, Minus, Database, Eye, X, Plus, ArrowUpDown, ChevronUp, ChevronDown, LayoutDashboard, Search, Activity, MapPin, Filter, Tag, Bus, History, LogOut, CheckCircle, Clock, XCircle, Fuel, MessageSquare, Star, Menu, Settings, Trash2, Slash, Edit2, AlertTriangle, RotateCcw, Check, MoreVertical, Globe, Key, CheckSquare, Square, ArrowLeft, BarChart2, DollarSign, FileText, Navigation, Loader2 } from 'lucide-react';
@@ -30,6 +30,7 @@ import { SIERRA_LEONE_DISTRICTS } from '../lib/constants';
 
 export default function AdminDashboard() {
   const { user, profile, logOut } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState<any[]>([]);
   const [stations, setStations] = useState<any[]>([]);
   const [priceReports, setPriceReports] = useState<any[]>([]);
@@ -1359,7 +1360,7 @@ export default function AdminDashboard() {
           {/* Bottom Actions */}
           <div className="p-4 border-t border-surface-800">
             <Button 
-              onClick={async () => { await logOut(); }}
+              onClick={async () => { await logOut(); navigate('/'); }}
               showNotification={false}
               variant="ghost"
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-blue-100 hover:bg-white/10 hover:text-white transition-all duration-200"
