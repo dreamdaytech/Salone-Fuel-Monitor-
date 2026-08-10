@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
@@ -338,17 +341,26 @@ async function startServer() {
       const idempotencyKey = `don_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
       const monimePayload = {
-        amount: {
-          currency: "SLE",
-          value: amount
-        },
+        name: "Donation to Salone Fuel Monitor",
+        reference: `don_${Date.now()}`,
+        lineItems: [
+          {
+            name: "Platform Donation",
+            price: {
+              currency: "SLE",
+              value: amount
+            },
+            type: "custom",
+            quantity: 1
+          }
+        ],
         metadata: {
           donor_name: name || "Anonymous",
           donor_email: email || "",
           type: "donation"
         },
-        success_url: `${SITE_URL}/donate/success`,
-        cancel_url: `${SITE_URL}/donate/cancel`
+        successUrl: `${SITE_URL}/donate/success`,
+        cancelUrl: `${SITE_URL}/donate/cancel`
       };
 
       const response = await fetch("https://api.monime.io/v1/checkout-sessions", {
@@ -369,11 +381,15 @@ async function startServer() {
         return res.status(response.status).json({ error: data.message || "Failed to create checkout session" });
       }
 
-      // The API usually returns the checkout URL in a specific field, e.g., data.checkout_url or data.url
-      const checkoutUrl = data.checkout_url || data.url;
+      // Log the successful response so we know the exact structure
+      console.log("Monime API Success Response:", JSON.stringify(data, null, 2));
+
+      // The API usually returns the checkout URL in a specific field.
+      // According to Monime docs, it returns `redirectUrl`. It might be nested under `data`.
+      const checkoutUrl = data.redirectUrl || data.checkout_url || data.url || (data.data && data.data.redirectUrl) || (data.result && data.result.redirectUrl);
 
       if (!checkoutUrl) {
-        return res.status(500).json({ error: "Checkout URL not received from payment gateway" });
+        throw new Error("Checkout URL not received from payment gateway");
       }
 
       res.json({ success: true, url: checkoutUrl });
