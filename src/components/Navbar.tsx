@@ -274,6 +274,7 @@ export default function Navbar() {
                 </div>
               </div>
             ) : (
+              <div className="flex items-center gap-2">
                 <Link
                   to="/donate"
                   className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 shadow-lg shadow-blue-600/20 transition-all active:scale-95"
