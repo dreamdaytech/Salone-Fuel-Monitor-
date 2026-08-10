@@ -277,7 +277,7 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="inline-flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 border border-transparent text-xs sm:text-sm font-bold rounded-xl text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                  className="inline-flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 border border-transparent text-xs sm:text-sm font-bold rounded-xl text-white bg-surface-900 hover:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-surface-900 shadow-lg shadow-surface-900/20 transition-all active:scale-95"
                 >
                   <LogIn className="h-4 w-4" />
                   <span>Sign In</span>
@@ -290,6 +290,7 @@ export default function Navbar() {
               showNotification={false}
               variant="ghost"
               className="sm:hidden p-2 -mr-2 text-gray-600 hover:text-primary rounded-lg transition-colors"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>

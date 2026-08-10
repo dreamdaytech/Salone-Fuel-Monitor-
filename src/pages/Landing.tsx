@@ -89,7 +89,7 @@ export default function Landing() {
               <div className="relative bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-white/50 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">Current Pump Prices</h3>
+                    <h2 className="text-xl font-bold text-gray-900">Current Pump Prices</h2>
                     <p className="text-sm text-gray-500">Official National Average</p>
                   </div>
                   <motion.div 
@@ -208,7 +208,7 @@ export default function Landing() {
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-blue-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img
-                  src="/images/fuel_stations_sl_new.png"
+                  src="/images/fuel_stations_sl_new.webp"
                   alt="Fuel Stations in Sierra Leone"
                   width="600"
                   height="600"
@@ -229,7 +229,7 @@ export default function Landing() {
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white/10">
                 <div className="absolute inset-0 bg-emerald-900/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img
-                  src="/images/price_trends_sl.png"
+                  src="/images/price_trends_sl.webp"
                   alt="Price Trends Data"
                   width="600"
                   height="600"
@@ -280,7 +280,7 @@ export default function Landing() {
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-purple-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img
-                  src="/images/transport_prices_sl.png"
+                  src="/images/transport_prices_sl.webp"
                   alt="Transport Fares"
                   width="600"
                   height="600"
@@ -301,7 +301,7 @@ export default function Landing() {
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-[#3B1F00]/30">
                 <div className="absolute inset-0 bg-[#6B1212]/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img
-                  src="/images/regional_comparison_wa.png"
+                  src="/images/regional_comparison_wa.webp"
                   alt="West Africa Regional Comparison"
                   width="600"
                   height="600"
@@ -352,7 +352,7 @@ export default function Landing() {
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white">
                 <div className="absolute inset-0 bg-indigo-900/10 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img
-                  src="/images/barrel_vs_fuel_sl.png"
+                  src="/images/barrel_vs_fuel_sl.webp"
                   alt="Barrel vs Fuel Analysis"
                   width="600"
                   height="600"
@@ -373,7 +373,7 @@ export default function Landing() {
               <div className="relative rounded-3xl overflow-hidden aspect-square max-w-sm mx-auto lg:max-w-full shadow-2xl group border-4 border-white/10">
                 <div className="absolute inset-0 bg-teal-900/20 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                 <img
-                  src="/images/fuel_calculator_sl.png"
+                  src="/images/fuel_calculator_sl.webp"
                   alt="Fuel Calculator"
                   width="600"
                   height="600"
