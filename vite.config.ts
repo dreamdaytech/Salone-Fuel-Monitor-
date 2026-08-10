@@ -8,6 +8,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
     build: {
+      target: 'es2021',
       outDir: 'dist',
       chunkSizeWarningLimit: 600,
       rollupOptions: {
