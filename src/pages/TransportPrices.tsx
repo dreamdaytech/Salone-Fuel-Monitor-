@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, db, handleFirestoreError, OperationType } from '../firebase';
-import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote, TrendingUp, TrendingDown, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote, TrendingUp, TrendingDown, SlidersHorizontal, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ReferenceLine } from 'recharts';
 
@@ -48,6 +48,12 @@ export default function TransportPrices() {
   const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>((location.state as any)?.viewMode || 'list');
   const [sortField, setSortField] = useState<'route' | 'price' | 'date' | 'lastUpdated'>('route');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, minPrice, maxPrice, startDate, endDate, activeCategory, sortField, sortDirection]);
   
   // Advanced filter states
   const [minPrice, setMinPrice] = useState('');
@@ -189,6 +195,10 @@ export default function TransportPrices() {
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
+
+  const ITEMS_PER_PAGE = 50;
+  const totalPages = Math.ceil(filteredPrices.length / ITEMS_PER_PAGE);
+  const paginatedPrices = filteredPrices.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const getVehicleIcon = (type: string) => {
     const lowerType = type.toLowerCase();
@@ -500,8 +510,8 @@ export default function TransportPrices() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-50">
-                {filteredPrices.length > 0 ? (
-                  filteredPrices.map(price => (
+                {paginatedPrices.length > 0 ? (
+                  paginatedPrices.map(price => (
                     <tr 
                       key={price.id} 
                       className="hover:bg-surface-50/50 transition-colors group cursor-pointer"
@@ -571,8 +581,8 @@ export default function TransportPrices() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredPrices.length > 0 ? (
-            filteredPrices.map(price => (
+          {paginatedPrices.length > 0 ? (
+            paginatedPrices.map(price => (
               <div 
                 key={price.id} 
                 className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group cursor-pointer"
@@ -639,6 +649,56 @@ export default function TransportPrices() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {viewMode !== 'analytics' && totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-between bg-white px-4 py-3 sm:px-6 rounded-2xl shadow-sm border border-gray-100">
+          <div className="flex flex-1 justify-between sm:hidden">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+          <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-bold">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="font-bold">{Math.min(currentPage * ITEMS_PER_PAGE, filteredPrices.length)}</span> of{' '}
+                <span className="font-bold">{filteredPrices.length}</span> results
+              </p>
+            </div>
+            <div>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                >
+                  <span className="sr-only">Previous</span>
+                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                </button>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
+                >
+                  <span className="sr-only">Next</span>
+                  <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                </button>
+              </nav>
+            </div>
+          </div>
         </div>
       )}
     </div>
