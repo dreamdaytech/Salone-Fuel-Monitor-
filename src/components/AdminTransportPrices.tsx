@@ -903,7 +903,7 @@ export default function AdminTransportPrices() {
             <Button
               onClick={() => { setIsBulkImportOpen(true); setBulkStep(1); setBulkRawText(''); setBulkParsedRows([]); setBulkParseError(null); }}
               variant="secondary"
-              className="flex-1 sm:flex-none px-5 py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-emerald-400 hover:text-emerald-300"
+              className="flex-1 sm:flex-none px-5 py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold border border-emerald-200 text-white hover:bg-emerald-50 hover:text-emerald-700"
               showNotification={false}
             >
               <ClipboardPaste className="w-4 h-4" />
