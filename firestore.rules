@@ -175,28 +175,11 @@ service cloud.firestore {
              (!('type' in data) || (data.type is string && data.type.size() < 50));
     }
 
-    function isValidTransportCategory(data) {
-      let allowedFields = ['name', 'description', 'icon', 'order', 'routes', 'vehicleTypes', 'createdAt', 'updatedAt', 'updatedBy'];
-      return request.resource.data.keys().hasOnly(allowedFields) &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             (!('description' in data) || (data.description is string && data.description.size() < 500)) &&
-             (!('icon' in data) || (data.icon is string && data.icon.size() < 100)) &&
-             (!('order' in data) || data.order is number) &&
-             (!('routes' in data) || data.routes is list) &&
-             (!('vehicleTypes' in data) || data.vehicleTypes is list) &&
-             (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt is string) &&
-             (!('updatedAt' in data) || data.updatedAt is timestamp || data.updatedAt is string) &&
-             (!('updatedBy' in data) || (data.updatedBy is string && data.updatedBy.size() < 100));
-    }
-
     function isValidTransportPrice(data) {
-      let allowedFields = ['route', 'vehicleType', 'categoryId', 'price', 'isNegotiable', 'date', 'lastUpdated', 'updatedBy'];
-      return request.resource.data.keys().hasOnly(allowedFields) &&
+      return hasOnlyAllowedFields(['route', 'vehicleType', 'price', 'date', 'lastUpdated', 'updatedBy']) &&
              data.route is string && data.route.size() > 0 && data.route.size() < 200 &&
              data.vehicleType is string && data.vehicleType.size() > 0 && data.vehicleType.size() < 100 &&
-             data.categoryId is string && data.categoryId.size() > 0 && data.categoryId.size() < 100 &&
              data.price is number && data.price >= 0 &&
-             (!('isNegotiable' in data) || data.isNegotiable is bool) &&
              data.date is string && data.date.size() > 0 && data.date.size() < 20 &&
              (data.lastUpdated is timestamp || data.lastUpdated is string) &&
              data.updatedBy is string && data.updatedBy.size() > 0 && data.updatedBy.size() < 100;
@@ -425,8 +408,6 @@ service cloud.firestore {
                     request.resource.data.read == true;
       allow delete: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
     }
-
-    match /transport_categories/{categoryId} { allow read, write: if true; }
 
     match /transport_prices/{priceId} { allow read, write: if true; }
 

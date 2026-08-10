@@ -257,12 +257,12 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── 3. Transport Prices ── */}
+      {/* ── 3. Transport Fares ── */}
       <div className="bg-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div initial={{ opacity: 0, x: -24 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="order-last lg:order-first">
-              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-sm font-bold mb-5"><Bus className="w-4 h-4" /> Transport Prices</span>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 text-purple-700 text-sm font-bold mb-5"><Bus className="w-4 h-4" /> Transport Fares</span>
               <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-5">Know Your Official<br /><span className="text-purple-600">Transport Fares</span></h2>
               <p className="text-gray-500 text-lg mb-8 leading-relaxed">Access official public transport fares across all districts in Sierra Leone. Never be overcharged again — know your rights before you board.</p>
               <ul className="space-y-3 mb-10">

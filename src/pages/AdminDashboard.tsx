@@ -1183,7 +1183,7 @@ export default function AdminDashboard() {
             >
               {activeTab === 'transport' && <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full" />}
               <Bus className={`w-5 h-5 shrink-0 ${activeTab === 'transport' ? 'text-primary' : 'group-hover:text-white'}`} />
-              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Transport</span>}
+              {(!isSidebarCollapsed || isMobileMenuOpen) && <span className="font-semibold text-sm">Transport Fares</span>}
             </Button>
 
             <Button 

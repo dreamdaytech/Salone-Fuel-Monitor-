@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, serverTimestamp, db, handleFirestoreError, OperationType, where, limit } from '../firebase';
+import { collection, onSnapshot, query, orderBy, doc, setDoc, deleteDoc, serverTimestamp, db, handleFirestoreError, OperationType, where, limit, getDocs, addDoc, updateDoc, auth } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown, ChevronUp, ArrowUpDown, RotateCcw, SlidersHorizontal, MapPin } from 'lucide-react';
+import { Bus, Plus, Edit2, Trash2, Search, X, Save, Database, Clock, CheckCircle, TrendingUp, TrendingDown, History, Car, Bike, Ship, Truck, Zap, Info, ChevronDown, ChevronUp, ArrowUpDown, RotateCcw, SlidersHorizontal, MapPin, ClipboardPaste, AlertTriangle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Button } from './ui/Button';
 
@@ -36,6 +36,20 @@ interface PriceHistory {
   price: number;
   date: string;
   timestamp: any;
+}
+
+interface BulkRow {
+  key: string;
+  categoryId: string;
+  categoryName: string;
+  route: string;
+  vehicleType: string;
+  price: string;
+  isNegotiable: boolean;
+  date: string;
+  status: 'update' | 'new' | 'error';
+  existingId?: string;
+  error?: string;
 }
 
 interface VehicleType {
@@ -73,11 +87,14 @@ export default function AdminTransportPrices() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
+  const [showNegotiableOnly, setShowNegotiableOnly] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState<TransportPrice | null>(null);
   const [viewingPrice, setViewingPrice] = useState<TransportPrice | null>(null);
   const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
+  const [globalPriceHistory, setGlobalPriceHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyUnsubscribe, setHistoryUnsubscribe] = useState<(() => void) | null>(null);
   const [isManageHistoryOpen, setIsManageHistoryOpen] = useState(false);
@@ -109,6 +126,8 @@ export default function AdminTransportPrices() {
     vehicleTypes: []
   });
   const [newCategoryRoute, setNewCategoryRoute] = useState('');
+  const [editingCategoryRouteIdx, setEditingCategoryRouteIdx] = useState<number | null>(null);
+  const [editingCategoryRouteValue, setEditingCategoryRouteValue] = useState('');
 
   const [formData, setFormData] = useState({
     route: '',
@@ -123,6 +142,14 @@ export default function AdminTransportPrices() {
   const [isRouteDropdownOpen, setIsRouteDropdownOpen] = useState(false);
   const [routeSearchTerm, setRouteSearchTerm] = useState('');
   const routeDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Bulk Import state
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [bulkStep, setBulkStep] = useState<1 | 2>(1);
+  const [bulkRawText, setBulkRawText] = useState('');
+  const [bulkParsedRows, setBulkParsedRows] = useState<BulkRow[]>([]);
+  const [bulkImporting, setBulkImporting] = useState(false);
+  const [bulkParseError, setBulkParseError] = useState<string | null>(null);
   
   const uniqueRoutes = Array.from(new Set(prices.map(p => p.route))).sort();
 
@@ -136,6 +163,13 @@ export default function AdminTransportPrices() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+  }, []);
+
+  useEffect(() => {
+    const unsubscribeHistory = onSnapshot(collection(db, 'transport_price_history'), (snapshot) => {
+      setGlobalPriceHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return () => unsubscribeHistory();
   }, []);
 
   useEffect(() => {
@@ -199,7 +233,12 @@ export default function AdminTransportPrices() {
         })) as TransportCategory[];
         setCategories(catData);
         if (catData.length > 0 && !formData.categoryId) {
-          setFormData(prev => ({ ...prev, categoryId: catData[0].id }));
+          const firstCat = catData[0];
+          setFormData(prev => ({ 
+            ...prev, 
+            categoryId: firstCat.id,
+            vehicleType: firstCat.vehicleTypes?.length > 0 ? firstCat.vehicleTypes.join(', ') : prev.vehicleType
+          }));
         }
       },
       (error) => handleFirestoreError(error, OperationType.LIST, 'transport_categories')
@@ -229,10 +268,14 @@ export default function AdminTransportPrices() {
       setIsNewRoute(false);
     } else {
       setEditingPrice(null);
+      const initialCatId = categories[0]?.id ?? '';
+      const initialCat = categories.find(c => c.id === initialCatId);
+      const initialVehicleType = initialCat?.vehicleTypes?.length > 0 ? initialCat.vehicleTypes.join(', ') : (vehicleTypes.length > 0 ? vehicleTypes[0].name : 'Car');
+      
       setFormData({
         route: uniqueRoutes.length > 0 ? uniqueRoutes[0] : '',
-        vehicleType: vehicleTypes.length > 0 ? vehicleTypes[0].name : 'Car',
-        categoryId: categories[0]?.id ?? '',
+        vehicleType: initialVehicleType,
+        categoryId: initialCatId,
         price: '',
         isNegotiable: false,
         date: new Date().toISOString().split('T')[0]
@@ -343,6 +386,30 @@ export default function AdminTransportPrices() {
     setEditingHistoryId(null);
   };
 
+  const getPriceChange = (priceId: string, currentPrice: number) => {
+    if (globalPriceHistory.length === 0) return null;
+    
+    const history = globalPriceHistory
+      .filter(h => h.priceId === priceId)
+      .sort((a, b) => {
+        const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp || 0);
+        const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp || 0);
+        return tB - tA;
+      });
+      
+    const prev = history.find(h => h.price !== currentPrice);
+    if (!prev || prev.price === 0) return null;
+    
+    const diff = currentPrice - prev.price;
+    const pct = Math.abs((diff / prev.price) * 100);
+    
+    return {
+      diff: Math.abs(diff),
+      pct: pct.toFixed(1),
+      isIncrease: diff > 0
+    };
+  };
+
   const handleDeleteHistory = async (historyId: string) => {
     if (window.confirm('Are you sure you want to delete this price history record?')) {
       try {
@@ -367,6 +434,196 @@ export default function AdminTransportPrices() {
     }
   };
 
+  // ─── Bulk Import Logic ─────────────────────────────────────────────────────
+
+  const parseBulkText = (rawText: string): BulkRow[] => {
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const rows: BulkRow[] = [];
+
+    let effectiveDate = new Date().toISOString().split('T')[0];
+    let currentCategoryId = '';
+    let currentCategoryName = '';
+    let currentVehicleType = '';
+    let rowIndex = 0;
+
+    // Helper to parse the date from lines like "Effective: Thursday, 29th January, 2026"
+    const parseDateLine = (line: string): string => {
+      const raw = line.replace(/^effective:\s*/i, '').trim();
+      const d = new Date(raw.replace(/(\d+)(st|nd|rd|th)/i, '$1'));
+      if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      return new Date().toISOString().split('T')[0];
+    };
+
+    for (const line of lines) {
+      // 1. Detect effective date
+      if (/^effective:/i.test(line)) {
+        effectiveDate = parseDateLine(line);
+        continue;
+      }
+
+      // 2. Check if line is a category header (fuzzy match against known categories)
+      // A category header has no price-like number pattern at the end
+      const hasPricePattern = /[-–]\s*[\d.]*\s*$/.test(line);
+      if (!hasPricePattern) {
+        const trimmed = line.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+        let bestMatch: TransportCategory | null = null;
+        let bestScore = 0;
+        for (const cat of categories) {
+          const catName = cat.name.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+          // Simple scoring: count matching words
+          const catWords = catName.split(' ');
+          const lineWords = trimmed.split(' ');
+          const score = catWords.filter(w => lineWords.includes(w)).length;
+          if (score > bestScore) {
+            bestScore = score;
+            bestMatch = cat;
+          }
+        }
+        if (bestMatch && bestScore > 0) {
+          currentCategoryId = bestMatch.id;
+          currentCategoryName = bestMatch.name;
+          currentVehicleType = bestMatch.vehicleTypes?.length > 0 ? bestMatch.vehicleTypes.join(', ') : 'Car';
+          continue;
+        }
+        // Not a category and no price — skip
+        continue;
+      }
+
+      // 3. Parse a route line: "From - To - Price" or "Route Name - Price"
+      const parts = line.split('-').map(p => p.trim());
+      if (parts.length < 2) continue;
+
+      const priceRaw = parts[parts.length - 1];
+      const routeParts = parts.slice(0, parts.length - 1);
+      const routeName = routeParts.join(' - ').trim();
+      const priceNum = parseFloat(priceRaw);
+      const isNegotiable = priceRaw === '' || isNaN(priceNum);
+
+      // Match against existing prices
+      const existingPrice = prices.find(
+        p => p.route.toLowerCase().trim() === routeName.toLowerCase().trim() &&
+             (currentCategoryId === '' || p.categoryId === currentCategoryId)
+      );
+
+      let status: BulkRow['status'] = 'new';
+      let existingId: string | undefined;
+      let error: string | undefined;
+
+      if (!currentCategoryId) {
+        status = 'error';
+        error = 'No matching category found';
+      } else if (existingPrice) {
+        status = 'update';
+        existingId = existingPrice.id;
+      }
+
+      rows.push({
+        key: `bulk-${rowIndex++}`,
+        categoryId: currentCategoryId,
+        categoryName: currentCategoryName,
+        route: routeName,
+        vehicleType: currentVehicleType,
+        price: isNegotiable ? '' : priceNum.toString(),
+        isNegotiable,
+        date: effectiveDate,
+        status,
+        existingId,
+        error
+      });
+    }
+    return rows;
+  };
+
+  const handleBulkParse = () => {
+    setBulkParseError(null);
+    if (!bulkRawText.trim()) {
+      setBulkParseError('Please paste some transport fare data first.');
+      return;
+    }
+    const rows = parseBulkText(bulkRawText);
+    if (rows.length === 0) {
+      setBulkParseError('No valid rows found. Make sure the text includes route lines with prices (e.g. Lumley - Regent Road - 6.1).');
+      return;
+    }
+    setBulkParsedRows(rows);
+    setBulkStep(2);
+  };
+
+  const handleBulkConfirm = async () => {
+    if (!user) return;
+    setBulkImporting(true);
+    const validRows = bulkParsedRows.filter(r => r.status !== 'error');
+
+    // Check for duplicate effective dates per route
+    const duplicateDates = validRows.filter(row => {
+      if (row.status === 'update' && row.existingId) {
+        const oldPrice = prices.find(p => p.id === row.existingId);
+        return oldPrice && oldPrice.date === row.date;
+      }
+      return false;
+    });
+
+    if (duplicateDates.length > 0) {
+      const proceed = window.confirm(
+        `${duplicateDates.length} route(s) already have prices recorded for this effective date.\n\nDo you want to overwrite the existing records?`
+      );
+      if (!proceed) {
+        setBulkImporting(false);
+        return;
+      }
+    }
+
+    try {
+      await Promise.all(validRows.map(async (row) => {
+        const priceVal = row.isNegotiable ? 0 : parseFloat(row.price);
+        const priceData = {
+          route: row.route,
+          vehicleType: row.vehicleType,
+          categoryId: row.categoryId,
+          price: priceVal,
+          isNegotiable: row.isNegotiable,
+          date: row.date,
+          updatedBy: user.uid,
+          lastUpdated: serverTimestamp(),
+        };
+
+        if (row.status === 'update' && row.existingId) {
+          const oldPrice = prices.find(p => p.id === row.existingId);
+          await setDoc(doc(db, 'transport_prices', row.existingId), priceData, { merge: true });
+          // Log history if price or date actually changed
+          if (oldPrice && (oldPrice.price !== priceVal || oldPrice.date !== row.date)) {
+            await setDoc(doc(collection(db, 'transport_price_history')), {
+              priceId: row.existingId,
+              price: priceVal,
+              date: row.date,
+              timestamp: serverTimestamp()
+            });
+          }
+        } else if (row.status === 'new') {
+          const newDocRef = doc(collection(db, 'transport_prices'));
+          await setDoc(newDocRef, priceData);
+          await setDoc(doc(collection(db, 'transport_price_history')), {
+            priceId: newDocRef.id,
+            price: priceVal,
+            date: row.date,
+            timestamp: serverTimestamp()
+          });
+        }
+      }));
+      setSuccessMessage(`✅ ${validRows.length} price${validRows.length > 1 ? 's' : ''} saved successfully!`);
+      setIsBulkImportOpen(false);
+      setBulkRawText('');
+      setBulkParsedRows([]);
+      setBulkStep(1);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'transport_prices');
+    } finally {
+      setBulkImporting(false);
+    }
+  };
+
+  // ────────────────────────────────────────────────────────────────────────────
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -383,11 +640,24 @@ export default function AdminTransportPrices() {
         lastUpdated: serverTimestamp(),
       };
 
+      // Check for duplicate effective date
+      const duplicateExists = prices.some(p => 
+        p.route === priceData.route && 
+        p.vehicleType === priceData.vehicleType && 
+        p.date === priceData.date && 
+        p.id !== editingPrice?.id
+      );
+
+      if (duplicateExists) {
+        alert('A fare entry with this effective date already exists for this route and vehicle type. Please choose a different date.');
+        return;
+      }
+
       if (editingPrice) {
         await setDoc(doc(db, 'transport_prices', editingPrice.id), priceData, { merge: true });
         
-        // Record history if price changed
-        if (editingPrice.price !== priceData.price) {
+        // Record history if price or date changed
+        if (editingPrice.price !== priceData.price || editingPrice.date !== priceData.date) {
           await setDoc(doc(collection(db, 'transport_price_history')), {
             priceId: editingPrice.id,
             price: priceData.price,
@@ -503,6 +773,8 @@ export default function AdminTransportPrices() {
   const handleResetFilters = () => {
     setSearchTerm('');
     setSelectedVehicleType('All');
+    setSelectedCategoryFilter('All');
+    setShowNegotiableOnly(false);
     setMinPrice('');
     setMaxPrice('');
     setStartDate('');
@@ -516,10 +788,12 @@ export default function AdminTransportPrices() {
                           price.vehicleType.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesVehicleType = selectedVehicleType === 'All' || price.vehicleType === selectedVehicleType;
+    const matchesCategory = selectedCategoryFilter === 'All' || price.categoryId === selectedCategoryFilter;
+    const matchesNegotiable = !showNegotiableOnly || price.isNegotiable;
     
     // Price Range filter
-    const matchesMinPrice = minPrice === '' || price.price >= parseFloat(minPrice);
-    const matchesMaxPrice = maxPrice === '' || price.price <= parseFloat(maxPrice);
+    const matchesMinPrice = minPrice === '' || (price.isNegotiable ? true : price.price >= parseFloat(minPrice));
+    const matchesMaxPrice = maxPrice === '' || (price.isNegotiable ? true : price.price <= parseFloat(maxPrice));
 
     // Date Range filter
     let matchesDate = true;
@@ -533,7 +807,7 @@ export default function AdminTransportPrices() {
       }
     }
 
-    return matchesSearch && matchesVehicleType && matchesMinPrice && matchesMaxPrice && matchesDate;
+    return matchesSearch && matchesVehicleType && matchesCategory && matchesNegotiable && matchesMinPrice && matchesMaxPrice && matchesDate;
   }).sort((a, b) => {
     let aValue: any = a[sortField];
     let bValue: any = b[sortField];
@@ -559,10 +833,10 @@ export default function AdminTransportPrices() {
 
   useEffect(() => {
     setVisibleCount(8);
-  }, [searchTerm, selectedVehicleType, minPrice, maxPrice, startDate, endDate]);
+  }, [searchTerm, selectedVehicleType, selectedCategoryFilter, showNegotiableOnly, minPrice, maxPrice, startDate, endDate]);
 
   if (loading) {
-    return <div className="p-8 text-center">Loading transport prices...</div>;
+    return <div className="p-8 text-center">Loading transport fares...</div>;
   }
 
   return (
@@ -587,7 +861,7 @@ export default function AdminTransportPrices() {
           }`}
         >
           <Bus className="w-4 h-4" />
-          Transport Prices
+          Transport Fares
         </button>
         <button
           onClick={() => setActiveTab('categories')}
@@ -621,12 +895,20 @@ export default function AdminTransportPrices() {
               <div className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
                 <Bus className="w-6 h-6" />
               </div>
-              Transport Prices
+              Transport Fares
             </h2>
             <p className="text-gray-500 mt-1">Manage public transportation fares across different routes</p>
           </div>
           <div className="flex gap-3 w-full sm:w-auto">
-
+            <Button
+              onClick={() => { setIsBulkImportOpen(true); setBulkStep(1); setBulkRawText(''); setBulkParsedRows([]); setBulkParseError(null); }}
+              variant="secondary"
+              className="flex-1 sm:flex-none px-5 py-3 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+              showNotification={false}
+            >
+              <ClipboardPaste className="w-4 h-4" />
+              Bulk Import
+            </Button>
             <Button
               onClick={() => handleOpenModal()}
               variant="primary"
@@ -656,6 +938,18 @@ export default function AdminTransportPrices() {
               <div className="relative min-w-[160px] flex-1 sm:flex-none">
                 <select
                   className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm appearance-none cursor-pointer"
+                  value={selectedCategoryFilter}
+                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                >
+                  <option value="All">All Categories</option>
+                  {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
+              </div>
+
+              <div className="relative min-w-[160px] flex-1 sm:flex-none">
+                <select
+                  className="w-full pl-4 pr-10 py-3 bg-white border border-gray-200 rounded-2xl text-sm font-bold text-gray-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm appearance-none cursor-pointer"
                   value={selectedVehicleType}
                   onChange={(e) => setSelectedVehicleType(e.target.value)}
                 >
@@ -675,7 +969,7 @@ export default function AdminTransportPrices() {
                 Filters
               </Button>
 
-              {(searchTerm || selectedVehicleType !== 'All' || minPrice || maxPrice || startDate || endDate) && (
+              {(searchTerm || selectedVehicleType !== 'All' || selectedCategoryFilter !== 'All' || showNegotiableOnly || minPrice || maxPrice || startDate || endDate) && (
                 <Button
                   onClick={handleResetFilters}
                   variant="ghost"
@@ -692,7 +986,7 @@ export default function AdminTransportPrices() {
 
           {/* Collapsible Advanced Filters */}
           {showAdvanced && (
-            <div className="pt-4 border-t border-gray-200/50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 animate-in slide-in-from-top-4 duration-200">
+            <div className="pt-4 border-t border-gray-200/50 grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4 animate-in slide-in-from-top-4 duration-200">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Min Price (SLL)</label>
                 <input
@@ -730,6 +1024,19 @@ export default function AdminTransportPrices() {
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                 />
+              </div>
+              <div className="space-y-1 flex items-center h-full pt-5">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <div className="relative flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded-md border-gray-300 text-emerald-600 focus:ring-emerald-500 transition-all peer cursor-pointer"
+                      checked={showNegotiableOnly}
+                      onChange={(e) => setShowNegotiableOnly(e.target.checked)}
+                    />
+                  </div>
+                  <span className="text-sm font-bold text-gray-700 group-hover:text-emerald-700 transition-colors">Negotiable Only</span>
+                </label>
               </div>
             </div>
           )}
@@ -850,7 +1157,19 @@ export default function AdminTransportPrices() {
                       {price.isNegotiable ? (
                         <div className="text-lg font-bold text-emerald-600">Negotiable</div>
                       ) : (
-                        <div className="text-lg font-bold text-gray-900">Le {price.price.toLocaleString()}</div>
+                        <div className="flex flex-col">
+                          <div className="text-lg font-bold text-gray-900">Le {price.price.toLocaleString()}</div>
+                          {(() => {
+                            const change = getPriceChange(price.id, price.price);
+                            if (!change) return null;
+                            return (
+                              <div className={`flex items-center gap-1 text-[10px] font-bold mt-0.5 ${change.isIncrease ? 'text-red-500' : 'text-emerald-500'}`}>
+                                {change.isIncrease ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                <span>{change.isIncrease ? '+' : '-'}{change.pct}%</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
                       )}
                     </td>
                     <td className="px-8 py-5 text-sm text-gray-500 font-medium">{price.date || 'N/A'}</td>
@@ -866,7 +1185,7 @@ export default function AdminTransportPrices() {
                           onClick={() => handleOpenModal(price)}
                           variant="ghost"
                           className="p-2 rounded-xl transition-all"
-                          title="Edit Price"
+                          title="Edit Fare"
                           showNotification={false}
                         >
                           <Edit2 className="w-5 h-5 text-emerald-600" />
@@ -875,8 +1194,8 @@ export default function AdminTransportPrices() {
                           onClick={() => handleDelete(price.id)}
                           variant="ghost"
                           className="p-2 rounded-xl transition-all"
-                          title="Delete Price"
-                          notificationMessage="Price deleted successfully"
+                          title="Delete Fare"
+                          notificationMessage="Fare deleted successfully"
                         >
                           <Trash2 className="w-5 h-5 text-red-600" />
                         </Button>
@@ -890,7 +1209,7 @@ export default function AdminTransportPrices() {
                     <div className="w-20 h-20 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Bus className="w-10 h-10" />
                     </div>
-                    <p className="text-gray-500 font-medium">No transport prices found.</p>
+                    <p className="text-gray-500 font-medium">No transport fares found.</p>
                   </td>
                 </tr>
               )}
@@ -906,7 +1225,7 @@ export default function AdminTransportPrices() {
               className="px-8 py-3 rounded-xl font-bold transition-all active:scale-95 shadow-sm"
               showNotification={false}
             >
-              Show More Prices
+              Show More Fares
             </Button>
           </div>
         )}
@@ -1116,7 +1435,16 @@ export default function AdminTransportPrices() {
                       required
                       className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
                       value={formData.categoryId}
-                      onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                      onChange={(e) => {
+                        const catId = e.target.value;
+                        const selectedCat = categories.find(c => c.id === catId);
+                        const vTypes = selectedCat?.vehicleTypes || [];
+                        setFormData({ 
+                          ...formData, 
+                          categoryId: catId,
+                          vehicleType: vTypes.length > 0 ? vTypes.join(', ') : (vehicleTypes.length > 0 ? vehicleTypes[0].name : 'Car')
+                        });
+                      }}
                     >
                       <option value="" disabled>Select a category</option>
                       {categories.map(cat => (
@@ -1209,26 +1537,16 @@ export default function AdminTransportPrices() {
                         return <div className="text-sm text-amber-600 font-medium bg-amber-50 p-4 rounded-2xl border border-amber-200">No vehicle types allowed for this category. Go to Categories tab to configure.</div>;
                       }
 
-                      const optionsToRender = vehicleTypes.filter(t => allowedTypes.includes(t.name));
-
                       return (
-                        <select
-                          required
-                          className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer"
-                          value={formData.vehicleType}
-                          onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                        >
-                          <option value="" disabled>Select vehicle type</option>
-                          {optionsToRender.map(type => (
-                            <option key={type.id} value={type.name}>{type.name}</option>
-                          ))}
-                        </select>
+                        <div className="w-full px-5 py-3.5 sm:py-4 bg-gray-50 border-none rounded-2xl text-sm font-bold text-gray-500 flex items-center overflow-x-auto whitespace-nowrap custom-scrollbar">
+                          {allowedTypes.join(', ')}
+                        </div>
                       );
                     })()}
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center ml-1">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price (SLL)</label>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fare (SLL)</label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
@@ -1283,10 +1601,10 @@ export default function AdminTransportPrices() {
                     type="submit"
                     variant="primary"
                     className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 order-1 sm:order-2"
-                    notificationMessage={editingPrice ? "Updating price..." : "Saving price..."}
+                    notificationMessage={editingPrice ? "Updating fare..." : "Saving fare..."}
                   >
                     <Save className="w-5 h-5" /> 
-                    {editingPrice ? 'Update Price' : 'Save Price'}
+                    {editingPrice ? 'Update Fare' : 'Save Fare'}
                   </Button>
                 </div>
               </form>
@@ -1373,7 +1691,7 @@ export default function AdminTransportPrices() {
           <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 sm:px-8 py-4 sm:py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
               <div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Price Details</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Fare Details</h3>
                 <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase tracking-wider mt-1">Route Information</p>
               </div>
               <Button onClick={handleCloseViewModal} variant="unstyled" className="p-2 hover:bg-gray-200 rounded-xl transition-all text-gray-400" showNotification={false}>
@@ -1402,7 +1720,7 @@ export default function AdminTransportPrices() {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fare</label>
                     {viewingPrice.isNegotiable ? (
                       <div className="text-lg sm:text-xl font-black text-emerald-600">Negotiable</div>
                     ) : (
@@ -1428,7 +1746,7 @@ export default function AdminTransportPrices() {
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
                       <TrendingUp className="w-4 h-4 text-emerald-500" />
-                      Price History
+                      Fare History
                     </h4>
                     <div className="flex items-center gap-3">
                       {!isManageHistoryOpen && priceHistory.length > 0 && (
@@ -1460,7 +1778,7 @@ export default function AdminTransportPrices() {
                                 className="px-3 py-1.5 bg-gray-50 border-none rounded-lg text-xs font-bold focus:ring-2 focus:ring-emerald-500/20 w-24"
                                 value={historyFormData.price}
                                 onChange={(e) => setHistoryFormData({ ...historyFormData, price: e.target.value })}
-                                placeholder="Price"
+                                placeholder="Fare"
                               />
                               <div className="flex gap-1 ml-auto">
                                 <button onClick={() => handleSaveHistory(history.id)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg">
@@ -1548,7 +1866,7 @@ export default function AdminTransportPrices() {
                     ) : (
                       <div className="h-full flex flex-col items-center justify-center text-center space-y-2">
                         <History className="w-6 h-6 sm:w-8 sm:h-8 text-gray-200" />
-                        <p className="text-[10px] sm:text-xs text-gray-400 font-medium">No price history available yet.</p>
+                        <p className="text-[10px] sm:text-xs text-gray-400 font-medium">No fare history available yet.</p>
                       </div>
                     )}
                   </div>
@@ -1574,7 +1892,7 @@ export default function AdminTransportPrices() {
                     }}
                     variant="danger"
                     className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 order-1 sm:order-2"
-                    notificationMessage="Price deleted successfully"
+                    notificationMessage="Fare deleted successfully"
                   >
                     <Trash2 className="w-5 h-5" /> Delete
                   </Button>
@@ -1593,8 +1911,8 @@ export default function AdminTransportPrices() {
             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mb-6">
               <Trash2 className="w-6 h-6 sm:w-8 sm:h-8" />
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Delete Transport Price?</h3>
-            <p className="text-sm sm:text-base text-gray-500 mb-8">Are you sure you want to delete this transport price entry? This action cannot be undone.</p>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Delete Transport Fare?</h3>
+            <p className="text-sm sm:text-base text-gray-500 mb-8">Are you sure you want to delete this transport fare entry? This action cannot be undone.</p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button
                 onClick={() => setPriceToDelete(null)}
@@ -1608,7 +1926,7 @@ export default function AdminTransportPrices() {
                 onClick={confirmDelete}
                 variant="danger"
                 className="w-full sm:flex-1 py-3.5 sm:py-4 rounded-2xl font-bold transition-all shadow-lg shadow-red-500/20 order-1 sm:order-2"
-                notificationMessage="Deleting transport price..."
+                notificationMessage="Deleting transport fare..."
               >
                 Confirm Delete
               </Button>
@@ -1759,17 +2077,83 @@ export default function AdminTransportPrices() {
                   {categoryFormData.routes.length > 0 ? (
                     <div className="flex flex-col gap-2 mt-3 max-h-40 overflow-y-auto custom-scrollbar p-1">
                       {categoryFormData.routes.map((route, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-gray-50 px-4 py-3 rounded-xl border border-gray-100">
-                          <span className="text-sm font-bold text-gray-700">{route}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCategoryFormData(prev => ({ ...prev, routes: prev.routes.filter(r => r !== route) }));
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                        <div key={idx} className="flex justify-between items-center bg-gray-50 px-4 py-3 rounded-xl border border-gray-100 group">
+                          {editingCategoryRouteIdx === idx ? (
+                            <div className="flex-1 flex gap-2">
+                              <input
+                                type="text"
+                                className="flex-1 px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500/20"
+                                value={editingCategoryRouteValue}
+                                onChange={(e) => setEditingCategoryRouteValue(e.target.value)}
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const val = editingCategoryRouteValue.trim();
+                                    if (val && (!categoryFormData.routes.includes(val) || val === route)) {
+                                      setCategoryFormData(prev => {
+                                        const newRoutes = [...prev.routes];
+                                        newRoutes[idx] = val;
+                                        return { ...prev, routes: newRoutes };
+                                      });
+                                    }
+                                    setEditingCategoryRouteIdx(null);
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const val = editingCategoryRouteValue.trim();
+                                  if (val && (!categoryFormData.routes.includes(val) || val === route)) {
+                                    setCategoryFormData(prev => {
+                                      const newRoutes = [...prev.routes];
+                                      newRoutes[idx] = val;
+                                      return { ...prev, routes: newRoutes };
+                                    });
+                                  }
+                                  setEditingCategoryRouteIdx(null);
+                                }}
+                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"
+                              >
+                                <Save className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingCategoryRouteIdx(null)}
+                                className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span className="text-sm font-bold text-gray-700">{route}</span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingCategoryRouteIdx(idx);
+                                    setEditingCategoryRouteValue(route);
+                                  }}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to remove the route "${route}" from this category?`)) {
+                                      setCategoryFormData(prev => ({ ...prev, routes: prev.routes.filter(r => r !== route) }));
+                                    }
+                                  }}
+                                  className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1857,6 +2241,249 @@ export default function AdminTransportPrices() {
           </div>
         </div>
       )}
+
+      {/* ───── Bulk Import Modal ───── */}
+      {isBulkImportOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                  <ClipboardPaste className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Bulk Import Transport Fares</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {bulkStep === 1 ? 'Step 1 of 2 — Paste your raw data' : `Step 2 of 2 — Review & confirm ${bulkParsedRows.length} rows`}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setIsBulkImportOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Step 1 — Paste */}
+            {bulkStep === 1 && (
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 text-sm text-blue-700">
+                  <p className="font-bold mb-1">📋 Expected Format</p>
+                  <pre className="text-xs whitespace-pre-wrap font-mono text-blue-600 leading-relaxed">{`Effective: Thursday, 29th January, 2026
+
+Freetown Routes
+Lumley - Regent Road - 6.1
+Aberdeen - Regent Road - 6.1
+Waterloo - Bombay Street - 14.7
+
+Freetown to Provincial
+Freetown - Bo - 159.7
+Freetown - Makeni - 147.4`}</pre>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-bold text-gray-700">Paste Transport Fare Data</label>
+                  <textarea
+                    className="w-full h-72 px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all resize-none"
+                    placeholder="Paste your transport fare text here..."
+                    value={bulkRawText}
+                    onChange={e => setBulkRawText(e.target.value)}
+                  />
+                </div>
+
+                {bulkParseError && (
+                  <div className="flex items-start gap-3 bg-red-50 border border-red-100 text-red-700 px-4 py-3 rounded-xl text-sm">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{bulkParseError}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2 — Preview Table */}
+            {bulkStep === 2 && (
+              <div className="flex-1 overflow-y-auto">
+                {/* Summary bar */}
+                <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap gap-4 items-center text-xs font-bold shrink-0">
+                  <span className="flex items-center gap-1.5 text-emerald-700">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                    {bulkParsedRows.filter(r => r.status === 'update').length} Updates
+                  </span>
+                  <span className="flex items-center gap-1.5 text-blue-700">
+                    <span className="w-2 h-2 rounded-full bg-blue-500 inline-block"></span>
+                    {bulkParsedRows.filter(r => r.status === 'new').length} New Routes
+                  </span>
+                  <span className="flex items-center gap-1.5 text-red-600">
+                    <span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+                    {bulkParsedRows.filter(r => r.status === 'error').length} Errors
+                  </span>
+                  <span className="ml-auto text-gray-500 font-medium">{bulkParsedRows.length} total rows</span>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b border-gray-100 sticky top-0">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Route</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Fare (Le)</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Negotiable</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="text-left px-4 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {bulkParsedRows.map((row, idx) => (
+                        <tr key={row.key} className={`transition-colors ${
+                          row.status === 'error' ? 'bg-red-50/60' : 
+                          row.status === 'new' ? 'bg-blue-50/30' : 'hover:bg-gray-50/50'
+                        }`}>
+                          {/* Status Badge */}
+                          <td className="px-4 py-2.5">
+                            {row.status === 'update' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg">
+                                <CheckCircle className="w-3 h-3" /> UPDATE
+                              </span>
+                            )}
+                            {row.status === 'new' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-lg">
+                                <Plus className="w-3 h-3" /> NEW
+                              </span>
+                            )}
+                            {row.status === 'error' && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-lg" title={row.error}>
+                                <AlertTriangle className="w-3 h-3" /> ERROR
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Category */}
+                          <td className="px-4 py-2.5">
+                            <select
+                              className="px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400"
+                              value={row.categoryId}
+                              onChange={e => {
+                                const cat = categories.find(c => c.id === e.target.value);
+                                setBulkParsedRows(prev => prev.map((r, i) => i === idx ? {
+                                  ...r,
+                                  categoryId: e.target.value,
+                                  categoryName: cat?.name || '',
+                                  vehicleType: cat?.vehicleTypes?.length > 0 ? cat.vehicleTypes.join(', ') : r.vehicleType,
+                                  status: r.status === 'error' && e.target.value ? 'new' : r.status
+                                } : r));
+                              }}
+                            >
+                              <option value="">-- Select --</option>
+                              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                          </td>
+
+                          {/* Route */}
+                          <td className="px-4 py-2.5">
+                            <input
+                              type="text"
+                              className="w-full min-w-[180px] px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400"
+                              value={row.route}
+                              onChange={e => setBulkParsedRows(prev => prev.map((r, i) => i === idx ? { ...r, route: e.target.value } : r))}
+                            />
+                          </td>
+
+                          {/* Price */}
+                          <td className="px-4 py-2.5">
+                            <input
+                              type="number"
+                              className="w-24 px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400 disabled:bg-gray-50 disabled:text-gray-400"
+                              value={row.price}
+                              disabled={row.isNegotiable}
+                              onChange={e => setBulkParsedRows(prev => prev.map((r, i) => i === idx ? { ...r, price: e.target.value } : r))}
+                            />
+                          </td>
+
+                          {/* Negotiable */}
+                          <td className="px-4 py-2.5">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 cursor-pointer"
+                              checked={row.isNegotiable}
+                              onChange={e => setBulkParsedRows(prev => prev.map((r, i) => i === idx ? { ...r, isNegotiable: e.target.checked, price: e.target.checked ? '' : r.price } : r))}
+                            />
+                          </td>
+
+                          {/* Date */}
+                          <td className="px-4 py-2.5">
+                            <input
+                              type="date"
+                              className="px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400"
+                              value={row.date}
+                              onChange={e => setBulkParsedRows(prev => prev.map((r, i) => i === idx ? { ...r, date: e.target.value } : r))}
+                            />
+                          </td>
+
+                          {/* Delete row */}
+                          <td className="px-4 py-2.5">
+                            <button
+                              onClick={() => setBulkParsedRows(prev => prev.filter((_, i) => i !== idx))}
+                              className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Remove row"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-100 shrink-0 flex gap-3 justify-between items-center">
+              {bulkStep === 1 ? (
+                <>
+                  <button onClick={() => setIsBulkImportOpen(false)} className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors">
+                    Cancel
+                  </button>
+                  <Button
+                    onClick={handleBulkParse}
+                    variant="primary"
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2"
+                    showNotification={false}
+                  >
+                    Parse Data <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setBulkStep(1)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Back
+                  </button>
+                  <Button
+                    onClick={handleBulkConfirm}
+                    variant="primary"
+                    disabled={bulkImporting || bulkParsedRows.filter(r => r.status !== 'error').length === 0}
+                    className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                    showNotification={false}
+                  >
+                    {bulkImporting ? (
+                      <><RotateCcw className="w-4 h-4 animate-spin" /> Saving...</>
+                    ) : (
+                      <><CheckCircle className="w-4 h-4" /> Confirm & Save {bulkParsedRows.filter(r => r.status !== 'error').length} Records</>
+                    )}
+                  </Button>
+                </>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

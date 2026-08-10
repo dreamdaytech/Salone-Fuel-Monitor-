@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy, db, handleFirestoreError, OperationType } from '../firebase';
-import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote, TrendingUp, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Search, MapPin, Car, Bus, Bike, ArrowUpDown, ChevronUp, ChevronDown, LayoutGrid, List, Calendar, Clock, Banknote, TrendingUp, TrendingDown, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, ReferenceLine } from 'recharts';
 
@@ -42,10 +42,10 @@ export default function TransportPrices() {
   const [stations, setStations] = useState<FuelStation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedVehicleType, setSelectedVehicleType] = useState('All');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [categories, setCategories] = useState<TransportCategory[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>((location.state as any)?.viewMode || 'cards');
+  const [globalPriceHistory, setGlobalPriceHistory] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'cards' | 'analytics'>((location.state as any)?.viewMode || (window.innerWidth >= 1024 ? 'list' : 'cards'));
   const [sortField, setSortField] = useState<'route' | 'price' | 'date' | 'lastUpdated'>('route');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
@@ -57,6 +57,10 @@ export default function TransportPrices() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
+    const unsubscribeHistory = onSnapshot(collection(db, 'transport_price_history'), (snapshot) => {
+      setGlobalPriceHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     const unsubscribeTransport = onSnapshot(
       query(collection(db, 'transport_prices'), orderBy('route')),
       (snapshot) => {
@@ -87,6 +91,7 @@ export default function TransportPrices() {
     return () => {
       unsubscribeTransport();
       unsubscribeStations();
+      unsubscribeHistory();
     };
   }, []);
 
@@ -101,7 +106,29 @@ export default function TransportPrices() {
     return () => unsubscribe();
   }, []);
 
-  const vehicleTypes = ['All', ...Array.from(new Set(prices.map(p => p.vehicleType)))].sort();
+  const getPriceChange = (priceId: string, currentPrice: number) => {
+    if (globalPriceHistory.length === 0) return null;
+    
+    const history = globalPriceHistory
+      .filter(h => h.priceId === priceId)
+      .sort((a, b) => {
+        const tA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp || 0);
+        const tB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp || 0);
+        return tB - tA;
+      });
+      
+    const prev = history.find(h => h.price !== currentPrice);
+    if (!prev || prev.price === 0) return null;
+    
+    const diff = currentPrice - prev.price;
+    const pct = Math.abs((diff / prev.price) * 100);
+    
+    return {
+      diff: Math.abs(diff),
+      pct: pct.toFixed(1),
+      isIncrease: diff > 0
+    };
+  };
 
   const handleSort = (field: 'route' | 'price' | 'date' | 'lastUpdated') => {
     if (sortField === field) {
@@ -114,7 +141,6 @@ export default function TransportPrices() {
 
   const handleResetFilters = () => {
     setSearchTerm('');
-    setSelectedVehicleType('All');
     setMinPrice('');
     setMaxPrice('');
     setStartDate('');
@@ -126,7 +152,6 @@ export default function TransportPrices() {
   const filteredPrices = prices.filter(price => {
     const matchesCategory = activeCategory === 'all' || price.categoryId === activeCategory;
     const matchesSearch = price.route.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesVehicleType = selectedVehicleType === 'All' || price.vehicleType === selectedVehicleType;
     
     // Price Range filter
     const matchesMinPrice = minPrice === '' || price.price >= parseFloat(minPrice);
@@ -144,7 +169,7 @@ export default function TransportPrices() {
       }
     }
 
-    return matchesCategory && matchesSearch && matchesVehicleType && matchesMinPrice && matchesMaxPrice && matchesDate;
+    return matchesCategory && matchesSearch && matchesMinPrice && matchesMaxPrice && matchesDate;
   }).sort((a, b) => {
     let aValue: any = a[sortField];
     let bValue: any = b[sortField];
@@ -184,8 +209,8 @@ export default function TransportPrices() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-surface-900 mb-2 tracking-tight">Transport Price List</h1>
-          <p className="text-gray-500 font-medium">Official transport prices across different routes and vehicle types</p>
+          <h1 className="text-3xl font-bold text-surface-900 mb-2 tracking-tight">Transport Fare List</h1>
+          <p className="text-gray-500 font-medium">Official transport fares across different routes and vehicle types</p>
         </div>
 
         <div className="flex items-center bg-gray-100/50 p-1 rounded-xl self-start md:self-auto">
@@ -227,51 +252,7 @@ export default function TransportPrices() {
         </div>
       </div>
 
-      {/* Category Tabs */}
-      {categories.length > 0 && (
-        <div className="mb-6 overflow-x-auto">
-          <div className="flex gap-2 min-w-max pb-1">
-            <button
-              onClick={() => { setActiveCategory('all'); setSearchTerm(''); setSelectedVehicleType('All'); }}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${
-                activeCategory === 'all'
-                  ? 'bg-primary text-white shadow-md shadow-primary/20'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:border-primary/30 hover:text-primary'
-              }`}
-            >
-              <Bus className="w-4 h-4" />
-              All Routes
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                activeCategory === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-              }`}>
-                {prices.length}
-              </span>
-            </button>
-            {categories.map(cat => {
-              const count = prices.filter(p => p.categoryId === cat.id).length;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => { setActiveCategory(cat.id); setSearchTerm(''); setSelectedVehicleType('All'); }}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap ${
-                    activeCategory === cat.id
-                      ? 'bg-primary text-white shadow-md shadow-primary/20'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:border-primary/30 hover:text-primary'
-                  }`}
-                >
-                  <MapPin className="w-4 h-4" />
-                  {cat.name}
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                    activeCategory === cat.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 space-y-6">
@@ -289,13 +270,24 @@ export default function TransportPrices() {
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:w-[600px]">
             <div className="relative group">
-              <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-primary transition-colors pointer-events-none" />
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-primary transition-colors pointer-events-none" />
               <select
                 className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm font-bold text-surface-900 appearance-none cursor-pointer"
-                value={selectedVehicleType}
-                onChange={(e) => setSelectedVehicleType(e.target.value)}
+                value={activeCategory}
+                onChange={(e) => {
+                  setActiveCategory(e.target.value);
+                  setSearchTerm('');
+                }}
               >
-                {vehicleTypes.map(v => <option key={v} value={v}>{v === 'All' ? 'All Vehicles' : v}</option>)}
+                <option value="all">All Categories ({new Set(prices.map(p => p.route)).size})</option>
+                {categories.map(cat => {
+                  const count = new Set(prices.filter(p => p.categoryId === cat.id).map(p => p.route)).size;
+                  return (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name} ({count})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -316,7 +308,6 @@ export default function TransportPrices() {
                 <option value="price-desc">Price (High to Low)</option>
                 <option value="date-desc">Date (Newest)</option>
                 <option value="date-asc">Date (Oldest)</option>
-                <option value="lastUpdated-desc">Recently Updated</option>
               </select>
             </div>
 
@@ -331,7 +322,7 @@ export default function TransportPrices() {
                 Filters
               </Button>
 
-              {(searchTerm || selectedVehicleType !== 'All' || minPrice || maxPrice || startDate || endDate) && (
+              {(searchTerm || minPrice || maxPrice || startDate || endDate) && (
                 <Button
                   onClick={handleResetFilters}
                   variant="ghost"
@@ -396,13 +387,13 @@ export default function TransportPrices() {
         <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 mb-8">
           <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h2 className="text-xl font-bold text-surface-900 mb-1">Fuel vs Transport Price Analysis</h2>
-              <p className="text-sm text-gray-500 font-medium">Comparing average transport prices by vehicle type against the current average fuel price.</p>
+              <h2 className="text-xl font-bold text-surface-900 mb-1">Fuel vs Transport Fare Analysis</h2>
+              <p className="text-sm text-gray-500 font-medium">Comparing average transport fares by vehicle type against the current average fuel price.</p>
             </div>
             <div className="flex items-center gap-4 text-sm font-bold bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-primary"></div>
-                <span className="text-gray-600">Transport Price</span>
+                <span className="text-gray-600">Transport Fare</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
@@ -413,7 +404,7 @@ export default function TransportPrices() {
           
           <div className="h-[400px] w-full">
             {prices.length > 0 ? (() => {
-              // Calculate average transport prices by vehicle type
+              // Calculate average transport fares by vehicle type
               const vehicleTypesSet = Array.from(new Set(prices.map(p => p.vehicleType)));
               const chartData = vehicleTypesSet.map(vt => {
                 const vtPrices = prices.filter(p => p.vehicleType === vt);
@@ -423,7 +414,7 @@ export default function TransportPrices() {
                 
                 return {
                   name: vt,
-                  'Avg Transport Price': avgPrice
+                  'Avg Transport Fare': avgPrice
                 };
               });
 
@@ -448,7 +439,7 @@ export default function TransportPrices() {
                       formatter={(value: number) => [`Le ${value.toLocaleString()}`, 'Price']}
                     />
                     <Legend wrapperStyle={{ paddingTop: '20px' }} />
-                    <Bar dataKey="Avg Transport Price" fill="#0EA5E9" radius={[6, 6, 0, 0]} maxBarSize={60} />
+                    <Bar dataKey="Avg Transport Fare" fill="#0EA5E9" radius={[6, 6, 0, 0]} maxBarSize={60} />
                     <ReferenceLine y={avgFuelPrice} stroke="#10B981" strokeDasharray="3 3" label={{ position: 'top', value: `Avg Fuel: Le ${avgFuelPrice.toLocaleString()}`, fill: '#10B981', fontSize: 12, fontWeight: 'bold' }} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -506,19 +497,6 @@ export default function TransportPrices() {
                       )}
                     </div>
                   </th>
-                  <th 
-                    className="px-8 py-5 text-left text-xs font-bold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-primary transition-colors"
-                    onClick={() => handleSort('lastUpdated')}
-                  >
-                    <div className="flex items-center gap-2">
-                      Last Updated
-                      {sortField === 'lastUpdated' ? (
-                        sortDirection === 'asc' ? <ChevronUp className="w-4 h-4 text-primary" /> : <ChevronDown className="w-4 h-4 text-primary" />
-                      ) : (
-                        <ArrowUpDown className="w-4 h-4 opacity-30" />
-                      )}
-                    </div>
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-50">
@@ -549,19 +527,28 @@ export default function TransportPrices() {
                         {price.isNegotiable ? (
                           <span className="text-base font-bold text-emerald-600">Negotiable</span>
                         ) : (
-                          <div className="flex items-baseline gap-1">
-                            <span className="text-base font-bold text-surface-900">
-                              {price.price.toLocaleString()}
-                            </span>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
+                          <div className="flex flex-col">
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-base font-bold text-surface-900">
+                                {price.price.toLocaleString()}
+                              </span>
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
+                            </div>
+                            {(() => {
+                              const change = getPriceChange(price.id, price.price);
+                              if (!change) return null;
+                              return (
+                                <div className={`flex items-center gap-1 text-[10px] font-bold mt-1 ${change.isIncrease ? 'text-red-500' : 'text-emerald-500'}`}>
+                                  {change.isIncrease ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                  <span>{change.isIncrease ? '+' : '-'}{change.pct}%</span>
+                                </div>
+                              );
+                            })()}
                           </div>
                         )}
                       </td>
                       <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-gray-500">
                         {price.date || 'N/A'}
-                      </td>
-                      <td className="px-8 py-5 whitespace-nowrap text-sm font-medium text-gray-500">
-                        {price.lastUpdated?.toDate?.()?.toLocaleDateString() || 'N/A'}
                       </td>
                     </tr>
                   ))
@@ -572,7 +559,7 @@ export default function TransportPrices() {
                         <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-2">
                           <Search className="w-6 h-6 text-gray-300" />
                         </div>
-                        <p className="text-surface-900 font-bold">No transport prices found</p>
+                        <p className="text-surface-900 font-bold">No transport fares found</p>
                         <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
                       </div>
                     </td>
@@ -612,9 +599,21 @@ export default function TransportPrices() {
                     {price.isNegotiable ? (
                       <span className="text-lg font-bold text-emerald-600">Negotiable</span>
                     ) : (
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-xl font-bold text-surface-900">{price.price.toLocaleString()}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
+                      <div className="flex flex-col items-end">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-xl font-bold text-surface-900">{price.price.toLocaleString()}</span>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SLL</span>
+                        </div>
+                        {(() => {
+                          const change = getPriceChange(price.id, price.price);
+                          if (!change) return null;
+                          return (
+                            <div className={`flex items-center gap-1 text-xs font-bold mt-1 ${change.isIncrease ? 'text-red-500' : 'text-emerald-500'}`}>
+                              {change.isIncrease ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                              <span>{change.isIncrease ? '+' : '-'}{change.pct}%</span>
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -626,16 +625,6 @@ export default function TransportPrices() {
                     </div>
                     <span className="text-sm font-bold text-gray-600">{price.date || 'N/A'}</span>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-xs font-bold uppercase tracking-wider">Updated</span>
-                    </div>
-                    <span className="text-sm font-bold text-gray-600">
-                      {price.lastUpdated?.toDate?.()?.toLocaleDateString() || 'N/A'}
-                    </span>
-                  </div>
                 </div>
               </div>
             ))
@@ -645,7 +634,7 @@ export default function TransportPrices() {
                 <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-2">
                   <Search className="w-6 h-6 text-gray-300" />
                 </div>
-                <p className="text-surface-900 font-bold">No transport prices found</p>
+                <p className="text-surface-900 font-bold">No transport fares found</p>
                 <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
               </div>
             </div>

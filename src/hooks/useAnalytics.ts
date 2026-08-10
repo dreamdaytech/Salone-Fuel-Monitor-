@@ -9,7 +9,7 @@ const PAGE_NAMES: Record<string, string> = {
   '/':                      'Home / Landing',
   '/stations':              'Fuel Stations',
   '/price-trends':          'Price Trends',
-  '/transport-prices':      'Transport Prices',
+  '/transport-prices':      'Transport Fares',
   '/transport-trends':      'Transport Trends',
   '/regional-comparison':   'Regional Comparison',
   '/market-intelligence':   'Market Intelligence',
@@ -33,7 +33,7 @@ const PAGE_NAMES: Record<string, string> = {
 function getPageName(pathname: string): string {
   if (PAGE_NAMES[pathname]) return PAGE_NAMES[pathname];
   if (pathname.startsWith('/blog/')) return 'Blog Post';
-  if (pathname.startsWith('/transport-prices/')) return 'Transport Price Details';
+  if (pathname.startsWith('/transport-prices/')) return 'Transport Fare Details';
   if (pathname.startsWith('/admin/')) return 'Admin Panel';
   return pathname;
 }

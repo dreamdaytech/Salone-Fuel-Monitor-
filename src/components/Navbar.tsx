@@ -78,7 +78,7 @@ export default function Navbar() {
                 className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive('/transport-prices') ? 'text-primary' : 'text-gray-600 hover:text-primary'}`}
               >
                 <Bus className="h-4 w-4" />
-                <span>Transport Prices</span>
+                <span>Transport Fares</span>
               </Link>
               
               <Link
@@ -315,7 +315,7 @@ export default function Navbar() {
               className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/transport-prices') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
             >
               <Bus className="h-5 w-5" />
-              <span>Transport Prices</span>
+              <span>Transport Fares</span>
             </Link>
             <Link
               to="/price-trends"

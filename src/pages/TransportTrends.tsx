@@ -21,7 +21,11 @@ import { trackPdfExport } from '../hooks/useAnalytics';
 interface TransportPrice {
   id: string;
   route: string;
+  categoryId: string;
   vehicleType: string;
+  price: number;
+  date: string;
+  lastUpdated: any;
 }
 
 export default function TransportTrends() {
@@ -31,10 +35,11 @@ export default function TransportTrends() {
   const [globalHistoryLoading, setGlobalHistoryLoading] = useState(true);
   
   // Search, Filter & Sort States
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>('all');
   const [routeSearchQuery, setRouteSearchQuery] = useState<string>('');
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
   const [isRouteDropdownOpen, setIsRouteDropdownOpen] = useState(false);
-  const [selectedVehicleType, setSelectedVehicleType] = useState<string>('All');
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>('365');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -47,7 +52,7 @@ export default function TransportTrends() {
 
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // Fetch transport prices map first
+  // Fetch transport fares map first
   useEffect(() => {
     const fetchTransportPrices = async () => {
       const tpQuery = query(collection(db, 'transport_prices'));
@@ -58,12 +63,26 @@ export default function TransportTrends() {
         tpMap[doc.id] = {
           id: doc.id,
           route: data.route,
-          vehicleType: data.vehicleType
+          categoryId: data.categoryId,
+          vehicleType: data.vehicleType,
+          price: data.price,
+          date: data.date,
+          lastUpdated: data.lastUpdated
         };
       });
       setTransportPrices(tpMap);
     };
     fetchTransportPrices();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      query(collection(db, 'transport_categories'), orderBy('order')),
+      (snapshot) => {
+        setCategories(snapshot.docs.map(d => ({ id: d.id, name: d.data().name })));
+      }
+    );
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -75,21 +94,46 @@ export default function TransportTrends() {
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const history = snapshot.docs.map(doc => {
+      const dbHistory = snapshot.docs.map(doc => {
         const data = doc.data();
         const tp = transportPrices[data.priceId];
+        if (!tp) return null;
         return {
           id: doc.id,
           priceId: data.priceId,
           price: data.price,
           date: data.date,
           timestamp: data.timestamp?.toMillis() || Date.now(),
-          route: tp ? tp.route : 'Unknown Route',
-          vehicleType: tp ? tp.vehicleType : 'Unknown Type'
+          route: tp.route,
+          categoryId: tp.categoryId,
+          vehicleType: tp.vehicleType
         };
+      }).filter(Boolean);
+      
+      // Synthesize current prices as data points for items that might not have history
+      const syntheticHistory = Object.values(transportPrices).map(tp => ({
+         id: `current-${tp.id}`,
+         priceId: tp.id,
+         price: tp.price,
+         date: tp.date || new Date().toISOString().split('T')[0],
+         timestamp: tp.lastUpdated?.toMillis ? tp.lastUpdated.toMillis() : Date.now(),
+         route: tp.route,
+         categoryId: tp.categoryId,
+         vehicleType: tp.vehicleType
+      }));
+
+      const merged = [...dbHistory, ...syntheticHistory] as any[];
+      // Deduplicate by priceId + date
+      const uniqueMap = new Map();
+      merged.forEach(item => {
+        const key = `${item.priceId}-${item.date}`;
+        // Keep the latest timestamp if there are duplicates
+        if (!uniqueMap.has(key) || item.timestamp > uniqueMap.get(key).timestamp) {
+           uniqueMap.set(key, item);
+        }
       });
       
-      setGlobalPriceHistory(history);
+      setGlobalPriceHistory(Array.from(uniqueMap.values()));
       setGlobalHistoryLoading(false);
     }, (error) => {
       console.error("Error fetching global history:", error);
@@ -102,21 +146,12 @@ export default function TransportTrends() {
   // Derived unique values for filters
   const allRoutes = useMemo(() => {
     let prices = Object.values(transportPrices);
-    if (selectedVehicleType !== 'All') {
-      prices = prices.filter(tp => tp.vehicleType === selectedVehicleType);
+    if (activeCategory !== 'all') {
+      prices = prices.filter(tp => tp.categoryId === activeCategory);
     }
     const routes = new Set(prices.map(tp => tp.route));
     return Array.from(routes).sort();
-  }, [transportPrices, selectedVehicleType]);
-
-  useEffect(() => {
-    setSelectedRoutes([]);
-  }, [selectedVehicleType]);
-
-  const vehicleTypes = useMemo(() => {
-    const types = new Set(Object.values(transportPrices).map(tp => tp.vehicleType));
-    return Array.from(types).sort();
-  }, [transportPrices]);
+  }, [transportPrices, activeCategory]);
 
   const filteredHistory = useMemo(() => {
     let result = [...globalPriceHistory];
@@ -132,12 +167,12 @@ export default function TransportTrends() {
       result = result.filter(row => row.timestamp >= now - timeframeMs);
     }
     
-    if (selectedRoutes.length > 0) {
-      result = result.filter(row => selectedRoutes.includes(row.route));
+    if (activeCategory !== 'all') {
+      result = result.filter(row => row.categoryId === activeCategory);
     }
     
-    if (selectedVehicleType !== 'All') {
-      result = result.filter(row => row.vehicleType === selectedVehicleType);
+    if (selectedRoutes.length > 0) {
+      result = result.filter(row => selectedRoutes.includes(row.route));
     }
     
     if (startDate) {
@@ -157,7 +192,7 @@ export default function TransportTrends() {
     }
     
     return result;
-  }, [globalPriceHistory, selectedRoutes, selectedVehicleType, selectedTimeframe, startDate, endDate, minPrice, maxPrice]);
+  }, [globalPriceHistory, activeCategory, selectedRoutes, selectedTimeframe, startDate, endDate, minPrice, maxPrice]);
 
   const sortedHistory = useMemo(() => {
     let result = [...filteredHistory];
@@ -209,9 +244,9 @@ export default function TransportTrends() {
   }, [filteredHistory]);
 
   const resetFilters = () => {
+    setActiveCategory('all');
     setRouteSearchQuery('');
     setSelectedRoutes([]);
-    setSelectedVehicleType('All');
     setSelectedTimeframe('365');
     setStartDate('');
     setEndDate('');
@@ -276,7 +311,7 @@ export default function TransportTrends() {
       pdf.setTextColor(71, 85, 105);
       
       const filters = [
-        `Vehicle Type: ${selectedVehicleType}`,
+        `Category: ${activeCategory === 'all' ? 'All Categories' : categories.find(c => c.id === activeCategory)?.name || 'Unknown'}`,
         `Timeframe: ${selectedTimeframe === 'all' ? 'All Time' : `Last ${selectedTimeframe} Days`}`,
         `Sort By: ${sortBy}`
       ];
@@ -391,7 +426,7 @@ export default function TransportTrends() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-surface-900 leading-tight">Transport Trends</h1>
-              <p className="text-sm text-gray-500 font-medium mt-1">Analyze and export historical transport price data</p>
+              <p className="text-sm text-gray-500 font-medium mt-1">Analyze and export historical transport fare data</p>
             </div>
           </div>
         </div>
@@ -433,6 +468,26 @@ export default function TransportTrends() {
       {/* Main Controls - Filters & View Toggle */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <select
+            value={activeCategory}
+            onChange={(e) => {
+              setActiveCategory(e.target.value);
+              setSelectedRoutes([]);
+              setRouteSearchQuery('');
+            }}
+            className="pl-3 pr-8 py-2 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
+          >
+            <option value="all">All Categories ({new Set(Object.values(transportPrices).map(tp => tp.route)).size})</option>
+            {categories.map(cat => {
+              const count = new Set(Object.values(transportPrices).filter(tp => tp.categoryId === cat.id).map(tp => tp.route)).size;
+              return (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name} ({count})
+                </option>
+              );
+            })}
+          </select>
+
           <div className="relative flex-1 min-w-[200px]" onMouseLeave={() => setIsRouteDropdownOpen(false)}>
             <div 
               onClick={() => setIsRouteDropdownOpen(!isRouteDropdownOpen)}
@@ -483,17 +538,6 @@ export default function TransportTrends() {
               </div>
             )}
           </div>
-          
-          <select
-            value={selectedVehicleType}
-            onChange={(e) => setSelectedVehicleType(e.target.value)}
-            className="pl-3 pr-8 py-2 bg-gray-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer"
-          >
-            <option value="All">All Vehicles</option>
-            {vehicleTypes.map(vt => (
-              <option key={vt} value={vt}>{vt}</option>
-            ))}
-          </select>
           
           <select
             value={selectedTimeframe}
@@ -615,7 +659,7 @@ export default function TransportTrends() {
         ) : sortedHistory.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[500px] text-gray-400 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
             <History className="w-12 h-12 mb-4 text-gray-300" />
-            <p className="font-medium text-gray-500">No transport price history found for the selected filters.</p>
+            <p className="font-medium text-gray-500">No transport fare history found for the selected filters.</p>
             <button 
               onClick={resetFilters}
               className="mt-4 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-surface-900 hover:bg-gray-50"
@@ -711,7 +755,7 @@ export default function TransportTrends() {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="text-lg font-bold text-surface-900">Price Trends</h2>
-                    <p className="text-sm text-gray-500 font-medium">Historical transport prices over time</p>
+                    <p className="text-sm text-gray-500 font-medium">Historical transport fares over time</p>
                   </div>
                   
                   {/* Legend hint if too many lines */}

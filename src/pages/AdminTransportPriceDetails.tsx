@@ -206,13 +206,13 @@ export default function AdminTransportPriceDetails({ priceId, onBack }: AdminTra
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const margin = 14;
-      let currentY = drawPdfHeader(pdf, 'Official Transport Price Report', logo);
+      let currentY = drawPdfHeader(pdf, 'Official Transport Fare Report', logo);
 
       // --- Report Title & Meta ---
       pdf.setFontSize(22);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(0, 114, 198); // Sierra Leone Blue
-      pdf.text('Transport Price Details', margin, currentY);
+      pdf.text('Transport Fare Details', margin, currentY);
       
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
@@ -351,7 +351,7 @@ export default function AdminTransportPriceDetails({ priceId, onBack }: AdminTra
       <div className="max-w-4xl mx-auto px-4 py-16 text-center">
         <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Price Not Found</h2>
-        <p className="text-gray-500 mb-8">The transport price details you are looking for do not exist or have been removed.</p>
+        <p className="text-gray-500 mb-8">The transport fare details you are looking for do not exist or have been removed.</p>
         <button 
           onClick={onBack || (() => navigate('/admin?tab=transport'))}
           className="px-6 py-3 bg-primary text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors"
