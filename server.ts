@@ -316,6 +316,73 @@ async function startServer() {
     }
   });
 
+  // Monime Donation Checkout API
+  app.post("/api/monime/create-checkout", async (req, res) => {
+    try {
+      const { amount, name, email } = req.body;
+      
+      if (!amount || amount < 10) {
+        return res.status(400).json({ error: "Invalid donation amount" });
+      }
+
+      const MONIME_API_KEY = process.env.MONIME_API_KEY;
+      const MONIME_SPACE_ID = process.env.MONIME_SPACE_ID;
+      const SITE_URL = process.env.SITE_URL || 'https://salonefuelmonitor.com';
+
+      if (!MONIME_API_KEY || !MONIME_SPACE_ID) {
+        console.error("Monime API keys are missing in environment variables.");
+        return res.status(500).json({ error: "Payment gateway configuration error" });
+      }
+
+      // Generate a unique idempotency key
+      const idempotencyKey = `don_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+      const monimePayload = {
+        amount: {
+          currency: "SLE",
+          value: amount
+        },
+        metadata: {
+          donor_name: name || "Anonymous",
+          donor_email: email || "",
+          type: "donation"
+        },
+        success_url: `${SITE_URL}/donate/success`,
+        cancel_url: `${SITE_URL}/donate/cancel`
+      };
+
+      const response = await fetch("https://api.monime.io/v1/checkout-sessions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${MONIME_API_KEY}`,
+          "Monime-Space-Id": MONIME_SPACE_ID,
+          "Idempotency-Key": idempotencyKey
+        },
+        body: JSON.stringify(monimePayload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Monime API Error:", data);
+        return res.status(response.status).json({ error: data.message || "Failed to create checkout session" });
+      }
+
+      // The API usually returns the checkout URL in a specific field, e.g., data.checkout_url or data.url
+      const checkoutUrl = data.checkout_url || data.url;
+
+      if (!checkoutUrl) {
+        return res.status(500).json({ error: "Checkout URL not received from payment gateway" });
+      }
+
+      res.json({ success: true, url: checkoutUrl });
+    } catch (error: any) {
+      console.error("Error creating Monime checkout:", error);
+      res.status(500).json({ error: error.message || "Failed to initialize payment gateway" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

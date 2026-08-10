@@ -40,6 +40,7 @@ export default function Footer() {
             <p className="text-xs text-blue-300 mt-1">Designed with ❤️ by DreamDay Technology</p>
           </div>
           <div className="flex flex-wrap justify-center gap-6 mt-4 md:mt-0">
+            <Link to="/donate" className="hover:text-white transition-colors">Support Us</Link>
             <Link to="/blog" className="hover:text-white transition-colors">Blog</Link>
             <Link to="/about" className="hover:text-white transition-colors">About Us</Link>
             <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>

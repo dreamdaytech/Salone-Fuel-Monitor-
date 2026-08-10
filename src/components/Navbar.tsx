@@ -274,7 +274,13 @@ export default function Navbar() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+                <Link
+                  to="/donate"
+                  className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 border border-transparent text-sm font-bold rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 shadow-lg shadow-blue-600/20 transition-all active:scale-95"
+                >
+                  <Heart className="h-4 w-4" />
+                  <span>Donate</span>
+                </Link>
                 <Link
                   to="/login"
                   className="inline-flex items-center gap-1 sm:gap-2 px-3 py-2 sm:px-5 sm:py-2.5 border border-transparent text-xs sm:text-sm font-bold rounded-xl text-white bg-surface-900 hover:bg-surface-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-surface-900 shadow-lg shadow-surface-900/20 transition-all active:scale-95"
@@ -373,6 +379,17 @@ export default function Navbar() {
                   <span>My Garage</span>
                 </Link>
               )}
+            </div>
+            
+            <div className="pt-2 mt-2 border-t border-gray-100">
+              <Link
+                to="/donate"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl font-bold transition-colors bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/20`}
+              >
+                <Heart className="h-5 w-5" />
+                <span>Donate</span>
+              </Link>
             </div>
           </div>
         </div>

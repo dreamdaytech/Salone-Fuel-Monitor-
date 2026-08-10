@@ -69,6 +69,9 @@ const BlogPost = lazyWithRetry(() => import('./pages/BlogPost'));
 const BarrelVsFuel = lazyWithRetry(() => import('./pages/BarrelVsFuel'));
 const AdminBarrelVsFuel = lazyWithRetry(() => import('./pages/AdminBarrelVsFuel'));
 const MyGarage = lazyWithRetry(() => import('./pages/MyGarage'));
+const Donate = lazyWithRetry(() => import('./pages/Donate'));
+const DonateSuccess = lazyWithRetry(() => import('./pages/DonateSuccess'));
+const DonateCancel = lazyWithRetry(() => import('./pages/DonateCancel'));
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -111,7 +114,7 @@ function AppContent() {
     };
   }, []);
 
-  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/contact', '/terms', '/privacy', '/cookies', '/blog', '/stations'];
+  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/contact', '/terms', '/privacy', '/cookies', '/blog', '/stations', '/donate', '/donate/success', '/donate/cancel'];
   const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/transport-prices/');
 
   // Scroll to top on every route change — must be before any conditional returns
@@ -169,6 +172,9 @@ function AppContent() {
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/barrel-vs-fuel" element={<BarrelVsFuel />} />
                 <Route path="/admin/barrel-vs-fuel" element={user && profile?.role === 'admin' ? <AdminBarrelVsFuel /> : <Navigate to={user ? '/' : '/login'} />} />
+                <Route path="/donate" element={<Donate />} />
+                <Route path="/donate/success" element={<DonateSuccess />} />
+                <Route path="/donate/cancel" element={<DonateCancel />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<TermsOfService />} />
