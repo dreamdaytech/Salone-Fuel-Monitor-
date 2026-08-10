@@ -5,7 +5,7 @@ import {
   Fuel, LogIn, LogOut, User, Shield, MapPin, Bus, Car,
   ChevronDown, LayoutGrid, Activity, ClipboardList, 
   PenTool, ShieldCheck, Info, UserPlus, MessageSquare,
-  Menu, X, TrendingUp, Calculator, Globe, BarChart3, DollarSign, FileText
+  Menu, X, TrendingUp, Calculator, Globe, BarChart3, DollarSign, FileText, Heart
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { Button } from './ui/Button';
