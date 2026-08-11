@@ -363,6 +363,10 @@ async function startServer() {
         cancelUrl: `${SITE_URL}/donate/cancel`
       };
 
+      // Add a 10-second timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const response = await fetch("https://api.monime.io/v1/checkout-sessions", {
         method: "POST",
         headers: {
@@ -371,8 +375,11 @@ async function startServer() {
           "Monime-Space-Id": MONIME_SPACE_ID,
           "Idempotency-Key": idempotencyKey
         },
-        body: JSON.stringify(monimePayload)
+        body: JSON.stringify(monimePayload),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
