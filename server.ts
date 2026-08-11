@@ -61,6 +61,20 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  // Debug endpoint — shows whether Monime env vars are configured (never exposes values)
+  app.get("/api/monime/status", (req, res) => {
+    const apiKey = process.env.MONIME_API_KEY;
+    const spaceId = process.env.MONIME_SPACE_ID;
+    const siteUrl = process.env.SITE_URL || 'https://salonefuelmonitor.com';
+    res.json({
+      monimeApiKey: apiKey ? `set (${apiKey.length} chars, starts with ${apiKey.substring(0, 8)}...)` : 'MISSING',
+      monimeSpaceId: spaceId ? `set (starts with ${spaceId.substring(0, 8)}...)` : 'MISSING',
+      siteUrl,
+      successUrl: `${siteUrl}/donate/success`,
+      cancelUrl: `${siteUrl}/donate/cancel`,
+    });
+  });
+
   app.get("/api/settings/twilio", (req, res) => {
     const config = getAppConfig();
     res.json({
