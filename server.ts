@@ -343,7 +343,9 @@ async function startServer() {
       }
 
       const MONIME_API_KEY = process.env.MONIME_API_KEY;
-      const MONIME_SPACE_ID = process.env.MONIME_SPACE_ID?.toLowerCase();
+      // Hostinger was forcing MONIME_SPACE_ID to uppercase, but the user successfully saved SPACE_ID with correct case.
+      // We also removed .toLowerCase() because it corrupts the base62 case-sensitive part of the token.
+      const MONIME_SPACE_ID = process.env.SPACE_ID || process.env.MONIME_SPACE_ID;
       const SITE_URL = process.env.SITE_URL || 'https://salonefuelmonitor.com';
 
       if (!MONIME_API_KEY || !MONIME_SPACE_ID) {
