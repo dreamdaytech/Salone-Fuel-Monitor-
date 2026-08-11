@@ -340,17 +340,21 @@ async function startServer() {
       // Generate a unique idempotency key
       const idempotencyKey = `don_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
+      // Monime API requires the amount in minor units (cents).
+      // SLE 1 = 100 minor units. So SLE 100 must be sent as 10000.
+      const amountInMinorUnits = Math.round(Number(amount) * 100);
+
       const monimePayload = {
         name: "Donation to Salone Fuel Monitor",
         reference: `don_${Date.now()}`,
         lineItems: [
           {
+            type: "custom",
             name: "Platform Donation",
             price: {
               currency: "SLE",
-              value: amount
+              value: amountInMinorUnits
             },
-            type: "custom",
             quantity: 1
           }
         ],
@@ -362,6 +366,8 @@ async function startServer() {
         successUrl: `${SITE_URL}/donate/success`,
         cancelUrl: `${SITE_URL}/donate/cancel`
       };
+
+      console.log("Monime payload:", JSON.stringify(monimePayload, null, 2));
 
       // Add a 10-second timeout to the fetch request
       const controller = new AbortController();
@@ -384,18 +390,24 @@ async function startServer() {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("Monime API Error:", data);
-        return res.status(response.status).json({ error: data.message || "Failed to create checkout session" });
+        console.error("Monime API Error Response:", JSON.stringify(data, null, 2));
+        return res.status(response.status).json({ error: data.message || data.error || "Failed to create checkout session" });
       }
 
-      // Log the successful response so we know the exact structure
+      // Log the successful response to capture the exact structure
       console.log("Monime API Success Response:", JSON.stringify(data, null, 2));
 
-      // The API usually returns the checkout URL in a specific field.
-      // According to Monime docs, it returns `redirectUrl`. It might be nested under `data`.
-      const checkoutUrl = data.redirectUrl || data.checkout_url || data.url || (data.data && data.data.redirectUrl) || (data.result && data.result.redirectUrl);
+      // Per Monime API spec (caph-2025-08-23), the response structure is:
+      // { success: true, result: { redirectUrl: "...", ... } }
+      const checkoutUrl =
+        (data.result && data.result.redirectUrl) ||
+        data.redirectUrl ||
+        data.checkout_url ||
+        data.url ||
+        (data.data && data.data.redirectUrl);
 
       if (!checkoutUrl) {
+        console.error("No redirectUrl found in Monime response:", JSON.stringify(data, null, 2));
         throw new Error("Checkout URL not received from payment gateway");
       }
 
