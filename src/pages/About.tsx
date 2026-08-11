@@ -102,13 +102,13 @@ export default function About() {
                 <h2 className="text-3xl font-extrabold text-surface-900 mb-8 tracking-tight">Our Story</h2>
                 <div className="space-y-6 text-gray-600 leading-relaxed text-lg">
                   <p>
-                    Salone Fuel Monitor was born out of a simple observation: finding fuel and knowing the current price shouldn't be a guessing game. In a rapidly changing economy, information is power.
+                    Salone Fuel Monitor emerged from a pressing national need: transforming how citizens and businesses navigate Sierra Leone's petroleum sector. In an economy where mobility and logistics are critical, uncertainty at the pump shouldn't dictate your day. We recognized that true empowerment begins with transparent, reliable data.
                   </p>
                   <p>
-                    Our team of dedicated developers and industry experts came together to build a solution that bridges the gap between fuel stations and consumers. We started with a small pilot in Freetown and are now expanding to cover the entire country.
+                    Driven by a commitment to technological innovation and public service, our team of developers and industry experts built a platform that bridges the information gap between fuel retailers and consumers. What began as a focused initiative in Freetown has rapidly evolved into a comprehensive, nationwide monitoring network.
                   </p>
                   <p>
-                    Today, we serve thousands of users daily, helping them save time, money, and stress by providing the most up-to-date fuel data available in Sierra Leone.
+                    Today, Salone Fuel Monitor stands as the premier digital infrastructure for fuel intelligence in Sierra Leone. By delivering real-time pricing, availability updates, and market insights, we empower thousands of daily users to optimize their logistics, reduce operational stress, and make informed decisions with absolute confidence.
                   </p>
                 </div>
               </div>
