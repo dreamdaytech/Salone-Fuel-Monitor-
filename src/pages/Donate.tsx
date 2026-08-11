@@ -102,7 +102,7 @@ export default function Donate() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
         <div className="text-center mb-10">
           <h2 className="text-3xl font-extrabold text-white mb-3 drop-shadow-md">Every contribution matters</h2>
-          <p className="text-blue-100 font-medium">Choose a tier that feels right for you. No amount is too small.</p>
+          <p className="text-blue-100 font-medium pb-6">Choose a tier that feels right for you. No amount is too small.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
