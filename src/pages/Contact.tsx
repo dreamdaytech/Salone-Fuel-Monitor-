@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, MessageSquare, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, MessageSquare, Clock, AlertCircle, Loader2, Heart, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { db, collection, addDoc, serverTimestamp, OperationType, handleFirestoreError } from '../firebase';
 import { Button } from '../components/ui/Button';
 
@@ -307,6 +308,29 @@ export default function Contact() {
                 </form>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+      {/* ── Support / Donate Section ── */}
+      <div className="bg-surface-50 border-t border-gray-200 py-24 mt-12 relative overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/4 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 text-red-600 border border-red-100 text-sm font-bold uppercase tracking-wider mb-6 shadow-sm">
+              <Heart className="w-4 h-4 fill-current text-red-500" /> Support Our Mission
+            </span>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
+              Fuel the Future of <span className="text-[#0072C6]">Transparency</span>
+            </h2>
+            <p className="text-gray-500 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+              Salone Fuel Monitor is free for all citizens. Your donations help us maintain server infrastructure, develop new features, and expand our platform across Sierra Leone.
+            </p>
+            <Link to="/donate" className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#0072C6] to-[#005aa0] hover:from-[#005aa0] hover:to-[#004a80] text-white font-bold text-lg transition-all shadow-xl shadow-[#0072C6]/20 hover:shadow-[#0072C6]/40 hover:-translate-y-1">
+              <Heart className="h-5 w-5" /> Make a Donation <ArrowRight className="h-5 w-5 ml-1" />
+            </Link>
           </div>
         </div>
       </div>
