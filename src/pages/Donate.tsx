@@ -92,6 +92,13 @@ export default function Donate() {
             Salone Fuel Monitor is free for all citizens. Your donations help us maintain server infrastructure, develop new features, and expand our platform across Sierra Leone.
           </motion.p>
         </div>
+
+        {/* Hero Section Text Extension */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 mt-16">
+          <h2 className="text-3xl font-extrabold text-white mb-3 drop-shadow-md">Every contribution matters</h2>
+          <p className="text-blue-100 font-medium mb-8">Choose a tier that feels right for you. No amount is too small.</p>
+        </div>
+
         {/* Decorative Elements */}
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
@@ -100,11 +107,6 @@ export default function Donate() {
       <div className="relative z-20 -mt-20">
         {/* Tiers Section */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
-        <div className="text-center mb-20">
-          <h2 className="text-3xl font-extrabold text-white mb-3 drop-shadow-md">Every contribution matters</h2>
-          <p className="text-blue-100 font-medium">Choose a tier that feels right for you. No amount is too small.</p>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Tier 1 */}
           <div className="bg-white border border-gray-100 rounded-3xl p-8 text-center hover:shadow-xl transition-shadow shadow-sm">
