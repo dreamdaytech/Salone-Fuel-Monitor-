@@ -391,7 +391,14 @@ async function startServer() {
 
       if (!response.ok) {
         console.error("Monime API Error Response:", JSON.stringify(data, null, 2));
-        return res.status(response.status).json({ error: data.message || data.error || "Failed to create checkout session" });
+        // Monime error bodies can be nested objects — extract a readable string
+        const monimeError =
+          (typeof data.message === 'string' && data.message) ||
+          (typeof data.error === 'string' && data.error) ||
+          (data.error && typeof data.error.message === 'string' && data.error.message) ||
+          (data.errors && Array.isArray(data.errors) && data.errors[0]?.message) ||
+          JSON.stringify(data);
+        return res.status(response.status).json({ error: monimeError || "Failed to create checkout session" });
       }
 
       // Log the successful response to capture the exact structure

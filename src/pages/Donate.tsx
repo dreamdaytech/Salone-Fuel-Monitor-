@@ -39,7 +39,14 @@ export default function Donate() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to initialize payment gateway.');
+        // data.error may be a string or a nested object — always extract a readable message
+        const errMsg =
+          (typeof data.error === 'string' && data.error) ||
+          (data.error && typeof data.error.message === 'string' && data.error.message) ||
+          (typeof data.message === 'string' && data.message) ||
+          (data.error ? JSON.stringify(data.error) : null) ||
+          'Failed to initialize payment gateway.';
+        throw new Error(errMsg);
       }
 
       if (data.url) {
