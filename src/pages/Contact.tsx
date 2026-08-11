@@ -89,17 +89,30 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-50 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-surface-900 sm:text-5xl tracking-tight">
-            Contact Support
+    <div className="min-h-screen bg-surface-50">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A] py-24">
+        <div 
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ 
+            backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', 
+            backgroundSize: '60px 60px' 
+          }} 
+        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <h1 className="text-4xl font-extrabold text-white sm:text-5xl md:text-6xl tracking-tight">
+            Contact <span className="text-blue-100">Support</span>
           </h1>
-          <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-6 max-w-2xl mx-auto text-xl text-blue-100 leading-relaxed">
             Have a question or need assistance? Our team is here to help you with any inquiries about Salone Fuel Monitor.
           </p>
         </div>
+        {/* Decorative Elements */}
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+      </div>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Contact Info */}
           <div className="space-y-6">
