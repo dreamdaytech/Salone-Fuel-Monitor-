@@ -343,7 +343,7 @@ async function startServer() {
       }
 
       const MONIME_API_KEY = process.env.MONIME_API_KEY;
-      const MONIME_SPACE_ID = process.env.MONIME_SPACE_ID;
+      const MONIME_SPACE_ID = process.env.MONIME_SPACE_ID?.toLowerCase();
       const SITE_URL = process.env.SITE_URL || 'https://salonefuelmonitor.com';
 
       if (!MONIME_API_KEY || !MONIME_SPACE_ID) {
