@@ -119,7 +119,7 @@ function AppContent() {
 
   // Scroll to top on every route change — must be before any conditional returns
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo(0, 0);
   }, [location.pathname]);
 
   if (loading) {
