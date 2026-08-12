@@ -74,6 +74,7 @@ const DonateSuccess = lazyWithRetry(() => import('./pages/DonateSuccess'));
 const DonateCancel = lazyWithRetry(() => import('./pages/DonateCancel'));
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import ScrollProgress from './components/ScrollProgress';
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
@@ -135,6 +136,7 @@ function AppContent() {
     <FavoriteProvider>
       <NotificationProvider>
         <div className="min-h-screen bg-surface-50">
+          <ScrollProgress />
           <Toaster position="top-center" richColors />
           <SystemUpdater />
           <Navbar />
