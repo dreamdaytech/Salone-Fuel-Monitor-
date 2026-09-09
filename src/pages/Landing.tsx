@@ -7,31 +7,48 @@ import {
   Car, Gauge, Receipt, Wrench, Navigation, BarChart3, Heart
 } from 'lucide-react';
 import { db, collection, query, orderBy, limit, getDocs } from '../firebase';
+import { onSnapshot } from 'firebase/firestore';
 
 export default function Landing() {
   const [latestFuelPrices, setLatestFuelPrices] = useState<{ petrol: number, diesel: number, kerosene: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchLatestPrices() {
-      try {
-        const q = query(collection(db, 'barrelFuelSnapshots'), orderBy('date', 'desc'), limit(1));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const data = snap.docs[0].data();
-          setLatestFuelPrices({
-            petrol: data.petrolNLe,
-            diesel: data.dieselNLe,
-            kerosene: data.keroseneNLe
-          });
-        }
-      } catch (err) {
-        console.error("Error fetching latest fuel prices:", err);
-      } finally {
+    // Subscribe to price_trends (the actual pump price collection) ordered by effectiveDate
+    const q = query(collection(db, 'price_trends'), orderBy('effectiveDate', 'desc'), limit(1));
+    const unsubscribe = onSnapshot(q, async (snap) => {
+      if (!snap.empty) {
+        const data = snap.docs[0].data();
+        setLatestFuelPrices({
+          petrol: Number(data.petrolPrice) || 0,
+          diesel: Number(data.dieselPrice) || 0,
+          kerosene: Number(data.kerosenePrice) || 0,
+        });
         setLoading(false);
+      } else {
+        // Fallback: if price_trends is empty, try barrelFuelSnapshots
+        try {
+          const fallbackQ = query(collection(db, 'barrelFuelSnapshots'), orderBy('date', 'desc'), limit(1));
+          const fallbackSnap = await getDocs(fallbackQ);
+          if (!fallbackSnap.empty) {
+            const data = fallbackSnap.docs[0].data();
+            setLatestFuelPrices({
+              petrol: Number(data.petrolNLe) || 0,
+              diesel: Number(data.dieselNLe) || 0,
+              kerosene: Number(data.keroseneNLe) || 0,
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching fallback fuel prices:', err);
+        } finally {
+          setLoading(false);
+        }
       }
-    }
-    fetchLatestPrices();
+    }, (err) => {
+      console.error('Error fetching latest fuel prices:', err);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
   return (
