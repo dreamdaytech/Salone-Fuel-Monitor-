@@ -7,11 +7,16 @@ import ImageExtension from '@tiptap/extension-image';
 import StarterKit from '@tiptap/starter-kit';
 import LinkExtension from '@tiptap/extension-link';
 import UnderlineExtension from '@tiptap/extension-underline';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 import {
   Bold, Italic, Underline as UnderlineIcon, Strikethrough, Code2, List, ListOrdered,
   Quote, Minus, Link as LinkIcon, Unlink, Undo, Redo,
   Heading1, Heading2, Heading3,
-  Plus, Edit2, Trash2, CheckCircle, XCircle, Search, Save, X, Eye, Upload
+  Plus, Edit2, Trash2, CheckCircle, XCircle, Search, Save, X, Eye, Upload,
+  Table as TableIcon, Trash, ArrowDown, ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
@@ -115,6 +120,20 @@ const MenuBar = ({ editor }: { editor: any }) => {
       </label>
 
       <Divider />
+      {/* Table */}
+      <ToolBtn title="Insert Table" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} active={editor.isActive('table')}><TableIcon className="w-4 h-4" /></ToolBtn>
+      {editor.isActive('table') && (
+        <>
+          <ToolBtn title="Delete Table" onClick={() => editor.chain().focus().deleteTable().run()}><Trash className="w-4 h-4 text-red-500" /></ToolBtn>
+          <ToolBtn title="Add Row After" onClick={() => editor.chain().focus().addRowAfter().run()}><ArrowDown className="w-4 h-4" /></ToolBtn>
+          <ToolBtn title="Delete Row" onClick={() => editor.chain().focus().deleteRow().run()}><Minus className="w-4 h-4 text-red-500" /></ToolBtn>
+          <ToolBtn title="Add Column After" onClick={() => editor.chain().focus().addColumnAfter().run()}><ArrowRight className="w-4 h-4" /></ToolBtn>
+          <ToolBtn title="Delete Column" onClick={() => editor.chain().focus().deleteColumn().run()}><Minus className="w-4 h-4 text-red-500" /></ToolBtn>
+          <ToolBtn title="Merge Cells" onClick={() => editor.chain().focus().mergeCells().run()}><span className="text-[10px] font-bold leading-none">M</span></ToolBtn>
+        </>
+      )}
+
+      <Divider />
       {/* History */}
       <ToolBtn title="Undo" onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()}><Undo className="w-4 h-4" /></ToolBtn>
       <ToolBtn title="Redo" onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()}><Redo className="w-4 h-4" /></ToolBtn>
@@ -128,7 +147,11 @@ const TiptapEditor = ({ value, onChange }: { value: string, onChange: (val: stri
       StarterKit,
       ImageExtension.configure({ inline: false, allowBase64: true }),
       UnderlineExtension,
-      LinkExtension.configure({ openOnClick: false, HTMLAttributes: { class: 'text-primary underline cursor-pointer', rel: 'noopener noreferrer', target: '_blank' } })
+      LinkExtension.configure({ openOnClick: false, HTMLAttributes: { class: 'text-primary underline cursor-pointer', rel: 'noopener noreferrer', target: '_blank' } }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell
     ],
     content: value,
     onUpdate: ({ editor }) => {
