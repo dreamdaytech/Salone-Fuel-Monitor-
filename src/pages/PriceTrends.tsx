@@ -16,6 +16,30 @@ import { getLogoBase64, drawPdfHeader } from '../utils/pdfUtils';
 import { toCanvas } from 'html-to-image';
 import { trackPdfExport } from '../hooks/useAnalytics';
 
+const normalizePrice = (value: unknown): number | null => {
+  if (value === '' || value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+};
+
+const parseEffectiveDate = (value: string) => {
+  if (!value) return null;
+  const parts = value.split('-').map(Number);
+  if (parts.length === 3 && parts.every(Number.isFinite)) {
+    const [year, month, day] = parts;
+    const localDate = new Date(year, month - 1, day);
+    if (!Number.isNaN(localDate.getTime())) return localDate;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatEffectiveDate = (date: Date) => date.toLocaleDateString('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric'
+});
+
 export default function PriceTrends() {
   const [globalPriceHistory, setGlobalPriceHistory] = useState<any[]>([]);
   const [globalHistoryLoading, setGlobalHistoryLoading] = useState(true);
@@ -48,7 +72,7 @@ export default function PriceTrends() {
       
       let currentY = drawPdfHeader(pdf, 'Official Price Trends Report', logo);
 
-      const getTrendText = (current?: number, previous?: number) => {
+      const getTrendText = (current?: number | null, previous?: number | null) => {
         if (!current || !previous || current === previous) return '';
         const diff = current - previous;
         const percent = (diff / previous) * 100;
@@ -118,22 +142,22 @@ export default function PriceTrends() {
         
         // Add Latest Prices
         if (stats.latest) {
-          let latestText = `Latest Recorded Prices (${stats.latest.date}):`;
+          const latestText = `Latest Recorded Prices (${stats.latest.date}):`;
           pdf.text(latestText, margin + 2, currentY);
           currentY += 5;
           
           if (selectedFuel === 'All' || selectedFuel === 'Petrol') {
-            const trend = getTrendText(stats.latest.Petrol, stats.previous?.Petrol);
+            const trend = getTrendText(stats.latest.Petrol, stats.latest.prevPetrol);
             pdf.text(`  • Petrol: ${formatPrice(stats.latest.Petrol)}${trend}`, margin + 2, currentY);
             currentY += 5;
           }
           if (selectedFuel === 'All' || selectedFuel === 'Diesel') {
-            const trend = getTrendText(stats.latest.Diesel, stats.previous?.Diesel);
+            const trend = getTrendText(stats.latest.Diesel, stats.latest.prevDiesel);
             pdf.text(`  • Diesel: ${formatPrice(stats.latest.Diesel)}${trend}`, margin + 2, currentY);
             currentY += 5;
           }
           if (selectedFuel === 'All' || selectedFuel === 'Kerosene') {
-            const trend = getTrendText(stats.latest.Kerosene, stats.previous?.Kerosene);
+            const trend = getTrendText(stats.latest.Kerosene, stats.latest.prevKerosene);
             pdf.text(`  • Kerosene: ${formatPrice(stats.latest.Kerosene)}${trend}`, margin + 2, currentY);
             currentY += 5;
           }
@@ -173,7 +197,7 @@ export default function PriceTrends() {
 
       // --- Table data ---
       if (filteredData.length > 0) {
-        const tableColumns = ['Date / Period'];
+        const tableColumns = ['Effective Date'];
         if (selectedFuel === 'All' || selectedFuel === 'Petrol') tableColumns.push('Petrol');
         if (selectedFuel === 'All' || selectedFuel === 'Diesel') tableColumns.push('Diesel');
         if (selectedFuel === 'All' || selectedFuel === 'Kerosene') tableColumns.push('Kerosene');
@@ -234,18 +258,28 @@ export default function PriceTrends() {
 
   useEffect(() => {
     const calculateTrends = (data: any[]) => {
-      return data.map((item, index) => {
-        const prev = index > 0 ? data[index - 1] : null;
-        return {
+      let previousPetrol: number | null = null;
+      let previousDiesel: number | null = null;
+      let previousKerosene: number | null = null;
+
+      return data.map((item) => {
+        const enriched = {
           ...item,
-          prevPetrol: prev?.Petrol,
-          prevDiesel: prev?.Diesel,
-          prevKerosene: prev?.Kerosene,
+          prevPetrol: previousPetrol,
+          prevDiesel: previousDiesel,
+          prevKerosene: previousKerosene,
         };
+
+        if (item.Petrol !== null && item.Petrol > 0) previousPetrol = item.Petrol;
+        if (item.Diesel !== null && item.Diesel > 0) previousDiesel = item.Diesel;
+        if (item.Kerosene !== null && item.Kerosene > 0) previousKerosene = item.Kerosene;
+
+        return enriched;
       });
     };
 
-    // 1. Subscribe to the official price_trends collection managed in the Admin Dashboard
+    // Subscribe to the official price_trends collection managed in the Admin Dashboard.
+    // Effective Date is the authoritative timeline. Multiple records may exist in one month.
     const unsubscribeTrends = onSnapshot(
       collection(db, 'price_trends'),
       (snapshot) => {
@@ -254,39 +288,45 @@ export default function PriceTrends() {
         if (trendsData.length > 0) {
           const parseDate = (item: any) => {
             if (item.effectiveDate) {
-              const d = new Date(item.effectiveDate);
-              if (!isNaN(d.getTime())) return d;
+              const effective = parseEffectiveDate(item.effectiveDate);
+              if (effective) return effective;
             }
+            // Legacy fallback only. New admin records require Effective Date.
             if (item.monthYear) {
-              const d = new Date(item.monthYear);
-              if (!isNaN(d.getTime())) return d;
+              const month = new Date(item.monthYear);
+              if (!Number.isNaN(month.getTime())) return month;
             }
             return new Date(0);
           };
 
           const formatted = trendsData.map((item: any) => {
             const dObj = parseDate(item);
+            const displayDate = dObj.getTime() > 0
+              ? formatEffectiveDate(dObj)
+              : (item.effectiveDate || item.monthYear || 'N/A');
+
             return {
               id: item.id,
-              date: item.monthYear || item.effectiveDate || 'N/A',
+              date: displayDate,
+              chartDate: displayDate,
               effectiveDate: item.effectiveDate || '',
               monthYear: item.monthYear || '',
               dateObj: dObj,
               timestamp: dObj.getTime(),
-              Petrol: Number(item.petrolPrice) || 0,
-              Diesel: Number(item.dieselPrice) || 0,
-              Kerosene: Number(item.kerosenePrice) || 0,
+              Petrol: normalizePrice(item.petrolPrice),
+              Diesel: normalizePrice(item.dieselPrice),
+              Kerosene: normalizePrice(item.kerosenePrice),
             };
           });
 
-          // Default sort ascending for store
+          // Store chronologically so per-fuel previous values are calculated correctly.
           formatted.sort((a, b) => a.timestamp - b.timestamp);
 
           setGlobalPriceHistory(calculateTrends(formatted));
           setGlobalHistoryLoading(false);
         } else {
           // Fallback: If price_trends collection is empty, load from price_history
-          const unsubscribeHistory = onSnapshot(
+          onSnapshot(
             query(collection(db, 'price_history'), orderBy('timestamp', 'asc')),
             (historySnap) => {
               const historyData = historySnap.docs.map(doc => doc.data());
@@ -295,33 +335,37 @@ export default function PriceTrends() {
               historyData.forEach((entry: any) => {
                 if (!entry.timestamp || typeof entry.timestamp.toDate !== 'function') return;
                 const dObj = entry.timestamp.toDate();
-                const date = dObj.toLocaleDateString();
-                if (!groupedData[date]) {
-                  groupedData[date] = { date, dateObj: dObj, sumPetrol: 0, countPetrol: 0, sumDiesel: 0, countDiesel: 0, sumKerosene: 0, countKerosene: 0 };
+                const dateKey = dObj.toISOString().split('T')[0];
+                if (!groupedData[dateKey]) {
+                  groupedData[dateKey] = { dateKey, dateObj: dObj, sumPetrol: 0, countPetrol: 0, sumDiesel: 0, countDiesel: 0, sumKerosene: 0, countKerosene: 0 };
                 }
-                if (entry.fuelType === 'Petrol') {
-                  groupedData[date].sumPetrol += entry.price;
-                  groupedData[date].countPetrol += 1;
-                } else if (entry.fuelType === 'Diesel') {
-                  groupedData[date].sumDiesel += entry.price;
-                  groupedData[date].countDiesel += 1;
-                } else if (entry.fuelType === 'Kerosene') {
-                  groupedData[date].sumKerosene += entry.price;
-                  groupedData[date].countKerosene += 1;
+                if (entry.fuelType === 'Petrol' && Number(entry.price) > 0) {
+                  groupedData[dateKey].sumPetrol += Number(entry.price);
+                  groupedData[dateKey].countPetrol += 1;
+                } else if (entry.fuelType === 'Diesel' && Number(entry.price) > 0) {
+                  groupedData[dateKey].sumDiesel += Number(entry.price);
+                  groupedData[dateKey].countDiesel += 1;
+                } else if (entry.fuelType === 'Kerosene' && Number(entry.price) > 0) {
+                  groupedData[dateKey].sumKerosene += Number(entry.price);
+                  groupedData[dateKey].countKerosene += 1;
                 }
               });
 
-              const result = Object.values(groupedData).map((d: any) => ({
-                id: d.date,
-                date: d.date,
-                effectiveDate: d.date,
-                monthYear: d.date,
-                dateObj: d.dateObj,
-                timestamp: d.dateObj ? d.dateObj.getTime() : 0,
-                Petrol: d.countPetrol ? Math.round(d.sumPetrol / d.countPetrol) : 0,
-                Diesel: d.countDiesel ? Math.round(d.sumDiesel / d.countDiesel) : 0,
-                Kerosene: d.countKerosene ? Math.round(d.sumKerosene / d.countKerosene) : 0,
-              }));
+              const result = Object.values(groupedData).map((d: any) => {
+                const displayDate = formatEffectiveDate(d.dateObj);
+                return {
+                  id: d.dateKey,
+                  date: displayDate,
+                  chartDate: displayDate,
+                  effectiveDate: d.dateKey,
+                  monthYear: d.dateObj.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }),
+                  dateObj: d.dateObj,
+                  timestamp: d.dateObj ? d.dateObj.getTime() : 0,
+                  Petrol: d.countPetrol ? Math.round(d.sumPetrol / d.countPetrol) : null,
+                  Diesel: d.countDiesel ? Math.round(d.sumDiesel / d.countDiesel) : null,
+                  Kerosene: d.countKerosene ? Math.round(d.sumKerosene / d.countKerosene) : null,
+                };
+              });
 
               result.sort((a, b) => a.timestamp - b.timestamp);
 
@@ -352,7 +396,7 @@ export default function PriceTrends() {
 
     let result = [...globalPriceHistory];
 
-    // 1. Search Query Filter (Matches date, monthYear, effectiveDate)
+    // 1. Search Query Filter (Matches effective date, monthYear)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       result = result.filter(item => 
@@ -366,17 +410,20 @@ export default function PriceTrends() {
     if (selectedTimeframe !== 'all') {
       if (selectedTimeframe === 'custom') {
         if (startDate) {
-          const start = new Date(startDate).getTime();
+          const startObj = parseEffectiveDate(startDate);
+          const start = startObj ? startObj.getTime() : 0;
           result = result.filter(item => item.timestamp >= start);
         }
         if (endDate) {
-          const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000 - 1);
+          const endObj = parseEffectiveDate(endDate);
+          const end = endObj ? endObj.getTime() + (24 * 60 * 60 * 1000 - 1) : Number.MAX_SAFE_INTEGER;
           result = result.filter(item => item.timestamp <= end);
         }
       } else {
         const days = parseInt(selectedTimeframe, 10);
-        if (!isNaN(days) && days > 0) {
-          const latestTime = Math.max(...globalPriceHistory.map(i => i.timestamp));
+        if (!Number.isNaN(days) && days > 0) {
+          const validTimestamps = globalPriceHistory.map(i => i.timestamp).filter(t => t > 0);
+          const latestTime = validTimestamps.length ? Math.max(...validTimestamps) : Date.now();
           const cutoff = latestTime - (days * 24 * 60 * 60 * 1000);
           result = result.filter(item => item.timestamp >= cutoff);
         }
@@ -392,17 +439,20 @@ export default function PriceTrends() {
         const fuelsToCheck = selectedFuel === 'Petrol' ? [item.Petrol]
           : selectedFuel === 'Diesel' ? [item.Diesel]
           : selectedFuel === 'Kerosene' ? [item.Kerosene]
-          : [item.Petrol, item.Diesel, item.Kerosene].filter(p => p > 0);
+          : [item.Petrol, item.Diesel, item.Kerosene];
 
-        return fuelsToCheck.some(price => {
-          if (minP !== null && price < minP) return false;
-          if (maxP !== null && price > maxP) return false;
-          return true;
-        });
+        return fuelsToCheck
+          .filter((price): price is number => typeof price === 'number' && price > 0)
+          .some(price => {
+            if (minP !== null && price < minP) return false;
+            if (maxP !== null && price > maxP) return false;
+            return true;
+          });
       });
     }
 
     // 4. Sorting
+    const sortablePrice = (value: number | null | undefined) => typeof value === 'number' && value > 0 ? value : -Infinity;
     result.sort((a, b) => {
       switch (sortBy) {
         case 'date-asc':
@@ -410,17 +460,17 @@ export default function PriceTrends() {
         case 'date-desc':
           return b.timestamp - a.timestamp;
         case 'petrol-desc':
-          return b.Petrol - a.Petrol;
+          return sortablePrice(b.Petrol) - sortablePrice(a.Petrol);
         case 'petrol-asc':
-          return a.Petrol - b.Petrol;
+          return sortablePrice(a.Petrol) - sortablePrice(b.Petrol);
         case 'diesel-desc':
-          return b.Diesel - a.Diesel;
+          return sortablePrice(b.Diesel) - sortablePrice(a.Diesel);
         case 'diesel-asc':
-          return a.Diesel - b.Diesel;
+          return sortablePrice(a.Diesel) - sortablePrice(b.Diesel);
         case 'kerosene-desc':
-          return b.Kerosene - a.Kerosene;
+          return sortablePrice(b.Kerosene) - sortablePrice(a.Kerosene);
         case 'kerosene-asc':
-          return a.Kerosene - b.Kerosene;
+          return sortablePrice(a.Kerosene) - sortablePrice(b.Kerosene);
         default:
           return b.timestamp - a.timestamp;
       }
@@ -439,11 +489,10 @@ export default function PriceTrends() {
     if (!filteredData.length) return null;
 
     const latest = [...filteredData].sort((a, b) => b.timestamp - a.timestamp)[0];
-    const previous = [...filteredData].sort((a, b) => b.timestamp - a.timestamp)[1];
 
-    const petrolPrices = filteredData.map(d => d.Petrol).filter(p => p > 0);
-    const dieselPrices = filteredData.map(d => d.Diesel).filter(p => p > 0);
-    const kerosenePrices = filteredData.map(d => d.Kerosene).filter(p => p > 0);
+    const petrolPrices = filteredData.map(d => d.Petrol).filter((p): p is number => typeof p === 'number' && p > 0);
+    const dieselPrices = filteredData.map(d => d.Diesel).filter((p): p is number => typeof p === 'number' && p > 0);
+    const kerosenePrices = filteredData.map(d => d.Kerosene).filter((p): p is number => typeof p === 'number' && p > 0);
 
     const getAvg = (arr: number[]) => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
     const getMax = (arr: number[]) => arr.length ? Math.max(...arr) : 0;
@@ -457,7 +506,6 @@ export default function PriceTrends() {
 
     return {
       latest,
-      previous,
       avgPetrol: getAvg(petrolPrices),
       avgDiesel: getAvg(dieselPrices),
       avgKerosene: getAvg(kerosenePrices),
@@ -489,12 +537,12 @@ export default function PriceTrends() {
     setSortBy('date-desc');
   };
 
-  const formatPrice = (val: number) => {
-    if (!val) return '-';
+  const formatPrice = (val: number | null | undefined) => {
+    if (typeof val !== 'number' || !Number.isFinite(val) || val <= 0) return '-';
     return val >= 1000 ? `${val.toLocaleString()} SLL` : `NLe ${Number(val).toFixed(2)}`;
   };
 
-  const renderTrend = (current?: number, previous?: number, darkBg = false) => {
+  const renderTrend = (current?: number | null, previous?: number | null, darkBg = false) => {
     if (!current || !previous || current === previous) {
       return <span className={`text-xs font-medium ml-2 inline-flex items-center ${darkBg ? 'text-white/50' : 'text-gray-400'}`}><Minus className="w-3 h-3 mr-1" /> 0%</span>;
     }
@@ -583,7 +631,7 @@ export default function PriceTrends() {
                 </p>
                 <div className="flex items-center text-white/70 text-[10px] sm:text-xs font-medium">
                   {stats.latest?.date || 'Latest Entry'}
-                  {renderTrend(stats.latest?.Petrol, stats.previous?.Petrol, true)}
+                  {renderTrend(stats.latest?.Petrol, stats.latest?.prevPetrol, true)}
                 </div>
               </div>
             </div>
@@ -609,7 +657,7 @@ export default function PriceTrends() {
                 </p>
                 <div className="flex items-center text-white/70 text-[10px] sm:text-xs font-medium">
                   {stats.latest?.date || 'Latest Entry'}
-                  {renderTrend(stats.latest?.Diesel, stats.previous?.Diesel, true)}
+                  {renderTrend(stats.latest?.Diesel, stats.latest?.prevDiesel, true)}
                 </div>
               </div>
             </div>
@@ -635,7 +683,7 @@ export default function PriceTrends() {
                 </p>
                 <div className="flex items-center text-white/70 text-[10px] sm:text-xs font-medium">
                   {stats.latest?.date || 'Latest Entry'}
-                  {renderTrend(stats.latest?.Kerosene, stats.previous?.Kerosene, true)}
+                  {renderTrend(stats.latest?.Kerosene, stats.latest?.prevKerosene, true)}
                 </div>
               </div>
             </div>
@@ -679,7 +727,7 @@ export default function PriceTrends() {
               <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search date, month or year (e.g. '2024', 'Jan', '18 Mar')..."
+                placeholder="Search effective date, month or year (e.g. '24 Sep', 'Sep 2026')..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-200 text-gray-800 text-sm font-medium rounded-2xl pl-11 pr-10 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-gray-400"
@@ -901,7 +949,7 @@ export default function PriceTrends() {
                     <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
                       <XAxis 
-                        dataKey="date" 
+                        dataKey="chartDate" 
                         axisLine={false}
                         tickLine={false}
                         tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }}
@@ -926,7 +974,7 @@ export default function PriceTrends() {
                         }}
                         itemStyle={{ fontSize: '12px', fontWeight: 700, padding: '2px 0' }}
                         labelStyle={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#9CA3AF', marginBottom: '8px' }}
-                        formatter={(value: number) => [value >= 1000 ? `${value.toLocaleString()} SLL` : `NLe ${Number(value).toFixed(2)}/L`, '']}
+                        formatter={(value: number | null) => [formatPrice(value), '']}
                       />
                       <Legend 
                         verticalAlign="top" 
@@ -935,13 +983,13 @@ export default function PriceTrends() {
                         wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }}
                       />
                       {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
-                        <Line name="Diesel" type="monotone" dataKey="Diesel" stroke="var(--color-surface-900)" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                        <Line name="Diesel" type="monotone" dataKey="Diesel" stroke="var(--color-surface-900)" strokeWidth={4} dot={false} connectNulls={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                       )}
                       {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
-                        <Line name="Kerosene" type="monotone" dataKey="Kerosene" stroke="#2563EB" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                        <Line name="Kerosene" type="monotone" dataKey="Kerosene" stroke="#2563EB" strokeWidth={4} dot={false} connectNulls={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                       )}
                       {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
-                        <Line name="Petrol" type="monotone" dataKey="Petrol" stroke="var(--color-primary)" strokeWidth={4} dot={false} activeDot={{ r: 6, strokeWidth: 0 }} />
+                        <Line name="Petrol" type="monotone" dataKey="Petrol" stroke="var(--color-primary)" strokeWidth={4} dot={false} connectNulls={false} activeDot={{ r: 6, strokeWidth: 0 }} />
                       )}
                     </LineChart>
                   </ResponsiveContainer>
@@ -951,13 +999,13 @@ export default function PriceTrends() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F4F6" />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} dy={10} minTickGap={30} />
+                      <XAxis dataKey="chartDate" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} dy={10} minTickGap={30} />
                       <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 700 }} tickFormatter={(value) => value >= 1000 ? `NLe ${(value / 1000).toFixed(0)}` : `NLe ${value}`} dx={-10} domain={[0, 'auto']} tickCount={5} />
                       <Tooltip 
                         contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', padding: '12px' }}
                         itemStyle={{ fontSize: '12px', fontWeight: 700, padding: '2px 0' }}
                         labelStyle={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#9CA3AF', marginBottom: '8px' }}
-                        formatter={(value: number) => [value >= 1000 ? `${value.toLocaleString()} SLL` : `NLe ${Number(value).toFixed(2)}/L`, '']}
+                        formatter={(value: number | null) => [formatPrice(value), '']}
                       />
                       <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ paddingBottom: '20px', fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
                       {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
@@ -978,7 +1026,7 @@ export default function PriceTrends() {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Effective Date / Period</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Effective Date</th>
                           {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
                             <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Petrol</th>
                           )}
@@ -997,19 +1045,19 @@ export default function PriceTrends() {
                             {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-primary">
                                 {formatPrice(row.Petrol)}
-                                {renderTrend(row.Petrol, row.prevPetrol)}
+                                {row.Petrol ? renderTrend(row.Petrol, row.prevPetrol) : null}
                               </td>
                             )}
                             {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-surface-900">
                                 {formatPrice(row.Diesel)}
-                                {renderTrend(row.Diesel, row.prevDiesel)}
+                                {row.Diesel ? renderTrend(row.Diesel, row.prevDiesel) : null}
                               </td>
                             )}
                             {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
                               <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
                                 {formatPrice(row.Kerosene)}
-                                {renderTrend(row.Kerosene, row.prevKerosene)}
+                                {row.Kerosene ? renderTrend(row.Kerosene, row.prevKerosene) : null}
                               </td>
                             )}
                           </tr>
@@ -1050,7 +1098,7 @@ export default function PriceTrends() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50 sticky top-0 z-10">
                     <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date / Period</th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Effective Date</th>
                       {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
                         <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Petrol</th>
                       )}
@@ -1069,19 +1117,19 @@ export default function PriceTrends() {
                         {(selectedFuel === 'All' || selectedFuel === 'Petrol') && (
                           <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-primary">
                             {formatPrice(row.Petrol)}
-                            {renderTrend(row.Petrol, row.prevPetrol)}
+                            {row.Petrol ? renderTrend(row.Petrol, row.prevPetrol) : null}
                           </td>
                         )}
                         {(selectedFuel === 'All' || selectedFuel === 'Diesel') && (
                           <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-surface-900">
                             {formatPrice(row.Diesel)}
-                            {renderTrend(row.Diesel, row.prevDiesel)}
+                            {row.Diesel ? renderTrend(row.Diesel, row.prevDiesel) : null}
                           </td>
                         )}
                         {(selectedFuel === 'All' || selectedFuel === 'Kerosene') && (
                           <td className="px-6 py-3.5 whitespace-nowrap text-xs font-bold text-blue-600">
                             {formatPrice(row.Kerosene)}
-                            {renderTrend(row.Kerosene, row.prevKerosene)}
+                            {row.Kerosene ? renderTrend(row.Kerosene, row.prevKerosene) : null}
                           </td>
                         )}
                       </tr>
