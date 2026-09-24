@@ -7,11 +7,32 @@ import { Button } from './ui/Button';
 export interface PriceTrendRecord {
   id: string;
   monthYear: string;
-  petrolPrice: number | '';
-  dieselPrice: number | '';
-  kerosenePrice: number | '';
+  petrolPrice: number | '' | null;
+  dieselPrice: number | '' | null;
+  kerosenePrice: number | '' | null;
   effectiveDate: string;
 }
+
+const deriveMonthYear = (effectiveDate: string) => {
+  if (!effectiveDate) return '';
+  const [year, month, day] = effectiveDate.split('-').map(Number);
+  if (!year || !month || !day) return '';
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+};
+
+const normalizeStoredPrice = (value: number | '' | null | undefined) => {
+  if (value === '' || value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatAdminPrice = (value: number | '' | null | undefined) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return '-';
+  return parsed >= 1000 ? `${parsed.toLocaleString()} SLL` : `NLe ${parsed.toFixed(2)}`;
+};
 
 export function AdminPriceTrends() {
   const [trends, setTrends] = useState<PriceTrendRecord[]>([]);
@@ -51,9 +72,20 @@ export function AdminPriceTrends() {
     return () => unsubscribe();
   }, []);
 
+  const handleEffectiveDateChange = (effectiveDate: string) => {
+    setEditForm(current => ({
+      ...current,
+      effectiveDate,
+      monthYear: deriveMonthYear(effectiveDate)
+    }));
+  };
+
   const handleEdit = (trend: PriceTrendRecord) => {
     setEditingId(trend.id);
-    setEditForm(trend);
+    setEditForm({
+      ...trend,
+      monthYear: trend.effectiveDate ? deriveMonthYear(trend.effectiveDate) : trend.monthYear
+    });
     setIsAdding(false);
   };
 
@@ -64,10 +96,10 @@ export function AdminPriceTrends() {
     setSaveTargetId(null);
   };
 
-  // Trigger Confirmation Modal for Save
+  // Effective Date is the source of truth. Multiple records may exist in the same month.
   const triggerSaveConfirmation = (id: string) => {
-    if (!editForm.effectiveDate && !editForm.monthYear) {
-      alert('Please provide an Effective Date or Month & Year.');
+    if (!editForm.effectiveDate) {
+      alert('Please provide an Effective Date. The effective date is required for every official price update.');
       return;
     }
     setSaveTargetId(id);
@@ -75,15 +107,15 @@ export function AdminPriceTrends() {
 
   // Execute Save
   const executeSave = async () => {
-    if (!saveTargetId) return;
+    if (!saveTargetId || !editForm.effectiveDate) return;
     setIsSubmitting(true);
     try {
       const dataToSave = {
-        monthYear: editForm.monthYear || '',
-        petrolPrice: Number(editForm.petrolPrice) || 0,
-        dieselPrice: Number(editForm.dieselPrice) || 0,
-        kerosenePrice: Number(editForm.kerosenePrice) || 0,
-        effectiveDate: editForm.effectiveDate || ''
+        monthYear: deriveMonthYear(editForm.effectiveDate),
+        petrolPrice: normalizeStoredPrice(editForm.petrolPrice),
+        dieselPrice: normalizeStoredPrice(editForm.dieselPrice),
+        kerosenePrice: normalizeStoredPrice(editForm.kerosenePrice),
+        effectiveDate: editForm.effectiveDate
       };
 
       if (saveTargetId === 'new') {
@@ -152,14 +184,15 @@ export function AdminPriceTrends() {
   };
 
   const startAdd = () => {
+    const effectiveDate = new Date().toISOString().split('T')[0];
     setIsAdding(true);
     setEditingId('new');
     setEditForm({
-      monthYear: '',
+      monthYear: deriveMonthYear(effectiveDate),
       petrolPrice: '',
       dieselPrice: '',
       kerosenePrice: '',
-      effectiveDate: new Date().toISOString().split('T')[0]
+      effectiveDate
     });
   };
 
@@ -196,7 +229,7 @@ export function AdminPriceTrends() {
               <TrendingUp className="w-6 h-6 text-primary" />
               Price Trends Management
             </h2>
-            <p className="text-gray-500 mt-1 text-sm sm:text-base">View, add, edit or remove official historical fuel price records</p>
+            <p className="text-gray-500 mt-1 text-sm sm:text-base">Each official update is tracked by its effective date. You can publish multiple updates in the same month and leave individual fuel prices blank or zero until they are available.</p>
           </div>
           <div className="flex items-center gap-3">
             {selectedIds.size > 0 && (
@@ -247,48 +280,52 @@ export function AdminPriceTrends() {
                   <td className="p-4">
                     <input
                       type="text"
-                      className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                      placeholder="e.g. January 2024"
+                      readOnly
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
                       value={editForm.monthYear || ''}
-                      onChange={(e) => setEditForm({ ...editForm, monthYear: e.target.value })}
+                      title="Automatically derived from the Effective Date"
                     />
                   </td>
                   <td className="p-4">
                     <input
                       type="number"
+                      min="0"
                       step="0.01"
                       className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                      placeholder="0.00"
+                      placeholder="Blank or 0 allowed"
                       value={editForm.petrolPrice ?? ''}
-                      onChange={(e) => setEditForm({ ...editForm, petrolPrice: e.target.value ? Number(e.target.value) : '' })}
+                      onChange={(e) => setEditForm({ ...editForm, petrolPrice: e.target.value === '' ? '' : Number(e.target.value) })}
                     />
                   </td>
                   <td className="p-4">
                     <input
                       type="number"
+                      min="0"
                       step="0.01"
                       className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                      placeholder="0.00"
+                      placeholder="Blank or 0 allowed"
                       value={editForm.dieselPrice ?? ''}
-                      onChange={(e) => setEditForm({ ...editForm, dieselPrice: e.target.value ? Number(e.target.value) : '' })}
+                      onChange={(e) => setEditForm({ ...editForm, dieselPrice: e.target.value === '' ? '' : Number(e.target.value) })}
                     />
                   </td>
                   <td className="p-4">
                     <input
                       type="number"
+                      min="0"
                       step="0.01"
                       className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                      placeholder="0.00"
+                      placeholder="Blank or 0 allowed"
                       value={editForm.kerosenePrice ?? ''}
-                      onChange={(e) => setEditForm({ ...editForm, kerosenePrice: e.target.value ? Number(e.target.value) : '' })}
+                      onChange={(e) => setEditForm({ ...editForm, kerosenePrice: e.target.value === '' ? '' : Number(e.target.value) })}
                     />
                   </td>
                   <td className="p-4">
                     <input
                       type="date"
+                      required
                       className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
                       value={editForm.effectiveDate || ''}
-                      onChange={(e) => setEditForm({ ...editForm, effectiveDate: e.target.value })}
+                      onChange={(e) => handleEffectiveDateChange(e.target.value)}
                     />
                   </td>
                   <td className="p-4">
@@ -328,44 +365,49 @@ export function AdminPriceTrends() {
                       <td className="p-4">
                         <input
                           type="text"
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none font-semibold"
+                          readOnly
+                          className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed font-semibold"
                           value={editForm.monthYear || ''}
-                          onChange={(e) => setEditForm({ ...editForm, monthYear: e.target.value })}
+                          title="Automatically derived from the Effective Date"
                         />
                       </td>
                       <td className="p-4">
                         <input
                           type="number"
+                          min="0"
                           step="0.01"
                           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none font-semibold"
                           value={editForm.petrolPrice ?? ''}
-                          onChange={(e) => setEditForm({ ...editForm, petrolPrice: e.target.value ? Number(e.target.value) : '' })}
+                          onChange={(e) => setEditForm({ ...editForm, petrolPrice: e.target.value === '' ? '' : Number(e.target.value) })}
                         />
                       </td>
                       <td className="p-4">
                         <input
                           type="number"
+                          min="0"
                           step="0.01"
                           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none font-semibold"
                           value={editForm.dieselPrice ?? ''}
-                          onChange={(e) => setEditForm({ ...editForm, dieselPrice: e.target.value ? Number(e.target.value) : '' })}
+                          onChange={(e) => setEditForm({ ...editForm, dieselPrice: e.target.value === '' ? '' : Number(e.target.value) })}
                         />
                       </td>
                       <td className="p-4">
                         <input
                           type="number"
+                          min="0"
                           step="0.01"
                           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none font-semibold"
                           value={editForm.kerosenePrice ?? ''}
-                          onChange={(e) => setEditForm({ ...editForm, kerosenePrice: e.target.value ? Number(e.target.value) : '' })}
+                          onChange={(e) => setEditForm({ ...editForm, kerosenePrice: e.target.value === '' ? '' : Number(e.target.value) })}
                         />
                       </td>
                       <td className="p-4">
                         <input
                           type="date"
+                          required
                           className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none font-semibold"
                           value={editForm.effectiveDate || ''}
-                          onChange={(e) => setEditForm({ ...editForm, effectiveDate: e.target.value })}
+                          onChange={(e) => handleEffectiveDateChange(e.target.value)}
                         />
                       </td>
                       <td className="p-4">
@@ -391,16 +433,10 @@ export function AdminPriceTrends() {
                     </>
                   ) : (
                     <>
-                      <td className="p-4 text-sm font-semibold text-gray-900">{trend.monthYear || 'N/A'}</td>
-                      <td className="p-4 text-sm font-semibold text-gray-700">
-                        {trend.petrolPrice ? (Number(trend.petrolPrice) >= 1000 ? `${Number(trend.petrolPrice).toLocaleString()} SLL` : `NLe ${Number(trend.petrolPrice).toFixed(2)}`) : '-'}
-                      </td>
-                      <td className="p-4 text-sm font-semibold text-gray-700">
-                        {trend.dieselPrice ? (Number(trend.dieselPrice) >= 1000 ? `${Number(trend.dieselPrice).toLocaleString()} SLL` : `NLe ${Number(trend.dieselPrice).toFixed(2)}`) : '-'}
-                      </td>
-                      <td className="p-4 text-sm font-semibold text-gray-700">
-                        {trend.kerosenePrice ? (Number(trend.kerosenePrice) >= 1000 ? `${Number(trend.kerosenePrice).toLocaleString()} SLL` : `NLe ${Number(trend.kerosenePrice).toFixed(2)}`) : '-'}
-                      </td>
+                      <td className="p-4 text-sm font-semibold text-gray-900">{trend.monthYear || deriveMonthYear(trend.effectiveDate) || 'N/A'}</td>
+                      <td className="p-4 text-sm font-semibold text-gray-700">{formatAdminPrice(trend.petrolPrice)}</td>
+                      <td className="p-4 text-sm font-semibold text-gray-700">{formatAdminPrice(trend.dieselPrice)}</td>
+                      <td className="p-4 text-sm font-semibold text-gray-700">{formatAdminPrice(trend.kerosenePrice)}</td>
                       <td className="p-4 text-sm font-medium text-gray-500">{trend.effectiveDate || '-'}</td>
                       <td className="p-4">
                         <div className="flex items-center justify-end gap-2">
@@ -453,8 +489,8 @@ export function AdminPriceTrends() {
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-xs max-h-40 overflow-y-auto space-y-2">
               {deleteTargets.map((target) => (
                 <div key={target.id} className="pb-2 border-b border-gray-200 last:border-0 last:pb-0">
-                  <p className="text-gray-700"><strong>Period:</strong> {target.monthYear || target.effectiveDate || 'N/A'}</p>
-                  <p className="text-gray-700"><strong>Prices:</strong> Petrol: {target.petrolPrice || '-'}, Diesel: {target.dieselPrice || '-'}, Kerosene: {target.kerosenePrice || '-'}</p>
+                  <p className="text-gray-700"><strong>Effective Date:</strong> {target.effectiveDate || 'N/A'}</p>
+                  <p className="text-gray-700"><strong>Prices:</strong> Petrol: {formatAdminPrice(target.petrolPrice)}, Diesel: {formatAdminPrice(target.dieselPrice)}, Kerosene: {formatAdminPrice(target.kerosenePrice)}</p>
                 </div>
               ))}
             </div>
@@ -509,7 +545,7 @@ export function AdminPriceTrends() {
             <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-xs space-y-2">
               <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
                 <span className="text-gray-500 font-semibold">Month & Year:</span>
-                <span className="text-gray-900 font-bold">{editForm.monthYear || 'N/A'}</span>
+                <span className="text-gray-900 font-bold">{deriveMonthYear(editForm.effectiveDate || '') || 'N/A'}</span>
               </div>
               <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
                 <span className="text-gray-500 font-semibold">Effective Date:</span>
@@ -517,20 +553,20 @@ export function AdminPriceTrends() {
               </div>
               <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
                 <span className="text-gray-500 font-semibold">Petrol Price:</span>
-                <span className="text-primary font-bold">{editForm.petrolPrice ? `NLe ${editForm.petrolPrice}` : '-'}</span>
+                <span className="text-primary font-bold">{formatAdminPrice(editForm.petrolPrice)}</span>
               </div>
               <div className="flex justify-between border-b border-gray-200/60 pb-1.5">
                 <span className="text-gray-500 font-semibold">Diesel Price:</span>
-                <span className="text-surface-900 font-bold">{editForm.dieselPrice ? `NLe ${editForm.dieselPrice}` : '-'}</span>
+                <span className="text-surface-900 font-bold">{formatAdminPrice(editForm.dieselPrice)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500 font-semibold">Kerosene Price:</span>
-                <span className="text-fuchsia-600 font-bold">{editForm.kerosenePrice ? `NLe ${editForm.kerosenePrice}` : '-'}</span>
+                <span className="text-fuchsia-600 font-bold">{formatAdminPrice(editForm.kerosenePrice)}</span>
               </div>
             </div>
 
             <p className="text-sm text-gray-600 font-medium">
-              Are you sure you want to publish these fuel price changes to the public Price Trends chart?
+              Are you sure you want to publish these fuel price changes to the public Price Trends chart? Blank or zero fuel values will not be plotted until this record is edited with a positive price.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
