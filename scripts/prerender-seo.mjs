@@ -8,6 +8,7 @@ import {
   SITE_URL,
   STATIC_ARTICLE_SEO,
 } from '../seo-routes.js';
+import { getAuthorityContent } from '../seo-content.js';
 
 const root = process.cwd();
 const distDir = path.join(root, 'dist');
@@ -48,6 +49,7 @@ function removeTag(html, pattern) {
 
 function pageSchema(route, meta) {
   const canonical = `${SITE_URL}${route === '/' ? '/' : route}`;
+  const authority = getAuthorityContent(route);
 
   // Static article snapshots intentionally use WebPage schema. The live React
   // article page replaces this with richer Article schema using the real
@@ -87,11 +89,10 @@ function pageSchema(route, meta) {
     base.license = `${SITE_URL}/terms`;
   }
 
-  if (route === '/') return base;
+  const schemas = [base];
 
-  return [
-    base,
-    {
+  if (route !== '/') {
+    schemas.push({
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
@@ -108,8 +109,70 @@ function pageSchema(route, meta) {
           item: canonical,
         },
       ],
-    },
-  ];
+    });
+  }
+
+  if (authority?.faqs?.length) {
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: authority.faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer,
+        },
+      })),
+    });
+  }
+
+  return schemas.length === 1 ? schemas[0] : schemas;
+}
+
+function authorityHtml(route) {
+  const content = getAuthorityContent(route);
+  if (!content) return '';
+
+  const sections = (content.sections || [])
+    .map((section) => `
+      <article style="margin-top:28px">
+        <h2 style="font-size:1.35rem;margin:0 0 10px">${escapeHtml(section.heading)}</h2>
+        ${(section.paragraphs || []).map((paragraph) => `<p style="margin:10px 0">${escapeHtml(paragraph)}</p>`).join('')}
+      </article>`)
+    .join('');
+
+  const faqs = content.faqs?.length
+    ? `<section style="margin-top:32px">
+        <h2 style="font-size:1.35rem;margin:0 0 12px">Frequently asked questions</h2>
+        ${content.faqs.map((faq) => `
+          <div style="margin:18px 0">
+            <h3 style="font-size:1rem;margin:0 0 6px">${escapeHtml(faq.question)}</h3>
+            <p style="margin:0">${escapeHtml(faq.answer)}</p>
+          </div>`).join('')}
+      </section>`
+    : '';
+
+  const related = content.relatedLinks?.length
+    ? `<section style="margin-top:28px">
+        <h2 style="font-size:1.2rem;margin:0 0 10px">Related fuel information</h2>
+        <ul>${content.relatedLinks.map(([href, label]) => `<li><a href="${href}">${escapeHtml(label)}</a></li>`).join('')}</ul>
+      </section>`
+    : '';
+
+  const sources = content.sources?.length
+    ? `<section style="margin-top:28px">
+        <h2 style="font-size:1.2rem;margin:0 0 10px">Official source reference</h2>
+        <p>For primary regulatory announcements and official petroleum information, consult the original source alongside Salone Fuel Monitor.</p>
+        <ul>${content.sources.map(([href, label]) => `<li><a href="${href}" rel="noopener noreferrer">${escapeHtml(label)}</a></li>`).join('')}</ul>
+      </section>`
+    : '';
+
+  return `<section aria-label="Fuel information and search guide" style="margin-top:32px;border-top:1px solid #d9e1ea;padding-top:24px">
+    ${content.eyebrow ? `<p style="font-weight:700;color:#0072C6;margin:0 0 6px">${escapeHtml(content.eyebrow)}</p>` : ''}
+    <h2 style="font-size:1.55rem;margin:0 0 16px">Fuel price information you can understand and verify</h2>
+    ${sections}${faqs}${related}${sources}
+  </section>`;
 }
 
 function staticRootContent(route, meta) {
@@ -124,7 +187,8 @@ function staticRootContent(route, meta) {
       <p style="font-size:1.05rem;margin:0 0 20px">${escapeHtml(meta.intro || meta.description)}</p>
     </header>
     <nav aria-label="Primary fuel information" style="margin-top:20px">${nav}</nav>
-    <p style="margin-top:24px;font-size:.9rem;color:#5f6b7a">JavaScript enables the interactive charts, live data and filters on this page.</p>
+    ${authorityHtml(route)}
+    <p style="margin-top:28px;font-size:.9rem;color:#5f6b7a">JavaScript enables the interactive charts, live data and filters on this page.</p>
   </main>`;
 }
 
@@ -180,7 +244,7 @@ function renderRoute(route, meta) {
 
 // Route-specific HTML snapshots are served by the Hostinger production server
 // (and any supported static-host rewrites) so crawlers receive a unique title,
-// canonical, description, schema and H1 before React starts.
+// canonical, description, schema and useful page content before React starts.
 for (const [route, meta] of Object.entries(allRoutes)) {
   fs.writeFileSync(path.join(seoDir, routeFileName(route)), renderRoute(route, meta));
 }
