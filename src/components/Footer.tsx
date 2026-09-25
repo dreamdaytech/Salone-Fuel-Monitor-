@@ -32,7 +32,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="grid gap-8 border-t border-white/20 py-8 md:grid-cols-3">
+        <div className="grid gap-8 border-t border-white/20 py-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-white">Fuel Price Guides</h3>
             <div className="mt-4 flex flex-col gap-2 text-sm text-blue-100">
@@ -40,6 +40,17 @@ export default function Footer() {
               <Link to="/diesel-price-sierra-leone" className="hover:text-white transition-colors">Diesel Price in Sierra Leone</Link>
               <Link to="/kerosene-price-sierra-leone" className="hover:text-white transition-colors">Kerosene Price in Sierra Leone</Link>
               <Link to="/price-trends" className="hover:text-white transition-colors">Fuel Price History</Link>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-white">Research &amp; Explainers</h3>
+            <div className="mt-4 flex flex-col gap-2 text-sm text-blue-100">
+              <Link to="/blog/why-fuel-prices-change-in-sierra-leone" className="hover:text-white transition-colors">Why Fuel Prices Change</Link>
+              <Link to="/blog/sierra-leone-fuel-price-history-2026" className="hover:text-white transition-colors">2026 Fuel Price Timeline</Link>
+              <Link to="/blog/sierra-leone-vs-liberia-fuel-prices" className="hover:text-white transition-colors">Sierra Leone vs Liberia</Link>
+              <Link to="/blog/sierra-leone-vs-ghana-fuel-prices" className="hover:text-white transition-colors">Sierra Leone vs Ghana</Link>
+              <Link to="/blog/sierra-leone-vs-nigeria-fuel-prices" className="hover:text-white transition-colors">Sierra Leone vs Nigeria</Link>
             </div>
           </div>
 
