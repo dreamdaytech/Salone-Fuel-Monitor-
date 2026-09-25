@@ -9,15 +9,7 @@ import {
   normalizePathname,
 } from '../../seo-routes.js';
 import { getAuthorityContent } from '../../seo-content.js';
-
-type RouteMeta = {
-  title: string;
-  description: string;
-  heading?: string;
-  intro?: string;
-  schemaType?: string;
-  index?: boolean;
-};
+import { getPhase3SeoForPath } from '../../seo-phase3-routes.js';
 
 type AuthorityFaq = {
   question: string;
@@ -26,6 +18,16 @@ type AuthorityFaq = {
 
 type AuthorityContent = {
   faqs?: AuthorityFaq[];
+};
+
+type RouteMeta = {
+  title: string;
+  description: string;
+  heading?: string;
+  intro?: string;
+  schemaType?: string;
+  index?: boolean;
+  authority?: AuthorityContent;
 };
 
 function setMeta(attribute: 'name' | 'property', key: string, value: string) {
@@ -90,10 +92,9 @@ export default function RouteSEO() {
 
   useEffect(() => {
     const pathname = normalizePathname(location.pathname);
-    const staticMeta = getSeoForPath(pathname) as RouteMeta | null;
+    const staticMeta = (getSeoForPath(pathname) || getPhase3SeoForPath(pathname)) as RouteMeta | null;
     const dynamicMeta = getDynamicMeta(pathname);
     const privatePath = isPrivateOrUtilityPath(pathname);
-    const authority = getAuthorityContent(pathname) as AuthorityContent | null;
 
     // Remove the build-time schema after React takes control so client-side
     // navigation never leaves structured data from the previous route behind.
@@ -110,6 +111,7 @@ export default function RouteSEO() {
       index: false,
     };
 
+    const authority = (getAuthorityContent(pathname) as AuthorityContent | null) || meta.authority || null;
     const canonical = `${SITE_URL}${pathname === '/' ? '/' : pathname}`;
     const shouldIndex = !privatePath && meta.index !== false;
 
