@@ -47,6 +47,8 @@ const TransportPrices = lazyWithRetry(() => import('./pages/TransportPrices'));
 const TransportPriceDetails = lazyWithRetry(() => import('./pages/TransportPriceDetails'));
 const AdminTransportPriceDetails = lazyWithRetry(() => import('./pages/AdminTransportPriceDetails'));
 const PriceTrends = lazyWithRetry(() => import('./pages/PriceTrends'));
+const FuelPriceGuide = lazyWithRetry(() => import('./pages/FuelPriceGuide'));
+const DataMethodology = lazyWithRetry(() => import('./pages/DataMethodology'));
 const TransportTrends = lazyWithRetry(() => import('./pages/TransportTrends'));
 const StationDashboard = lazyWithRetry(() => import('./pages/StationDashboard'));
 const AdminDashboard = lazyWithRetry(() => import('./pages/AdminDashboard'));
@@ -115,7 +117,7 @@ function AppContent() {
     };
   }, []);
 
-  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/contact', '/terms', '/privacy', '/cookies', '/blog', '/stations', '/donate', '/donate/success', '/donate/cancel'];
+  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/petrol-price-sierra-leone', '/diesel-price-sierra-leone', '/kerosene-price-sierra-leone', '/data-methodology', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/contact', '/terms', '/privacy', '/cookies', '/blog', '/stations', '/donate', '/donate/success', '/donate/cancel'];
   const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/transport-prices/');
 
   useEffect(() => {
@@ -160,6 +162,10 @@ function AppContent() {
                 <Route path="/calculator" element={<CalculatorPage />} />
                 <Route path="/transport-prices/:id" element={<TransportPriceDetails />} />
                 <Route path="/price-trends" element={<PriceTrends />} />
+                <Route path="/petrol-price-sierra-leone" element={<FuelPriceGuide fuel="petrol" />} />
+                <Route path="/diesel-price-sierra-leone" element={<FuelPriceGuide fuel="diesel" />} />
+                <Route path="/kerosene-price-sierra-leone" element={<FuelPriceGuide fuel="kerosene" />} />
+                <Route path="/data-methodology" element={<DataMethodology />} />
                 <Route path="/transport-trends" element={<TransportTrends />} />
                 <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
                 <Route path="/signup" element={!user ? <Auth /> : <Navigate to="/" />} />
