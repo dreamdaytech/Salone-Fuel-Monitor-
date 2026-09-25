@@ -12,7 +12,135 @@
     ],
     "rewrites": [
       {
-        "source": "**",
+        "source": "/stations",
+        "destination": "/_seo/stations.html"
+      },
+      {
+        "source": "/price-trends",
+        "destination": "/_seo/price-trends.html"
+      },
+      {
+        "source": "/transport-prices",
+        "destination": "/_seo/transport-prices.html"
+      },
+      {
+        "source": "/regional-comparison",
+        "destination": "/_seo/regional-comparison.html"
+      },
+      {
+        "source": "/barrel-vs-fuel",
+        "destination": "/_seo/barrel-vs-fuel.html"
+      },
+      {
+        "source": "/market-intelligence",
+        "destination": "/_seo/market-intelligence.html"
+      },
+      {
+        "source": "/exchange-rates",
+        "destination": "/_seo/exchange-rates.html"
+      },
+      {
+        "source": "/calculator",
+        "destination": "/_seo/calculator.html"
+      },
+      {
+        "source": "/transport-trends",
+        "destination": "/_seo/transport-trends.html"
+      },
+      {
+        "source": "/blog",
+        "destination": "/_seo/blog.html"
+      },
+      {
+        "source": "/about",
+        "destination": "/_seo/about.html"
+      },
+      {
+        "source": "/contact",
+        "destination": "/_seo/contact.html"
+      },
+      {
+        "source": "/donate",
+        "destination": "/_seo/donate.html"
+      },
+      {
+        "source": "/terms",
+        "destination": "/_seo/terms.html"
+      },
+      {
+        "source": "/privacy",
+        "destination": "/_seo/privacy.html"
+      },
+      {
+        "source": "/cookies",
+        "destination": "/_seo/cookies.html"
+      },
+      {
+        "source": "/blog/the-true-cost-of-diesel-in-sierra-leone-a-regional-perspective",
+        "destination": "/_seo/blog-the-true-cost-of-diesel-in-sierra-leone-a-regional-perspective.html"
+      },
+      {
+        "source": "/blog/barrel-vs-fuel-price-tracker-sierra-leone-2026",
+        "destination": "/_seo/blog-barrel-vs-fuel-price-tracker-sierra-leone-2026.html"
+      },
+      {
+        "source": "/blog/introducing-salone-fuel-monitor-bringing-fuel-price-transparency-to-sierra-leone",
+        "destination": "/_seo/blog-introducing-salone-fuel-monitor-bringing-fuel-price-transparency-to-sierra-leone.html"
+      },
+      {
+        "source": "/blog/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/transport-prices/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/admin",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/admin/**",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/dashboard",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/profile",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/onboarding",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/my-garage",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/location-picker",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/login",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/signup",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/register",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/donate/success",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/donate/cancel",
         "destination": "/index.html"
       }
     ],
@@ -27,7 +155,16 @@
         ]
       },
       {
-        "source": "/**/*.html",
+        "source": "/_seo/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=300, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/index.html",
         "headers": [
           {
             "key": "Cache-Control",
@@ -36,11 +173,96 @@
         ]
       },
       {
-        "source": "/",
+        "source": "/404.html",
         "headers": [
           {
             "key": "Cache-Control",
             "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/admin/**",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/dashboard",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/profile",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/onboarding",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/my-garage",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/location-picker",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/login",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/signup",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
+          }
+        ]
+      },
+      {
+        "source": "/register",
+        "headers": [
+          {
+            "key": "X-Robots-Tag",
+            "value": "noindex, nofollow"
           }
         ]
       }
