@@ -5,7 +5,7 @@ import { BlogPost } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
 import { Calendar, ChevronRight, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { STATIC_CONTENT_ARTICLES } from '../../content-articles.js';
+import { STATIC_CONTENT_ARTICLES } from '../../content-articles-runtime.js';
 
 function toMillis(value: any) {
   try {
