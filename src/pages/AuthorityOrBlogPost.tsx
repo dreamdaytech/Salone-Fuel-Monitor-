@@ -1,13 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Calendar, ChevronRight, Share2 } from 'lucide-react';
 import BlogPost from './BlogPost';
 import { useSEO } from '../hooks/useSEO';
+import { collection, getDocs, limit, query, where } from '../firebase';
+import { db } from '../firebase';
 import { getStaticArticle, STATIC_CONTENT_ARTICLES } from '../../content-articles-runtime.js';
 
 const SITE_URL = 'https://salonefuelmonitor.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 const ORGANIZATION_LOGO = { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` };
+
+type OverrideStatus = 'checking' | 'present' | 'absent';
 
 function formatPublishedDate(value?: string) {
   if (!value) return 'Recently';
@@ -154,5 +158,55 @@ function StaticAuthorityArticle({ article }: { article: any }) {
 export default function AuthorityOrBlogPost() {
   const { slug = '' } = useParams<{ slug: string }>();
   const article = getStaticArticle(slug);
-  return article ? <StaticAuthorityArticle article={article} /> : <BlogPost />;
+  const [overrideStatus, setOverrideStatus] = useState<OverrideStatus>(article ? 'checking' : 'absent');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!slug || !article) {
+      setOverrideStatus('absent');
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setOverrideStatus('checking');
+
+    const checkForAdminOverride = async () => {
+      try {
+        const overrideQuery = query(
+          collection(db, 'blog_posts'),
+          where('slug', '==', slug),
+          limit(1)
+        );
+        const snapshot = await getDocs(overrideQuery);
+        if (!cancelled) setOverrideStatus(snapshot.empty ? 'absent' : 'present');
+      } catch (error) {
+        console.error('Failed to check Blog Management override:', error);
+        if (!cancelled) setOverrideStatus('absent');
+      }
+    };
+
+    checkForAdminOverride();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, article]);
+
+  if (!article) return <BlogPost />;
+
+  if (overrideStatus === 'checking') {
+    return (
+      <div className="min-h-screen bg-surface-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  // A Blog Management record is the source of truth whenever one exists.
+  // This keeps the reader page, card image, editor content and publication state
+  // synchronized. Static authority content is only a fallback until an admin
+  // saves an override for that slug.
+  return overrideStatus === 'present' ? <BlogPost /> : <StaticAuthorityArticle article={article} />;
 }
