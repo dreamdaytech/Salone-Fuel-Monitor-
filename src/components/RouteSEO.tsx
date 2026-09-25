@@ -84,6 +84,10 @@ export default function RouteSEO() {
     const dynamicMeta = getDynamicMeta(pathname);
     const privatePath = isPrivateOrUtilityPath(pathname);
 
+    // Clear richer page-specific schema from the previous route. A page such as
+    // BlogPost can add it back in its own SEO effect after navigation completes.
+    document.getElementById('dynamic-seo-jsonld')?.remove();
+
     const meta: RouteMeta = staticMeta || dynamicMeta || {
       title: `Page Not Found | ${SITE_NAME}`,
       description: 'The requested Salone Fuel Monitor page could not be found.',
@@ -112,6 +116,7 @@ export default function RouteSEO() {
     setMeta('property', 'og:image:alt', SITE_NAME);
 
     setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:url', canonical);
     setMeta('name', 'twitter:title', meta.title);
     setMeta('name', 'twitter:description', meta.description);
     setMeta('name', 'twitter:image', DEFAULT_OG_IMAGE);
