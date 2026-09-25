@@ -10,6 +10,8 @@ import {
 } from '../seo-routes.js';
 import { getAuthorityContent } from '../seo-content.js';
 import { PHASE3_ROUTE_SEO } from '../seo-phase3-routes.js';
+import { STATIC_AUTHORITY_SEO } from '../seo-authority-routes.js';
+import { getStaticArticleByPath } from '../content-articles.js';
 
 const root = process.cwd();
 const distDir = path.join(root, 'dist');
@@ -24,7 +26,7 @@ if (!fs.existsSync(indexPath)) {
 fs.mkdirSync(seoDir, { recursive: true });
 
 const sourceHtml = fs.readFileSync(indexPath, 'utf8');
-const allRoutes = { ...ROUTE_SEO, ...PHASE3_ROUTE_SEO, ...STATIC_ARTICLE_SEO };
+const allRoutes = { ...ROUTE_SEO, ...PHASE3_ROUTE_SEO, ...STATIC_ARTICLE_SEO, ...STATIC_AUTHORITY_SEO };
 const phase3NavLinks = [
   ['/petrol-price-sierra-leone', 'Petrol Price'],
   ['/diesel-price-sierra-leone', 'Diesel Price'],
@@ -61,12 +63,13 @@ function getRouteAuthority(route, meta) {
 function pageSchema(route, meta) {
   const canonical = `${SITE_URL}${route === '/' ? '/' : route}`;
   const authority = getRouteAuthority(route, meta);
+  const isKnownStaticArticle = meta.schemaType === 'Article' && Boolean(meta.publishedAt);
 
-  // Static article snapshots intentionally use WebPage schema. The live React
-  // article page replaces this with richer Article schema using the real
-  // Firestore publication date, image and author. This prevents incomplete
-  // Article markup from being served before those fields are available.
-  const staticSchemaType = meta.schemaType === 'Article'
+  // Firestore articles without build-time publication metadata keep a WebPage
+  // snapshot until the live article replaces it with its richer Article schema.
+  // Repo-backed authority articles have complete publication metadata at build
+  // time, so crawlers can safely receive Article markup immediately.
+  const staticSchemaType = meta.schemaType === 'Article' && !isKnownStaticArticle
     ? 'WebPage'
     : (meta.schemaType || 'WebPage');
 
@@ -91,6 +94,19 @@ function pageSchema(route, meta) {
       },
     },
   };
+
+  if (isKnownStaticArticle) {
+    base.headline = meta.heading || meta.title;
+    base.mainEntityOfPage = canonical;
+    base.datePublished = meta.publishedAt;
+    base.dateModified = meta.updatedAt || meta.publishedAt;
+    base.image = DEFAULT_OG_IMAGE;
+    base.author = {
+      '@type': 'Organization',
+      name: meta.authorName || SITE_NAME,
+      url: SITE_URL,
+    };
+  }
 
   if (meta.schemaType === 'Dataset') {
     base.spatialCoverage = {
@@ -190,6 +206,10 @@ function staticRootContent(route, meta) {
   const nav = [...SEO_NAV_LINKS, ...phase3NavLinks]
     .map(([href, label]) => `<a href="${href}">${escapeHtml(label)}</a>`)
     .join(' · ');
+  const staticArticle = getStaticArticleByPath(route);
+  const articleBody = staticArticle
+    ? `<article aria-label="Article content" style="margin-top:32px">${staticArticle.content}</article>`
+    : authorityHtml(route, meta);
 
   return `<main data-seo-prerender="true" style="max-width:960px;margin:0 auto;padding:32px 20px;font-family:Arial,sans-serif;line-height:1.6;color:#172033">
     <header>
@@ -198,7 +218,7 @@ function staticRootContent(route, meta) {
       <p style="font-size:1.05rem;margin:0 0 20px">${escapeHtml(meta.intro || meta.description)}</p>
     </header>
     <nav aria-label="Primary fuel information" style="margin-top:20px">${nav}</nav>
-    ${authorityHtml(route, meta)}
+    ${articleBody}
     <p style="margin-top:28px;font-size:.9rem;color:#5f6b7a">JavaScript enables the interactive charts, live data and filters on this page.</p>
   </main>`;
 }
@@ -272,7 +292,9 @@ const sitemapRoutes = Object.entries(allRoutes)
     const loc = `${SITE_URL}${route === '/' ? '/' : route}`;
     const changefreq = meta.changefreq ? `\n    <changefreq>${meta.changefreq}</changefreq>` : '';
     const priority = meta.priority ? `\n    <priority>${meta.priority}</priority>` : '';
-    return `  <url>\n    <loc>${escapeXml(loc)}</loc>${changefreq}${priority}\n  </url>`;
+    const lastmod = meta.updatedAt || meta.publishedAt;
+    const lastmodTag = lastmod ? `\n    <lastmod>${String(lastmod).slice(0, 10)}</lastmod>` : '';
+    return `  <url>\n    <loc>${escapeXml(loc)}</loc>${lastmodTag}${changefreq}${priority}\n  </url>`;
   })
   .join('\n');
 
