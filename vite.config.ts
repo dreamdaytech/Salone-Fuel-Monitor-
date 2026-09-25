@@ -53,6 +53,14 @@ export default defineConfig(({mode}) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           maximumFileSizeToCacheInBytes: 5000000,
+          // Activate new builds immediately and remove obsolete precaches.
+          // Admin navigations deliberately bypass the service-worker app-shell
+          // fallback so a refresh always receives the latest index.html and
+          // hashed JS bundles instead of a stale admin runtime.
+          skipWaiting: true,
+          clientsClaim: true,
+          cleanupOutdatedCaches: true,
+          navigateFallbackDenylist: [/^\/admin(?:\/|$)/],
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/supabase\.com\/.*$/i,
