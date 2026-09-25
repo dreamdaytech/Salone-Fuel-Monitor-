@@ -1,4 +1,4 @@
-import { STATIC_CONTENT_ARTICLES } from './content-articles.js';
+import { STATIC_CONTENT_ARTICLES } from './content-articles-runtime.js';
 
 export const STATIC_AUTHORITY_SEO = Object.fromEntries(
   STATIC_CONTENT_ARTICLES.map((article) => [
