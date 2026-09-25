@@ -25,6 +25,15 @@ function timestampToIso(value: any) {
   return undefined;
 }
 
+function getSocialImageUrl(coverImage?: string, slug?: string) {
+  if (!coverImage) return DEFAULT_OG_IMAGE;
+  if (coverImage.startsWith('data:')) {
+    return slug ? `${SITE_URL}/api/blog-image/${encodeURIComponent(slug)}` : DEFAULT_OG_IMAGE;
+  }
+  if (/^https?:\/\//i.test(coverImage)) return coverImage;
+  return `${SITE_URL}${coverImage.startsWith('/') ? coverImage : `/${coverImage}`}`;
+}
+
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -102,14 +111,14 @@ export default function BlogPost() {
   const notFound = !loading && (!post || !post.isPublished);
   const publishedAt = timestampToIso(post?.publishedAt);
   const modifiedAt = timestampToIso(post?.updatedAt) || publishedAt;
-  const schemaImage = post?.coverImage?.startsWith('https://') ? post.coverImage : DEFAULT_OG_IMAGE;
+  const socialImage = getSocialImageUrl(post?.coverImage, slug);
 
   const articleSchema = post?.isPublished ? {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: post.title,
     description: post.seoDescription || post.excerpt || '',
-    image: schemaImage,
+    image: socialImage,
     mainEntityOfPage: canonicalUrl,
     url: canonicalUrl,
     ...(publishedAt ? { datePublished: publishedAt } : {}),
@@ -134,7 +143,7 @@ export default function BlogPost() {
     description: notFound
       ? 'The requested Salone Fuel Monitor article could not be found.'
       : (post?.seoDescription || post?.excerpt || 'Read Sierra Leone fuel-price news, market analysis, regional comparisons and explainers from Salone Fuel Monitor.'),
-    image: post?.coverImage,
+    image: socialImage,
     type: 'article',
     url: canonicalUrl,
     robots: notFound ? 'noindex, nofollow' : 'index, follow, max-image-preview:large',
@@ -247,8 +256,16 @@ export default function BlogPost() {
         <div className="max-w-5xl mx-auto px-4 -mt-10 md:-mt-16 mb-12 relative z-10">
           <img 
             src={post.coverImage} 
-            alt={post.title} 
+            alt={`${post.title} featured image`}
             className="w-full aspect-[2/1] md:aspect-[21/9] object-contain rounded-[2rem] shadow-2xl border-4 border-white bg-white"
+            loading="eager"
+            fetchPriority="high"
+            onError={(event) => {
+              const image = event.currentTarget;
+              if (image.dataset.fallbackApplied === 'true') return;
+              image.dataset.fallbackApplied = 'true';
+              image.src = DEFAULT_OG_IMAGE;
+            }}
           />
         </div>
       )}
