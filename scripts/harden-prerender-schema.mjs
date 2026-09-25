@@ -6,14 +6,6 @@ if (!fs.existsSync(seoDir)) process.exit(0);
 
 const SITE_URL = 'https://salonefuelmonitor.com';
 
-const STATIC_ARTICLE_IMAGES = {
-  'why-fuel-prices-change-in-sierra-leone': '/images/articles/why-fuel-prices-change-in-sierra-leone.jpg',
-  'sierra-leone-fuel-price-history-2026': '/images/articles/sierra-leone-fuel-price-history-2026.jpg',
-  'sierra-leone-vs-liberia-fuel-prices': '/images/articles/sierra-leone-vs-liberia-fuel-prices.jpg',
-  'sierra-leone-vs-ghana-fuel-prices': '/images/articles/sierra-leone-vs-ghana-fuel-prices.jpg',
-  'sierra-leone-vs-nigeria-fuel-prices': '/images/articles/sierra-leone-vs-nigeria-fuel-prices.jpg',
-};
-
 const authorPattern = /"author":\{"@type":"Organization","name":"([^"]+)","url":"https:\/\/salonefuelmonitor\.com"\}/g;
 const authorReplacement = '"author":{"@type":"Organization","name":"$1","url":"https://salonefuelmonitor.com","logo":{"@type":"ImageObject","url":"https://salonefuelmonitor.com/logo.png"}}';
 
@@ -23,12 +15,10 @@ function getBlogSlug(fileName) {
 }
 
 function getArticleImage(slug) {
-  const staticImage = STATIC_ARTICLE_IMAGES[slug];
-  if (staticImage) return `${SITE_URL}${staticImage}`;
-
-  // Dashboard/Firestore articles store uploaded cover images in blog_posts.
-  // The server endpoint turns base64/WebP covers into a crawler-fetchable URL
-  // and redirects to remote cover URLs when appropriate.
+  // Blog Management / Firestore is the single source of truth for featured
+  // images once an article has an admin record. The HTTP endpoint returns a
+  // crawler-safe image response for uploaded data-URI/WebP covers and safely
+  // falls back to the site Open Graph image when no admin cover exists.
   return `${SITE_URL}/api/blog-image/${slug}`;
 }
 
@@ -60,12 +50,13 @@ for (const fileName of fs.readdirSync(seoDir)) {
     hardened = replaceMeta(hardened, 'property', 'og:image:secure_url', imageUrl);
     hardened = replaceMeta(hardened, 'name', 'twitter:image', imageUrl);
 
-    // Image dimensions/type in the generic shell may be wrong for article covers
-    // (Firestore images are commonly WebP; static authority art is JPEG). Let the
-    // social crawler inspect the real resource instead of publishing stale hints.
+    // The endpoint can return WebP or redirect to a remote image, so stale hard-
+    // coded width/height/type hints are intentionally removed. Crawlers inspect
+    // the actual response and receive the same featured image the admin selected.
     hardened = hardened
       .replace(/\s*<meta\s+property=["']og:image:(?:width|height|type)["'][^>]*>/gi, '')
-      .replace(/"image":"https:\/\/salonefuelmonitor\.com\/og-image\.png"/g, `"image":"${imageUrl}"`);
+      .replace(/"image":"https:\/\/salonefuelmonitor\.com\/og-image\.png"/g, `"image":"${imageUrl}"`)
+      .replace(/"image":"https:\/\/salonefuelmonitor\.com\/images\/articles\/[^"]+"/g, `"image":"${imageUrl}"`);
 
     if (hardened !== beforeSocial) socialImageChanged += 1;
   }
@@ -76,4 +67,4 @@ for (const fileName of fs.readdirSync(seoDir)) {
 }
 
 console.log(`[SEO] Hardened Article author schema in ${schemaChanged} prerendered page(s).`);
-console.log(`[SEO] Applied article-specific social images to ${socialImageChanged} prerendered blog page(s).`);
+console.log(`[SEO] Applied Blog Management social images to ${socialImageChanged} prerendered blog page(s).`);
