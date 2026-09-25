@@ -169,10 +169,18 @@ function renderRoute(route, meta) {
   return html;
 }
 
-// Keep dist/index.html as a canonical-neutral SPA shell. Route-specific HTML snapshots
-// live under /_seo and are served by hosting/server rewrites for direct requests.
+// Route-specific HTML snapshots are served by Firebase/Netlify/Express rewrites
+// so crawlers receive a unique title, canonical, description, schema and H1
+// before React starts.
 for (const [route, meta] of Object.entries(allRoutes)) {
   fs.writeFileSync(path.join(seoDir, routeFileName(route)), renderRoute(route, meta));
+}
+
+// Firebase Hosting serves / from dist/index.html before applying rewrites, so the
+// production index itself must be the prerendered homepage rather than a generic
+// SPA shell. React hydrates/replaces the static SEO content normally on load.
+if (allRoutes['/']) {
+  fs.writeFileSync(indexPath, renderRoute('/', allRoutes['/']));
 }
 
 const sitemapRoutes = Object.entries(allRoutes)
