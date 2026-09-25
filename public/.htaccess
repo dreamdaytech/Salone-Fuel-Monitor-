@@ -1,0 +1,23 @@
+RewriteEngine On
+
+# Canonical host: consolidate www traffic onto the preferred non-www domain.
+RewriteCond %{HTTP_HOST} ^www\.salonefuelmonitor\.com$ [NC]
+RewriteRule ^ https://salonefuelmonitor.com%{REQUEST_URI} [R=308,L]
+
+# Serve prerendered SEO snapshots for known single-segment public routes when available.
+# Vite copies public/.htaccess into dist/.htaccess during production builds.
+RewriteCond %{DOCUMENT_ROOT}/_seo/$1.html -f
+RewriteRule ^([A-Za-z0-9-]+)/?$ _seo/$1.html [L]
+
+# Serve prerendered SEO snapshots for known blog articles when available.
+RewriteCond %{DOCUMENT_ROOT}/_seo/blog-$1.html -f
+RewriteRule ^blog/([A-Za-z0-9-]+)/?$ _seo/blog-$1.html [L]
+
+# Preserve real files/directories (assets, sitemap.xml, robots.txt, images, etc.).
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# React Router fallback for direct/deep links on Hostinger Apache/LiteSpeed.
+# This prevents valid application routes such as /data-methodology from returning 404.
+RewriteRule ^ index.html [L]
