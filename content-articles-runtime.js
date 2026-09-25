@@ -1,17 +1,12 @@
 import { STATIC_CONTENT_ARTICLES as BASE_ARTICLES } from './content-articles.js';
 import { STATIC_CONTENT_ARTICLES as PUBLISHED_ARTICLES } from './content-articles-published.js';
 
-// Repository-backed authority articles use the site's known-good Open Graph
-// image as a safe fallback. Individual images should only come from real,
-// uploaded image files (for example via Blog Management / Firestore), never
-// from build-time image generation. This prevents deploys from producing
-// malformed or font-corrupted social cards.
 const ARTICLE_FEATURED_IMAGES = {
-  'why-fuel-prices-change-in-sierra-leone': '/og-image.png',
-  'sierra-leone-fuel-price-history-2026': '/og-image.png',
-  'sierra-leone-vs-liberia-fuel-prices': '/og-image.png',
-  'sierra-leone-vs-ghana-fuel-prices': '/og-image.png',
-  'sierra-leone-vs-nigeria-fuel-prices': '/og-image.png',
+  'why-fuel-prices-change-in-sierra-leone': '/images/articles/why-fuel-prices-change-in-sierra-leone.jpg',
+  'sierra-leone-fuel-price-history-2026': '/images/articles/sierra-leone-fuel-price-history-2026.jpg',
+  'sierra-leone-vs-liberia-fuel-prices': '/images/articles/sierra-leone-vs-liberia-fuel-prices.jpg',
+  'sierra-leone-vs-ghana-fuel-prices': '/images/articles/sierra-leone-vs-ghana-fuel-prices.jpg',
+  'sierra-leone-vs-nigeria-fuel-prices': '/images/articles/sierra-leone-vs-nigeria-fuel-prices.jpg',
 };
 
 const FINAL_META_OVERRIDES = {
