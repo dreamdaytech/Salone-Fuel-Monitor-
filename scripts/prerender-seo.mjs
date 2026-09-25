@@ -166,13 +166,10 @@ function renderRoute(route, meta) {
   return html;
 }
 
+// Keep dist/index.html as a canonical-neutral SPA shell. Route-specific HTML snapshots
+// live under /_seo and are served by hosting/server rewrites for direct requests.
 for (const [route, meta] of Object.entries(allRoutes)) {
-  const html = renderRoute(route, meta);
-  if (route === '/') {
-    fs.writeFileSync(indexPath, html);
-  } else {
-    fs.writeFileSync(path.join(seoDir, routeFileName(route)), html);
-  }
+  fs.writeFileSync(path.join(seoDir, routeFileName(route)), renderRoute(route, meta));
 }
 
 const sitemapRoutes = Object.entries(allRoutes)
@@ -191,4 +188,4 @@ ${sitemapRoutes}
 </urlset>\n`;
 
 fs.writeFileSync(path.join(distDir, 'sitemap.xml'), sitemap);
-console.log(`[SEO] Pre-rendered ${Object.keys(allRoutes).length} indexable/utility routes and generated sitemap.xml.`);
+console.log(`[SEO] Pre-rendered ${Object.keys(allRoutes).length} route snapshots and generated sitemap.xml.`);
