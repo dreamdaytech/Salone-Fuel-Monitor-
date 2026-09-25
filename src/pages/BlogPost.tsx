@@ -4,10 +4,26 @@ import { collection, query, where, getDocs, limit, doc, updateDoc, increment, or
 import { db } from '../firebase';
 import { BlogPost as BlogPostType } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
-import { Calendar, User, ArrowLeft, Tag, Share2, ChevronRight } from 'lucide-react';
+import { Calendar, ArrowLeft, Tag, Share2, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
-import Footer from '../components/Footer';
 import { trackBlogRead } from '../hooks/useAnalytics';
+
+const SITE_URL = 'https://salonefuelmonitor.com';
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
+
+function timestampToIso(value: any) {
+  try {
+    if (value?.toDate) return value.toDate().toISOString();
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === 'string' || typeof value === 'number') {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -18,7 +34,10 @@ export default function BlogPost() {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!slug) return;
+      if (!slug) {
+        setLoading(false);
+        return;
+      }
       
       try {
         const q = query(
@@ -35,10 +54,8 @@ export default function BlogPost() {
           const postData = { id: docData.id, ...docData.data() } as BlogPostType;
           setPost(postData);
 
-          // Track blog read in Firebase Analytics
           trackBlogRead(slug || '', postData.title || 'Untitled');
           
-          // Increment views
           const viewedKey = `viewed_post_${docData.id}`;
           if (!sessionStorage.getItem(viewedKey)) {
             try {
@@ -51,13 +68,13 @@ export default function BlogPost() {
               console.error('Error updating views:', updateErr);
             }
           }
-          // Fetch recommended posts (latest published, excluding current)
+
           try {
             const recQ = query(
               collection(db, 'blog_posts'),
               where('isPublished', '==', true),
               orderBy('publishedAt', 'desc'),
-              limit(4) // Fetch 4 in case current post is one of them
+              limit(4)
             );
             const recSnap = await getDocs(recQ);
             const recs = recSnap.docs
@@ -74,7 +91,6 @@ export default function BlogPost() {
         toast.error('Failed to load post');
       } finally {
         setLoading(false);
-        // Scroll to top when post changes
         window.scrollTo(0, 0);
       }
     };
@@ -82,13 +98,48 @@ export default function BlogPost() {
     fetchPost();
   }, [slug]);
 
-  // Hook handles SEO updates dynamically
+  const canonicalUrl = `${SITE_URL}/blog/${slug || ''}`;
+  const notFound = !loading && (!post || !post.isPublished);
+  const publishedAt = timestampToIso(post?.publishedAt);
+  const modifiedAt = timestampToIso(post?.updatedAt) || publishedAt;
+  const schemaImage = post?.coverImage?.startsWith('https://') ? post.coverImage : DEFAULT_OG_IMAGE;
+
+  const articleSchema = post?.isPublished ? {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.seoDescription || post.excerpt || '',
+    image: schemaImage,
+    mainEntityOfPage: canonicalUrl,
+    url: canonicalUrl,
+    ...(publishedAt ? { datePublished: publishedAt } : {}),
+    ...(modifiedAt ? { dateModified: modifiedAt } : {}),
+    author: {
+      '@type': 'Person',
+      name: post.authorName || 'Salone Fuel Monitor',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Salone Fuel Monitor',
+      url: SITE_URL,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE_URL}/logo.png`,
+      },
+    },
+  } : undefined;
+
   useSEO({
-    title: post?.seoTitle || post?.title || 'Loading...',
-    description: post?.seoDescription || post?.excerpt || '',
+    title: notFound ? 'Article Not Found' : (post?.seoTitle || post?.title || 'Sierra Leone Fuel News & Analysis'),
+    description: notFound
+      ? 'The requested Salone Fuel Monitor article could not be found.'
+      : (post?.seoDescription || post?.excerpt || 'Read Sierra Leone fuel-price news, market analysis, regional comparisons and explainers from Salone Fuel Monitor.'),
     image: post?.coverImage,
     type: 'article',
-    url: window.location.href,
+    url: canonicalUrl,
+    robots: notFound ? 'noindex, nofollow' : 'index, follow, max-image-preview:large',
+    keywords: post?.tags?.join(', '),
+    jsonLd: articleSchema,
   });
 
   if (loading) {
@@ -125,20 +176,19 @@ export default function BlogPost() {
         await navigator.share({
           title: post.title,
           text: post.excerpt,
-          url: window.location.href,
+          url: canonicalUrl,
         });
       } catch (err) {
         console.log('Share cancelled', err);
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(canonicalUrl);
       toast.success('Link copied to clipboard!');
     }
   };
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Article Header */}
       <header className="bg-surface-50 border-b border-gray-100 py-12 md:py-20 px-4">
         <div className="max-w-4xl mx-auto">
           <button 
@@ -193,7 +243,6 @@ export default function BlogPost() {
         </div>
       </header>
 
-      {/* Cover Image */}
       {post.coverImage && (
         <div className="max-w-5xl mx-auto px-4 -mt-10 md:-mt-16 mb-12 relative z-10">
           <img 
@@ -204,17 +253,13 @@ export default function BlogPost() {
         </div>
       )}
 
-      {/* Article Body */}
       <main className={`max-w-3xl mx-auto px-4 pb-24 ${!post.coverImage ? 'pt-12' : ''}`}>
         <article 
           className="blog-content text-surface-900 text-lg leading-relaxed max-w-none"
-          // We use dangerouslySetInnerHTML to render HTML content that admins provide.
-          // Since only trusted admins can create posts, this is safe.
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
       </main>
 
-      {/* More To Explore Section */}
       {recommendedPosts.length > 0 && (
         <section className="bg-surface-50 py-16 border-t border-gray-100">
           <div className="max-w-5xl mx-auto px-4">
@@ -262,7 +307,6 @@ export default function BlogPost() {
           </div>
         </section>
       )}
-
     </div>
   );
 }

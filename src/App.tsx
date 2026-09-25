@@ -11,6 +11,7 @@ import { FavoriteProvider } from './contexts/FavoriteContext';
 import { Toaster, toast } from 'sonner';
 import Navbar from './components/Navbar';
 import SystemUpdater from './components/SystemUpdater';
+import RouteSEO from './components/RouteSEO';
 import { usePageViewTracker } from './hooks/useAnalytics';
 
 /**
@@ -32,8 +33,7 @@ function lazyWithRetry<T extends React.ComponentType<unknown>>(
       if (isChunkError) {
         console.warn('[SFM] Stale chunk on lazy import — reloading for update:', err.message);
         window.location.reload();
-        // Return a never-resolving promise so React doesn't try to render
-        return new Promise(() => {})  as Promise<{ default: T }>;
+        return new Promise(() => {}) as Promise<{ default: T }>;
       }
       throw err;
     })
@@ -72,6 +72,7 @@ const MyGarage = lazyWithRetry(() => import('./pages/MyGarage'));
 const Donate = lazyWithRetry(() => import('./pages/Donate'));
 const DonateSuccess = lazyWithRetry(() => import('./pages/DonateSuccess'));
 const DonateCancel = lazyWithRetry(() => import('./pages/DonateCancel'));
+const NotFound = lazyWithRetry(() => import('./pages/NotFound'));
 import Footer from './components/Footer';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import ScrollProgress from './components/ScrollProgress';
@@ -81,7 +82,6 @@ function AppContent() {
   const location = useLocation();
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
-  // 🔵 Firebase Analytics — auto-track every page navigation
   usePageViewTracker();
 
   useEffect(() => {
@@ -101,7 +101,6 @@ function AppContent() {
       });
     };
 
-    // Show initial offline state if started offline
     if (!navigator.onLine) {
       handleOffline();
     }
@@ -118,7 +117,6 @@ function AppContent() {
   const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/contact', '/terms', '/privacy', '/cookies', '/blog', '/stations', '/donate', '/donate/success', '/donate/cancel'];
   const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/transport-prices/');
 
-  // Scroll to top on every route change — must be before any conditional returns
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
@@ -131,11 +129,11 @@ function AppContent() {
     );
   }
 
-
   return (
     <FavoriteProvider>
       <NotificationProvider>
         <div className="min-h-screen bg-surface-50">
+          <RouteSEO />
           <ScrollProgress />
           <Toaster position="top-center" richColors />
           <SystemUpdater />
@@ -164,7 +162,6 @@ function AppContent() {
                 <Route path="/transport-trends" element={<TransportTrends />} />
                 <Route path="/login" element={!user ? <Auth /> : <Navigate to="/" />} />
                 <Route path="/signup" element={!user ? <Auth /> : <Navigate to="/" />} />
-                {/* Registration gate: show Register page if user has no profile yet */}
                 <Route path="/register" element={user && !profile ? <Register /> : <Navigate to="/" />} />
                 <Route path="/profile" element={user ? (profile && !profile.onboardingCompleted ? <Navigate to="/onboarding" /> : <Profile />) : <Navigate to="/login" />} />
                 <Route path="/regional-comparison" element={<RegionalComparison />} />
@@ -186,13 +183,10 @@ function AppContent() {
                 <Route path="/location-picker" element={<LocationPickerPage />} />
                 <Route path="/dashboard" element={user && (profile?.role === 'station_owner' || profile?.role === 'admin') ? <StationDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
                 <Route path="/admin" element={user && profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
-                <Route path="/admin/transport-prices/:id" element={user && profile?.role === 'admin' ? <AdminTransportPriceDetails /> : <Navigate to={user ? "/" : "/login"} />} />
-                {/* My Garage — personal dispatch & fuel tracker (any authenticated user) */}
+                <Route path="/admin/transport-prices/:id" element={user && profile?.role === 'admin' ? <AdminTransportPriceDetails /> : <Navigate to={user ? "/" : '/login'} />} />
                 <Route path="/my-garage" element={user ? <MyGarage /> : <Navigate to="/login" />} />
-                {/* Admin reviews */}
-                <Route path="/admin/reviews" element={user && profile?.role === 'admin' ? <AdminReviews /> : <Navigate to={user ? "/" : "/login"} />} />
-                {/* Catch-all: if user is logged in but has no profile, send them to register */}
-                <Route path="*" element={user && !profile ? <Register /> : <Navigate to="/" />} />
+                <Route path="/admin/reviews" element={user && profile?.role === 'admin' ? <AdminReviews /> : <Navigate to={user ? "/" : '/login'} />} />
+                <Route path="*" element={user && !profile ? <Register /> : <NotFound />} />
               </Routes>
             </React.Suspense>
           </main>

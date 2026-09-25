@@ -3,14 +3,15 @@ import { collection, query, where, orderBy, getDocs } from '../firebase';
 import { db } from '../firebase';
 import { BlogPost } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
-import { Calendar, User, ChevronRight, FileText } from 'lucide-react';
+import { Calendar, ChevronRight, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Footer from '../components/Footer';
 
 export default function BlogList() {
   useSEO({
-    title: 'Blog',
-    description: 'Read the latest news, updates, and articles about fuel prices and market trends in Sierra Leone.'
+    title: 'Sierra Leone Fuel News & Analysis',
+    description: 'Read Sierra Leone fuel-price news, market analysis, regional comparisons and explainers from Salone Fuel Monitor.',
+    url: 'https://salonefuelmonitor.com/blog',
+    keywords: 'Sierra Leone fuel news, fuel price Sierra Leone, petrol price news Sierra Leone, diesel price Sierra Leone, West Africa fuel prices'
   });
 
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -44,27 +45,24 @@ export default function BlogList() {
     <div className="min-h-screen flex flex-col bg-surface-50">
       <div className="flex-1 py-12 md:py-20">
         <div className="max-w-6xl mx-auto px-4">
-        {/* Header Section */}
         <div className="text-center mb-16">
           <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
             <FileText className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-surface-900 mb-6 tracking-tight">
-            Latest <span className="text-primary">News & Updates</span>
+            Sierra Leone <span className="text-primary">Fuel News & Analysis</span>
           </h1>
           <p className="text-xl text-gray-500 max-w-2xl mx-auto">
-            Stay informed with the latest insights on fuel prices, market trends, and platform updates.
+            Stay informed with fuel-price updates, market analysis, regional comparisons and explainers focused on Sierra Leone and West Africa.
           </p>
         </div>
 
-        {/* Loading State */}
         {loading && (
           <div className="flex justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           </div>
         )}
 
-        {/* Empty State */}
         {!loading && posts.length === 0 && (
           <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -73,7 +71,6 @@ export default function BlogList() {
           </div>
         )}
 
-        {/* Blog Posts Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.map(post => (
             <Link 
@@ -81,7 +78,6 @@ export default function BlogList() {
               to={`/blog/${post.slug}`}
               className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col"
             >
-              {/* Cover Image */}
               <div className="aspect-video w-full overflow-hidden bg-gray-100 relative">
                 {post.coverImage ? (
                   <img 
@@ -94,7 +90,6 @@ export default function BlogList() {
                     <FileText className="w-12 h-12 text-gray-300" />
                   </div>
                 )}
-                {/* Overlay Tags */}
                 {post.tags && post.tags.length > 0 && (
                   <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
                     <span className="px-3 py-1 bg-white/90 backdrop-blur-sm text-surface-900 text-[10px] font-bold uppercase tracking-wider rounded-full shadow-sm">
@@ -104,7 +99,6 @@ export default function BlogList() {
                 )}
               </div>
 
-              {/* Content */}
               <div className="p-6 md:p-8 flex-1 flex flex-col">
                 <div className="flex items-center gap-4 text-xs font-semibold text-gray-400 mb-4 uppercase tracking-wider">
                   <div className="flex items-center gap-1.5">
