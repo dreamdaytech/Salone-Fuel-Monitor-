@@ -57,9 +57,14 @@ export default function Navbar() {
               <div className="flex items-center justify-center">
                 <img src="/logo.png" alt="Salone Fuel Monitor" className="h-20 w-20 object-contain" />
               </div>
-              <span className="text-2xl font-bold text-surface-900 hidden sm:block">
-                Salone Fuel Monitor
-              </span>
+              <div className="hidden sm:flex flex-col justify-center leading-tight">
+                <span className="text-2xl font-bold text-surface-900">
+                  Salone Fuel Monitor
+                </span>
+                <span className="mt-1 text-[11px] font-semibold tracking-wide text-primary">
+                  Transparency in every drop.
+                </span>
+              </div>
             </Link>
           </div>
 
