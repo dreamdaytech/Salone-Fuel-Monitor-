@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, BarChart3, CalendarDays, Fuel, Globe2, Info, MapPin } from 'lucide-react';
-import { db, collection, query, orderBy, limit, onSnapshot } from '../firebase';
+import { db, collection, onSnapshot } from '../firebase';
 
 type FuelKey = 'petrol' | 'diesel' | 'kerosene';
 type FuelField = 'petrolPrice' | 'dieselPrice' | 'kerosenePrice';
@@ -77,6 +77,11 @@ const parseEffectiveDate = (value?: string) => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
+const recordTimestamp = (record: FuelRecord) => {
+  const date = parseEffectiveDate(record.effectiveDate || record.monthYear);
+  return date?.getTime() || 0;
+};
+
 const formatDate = (value?: string) => {
   const date = parseEffectiveDate(value);
   return date
@@ -90,11 +95,16 @@ export default function FuelPriceGuide({ fuel }: { fuel: FuelKey }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const q = query(collection(db, 'price_trends'), orderBy('effectiveDate', 'desc'), limit(60));
+    // Read the complete price timeline and sort client-side. This keeps legacy
+    // monthYear records visible and ensures a valid older fuel price is not
+    // missed when newer records omit that specific fuel.
     const unsubscribe = onSnapshot(
-      q,
+      collection(db, 'price_trends'),
       (snapshot) => {
-        setRecords(snapshot.docs.map((document) => ({ id: document.id, ...document.data() })) as FuelRecord[]);
+        const nextRecords = snapshot.docs
+          .map((document) => ({ id: document.id, ...document.data() }) as FuelRecord)
+          .sort((a, b) => recordTimestamp(b) - recordTimestamp(a));
+        setRecords(nextRecords);
         setLoading(false);
       },
       (error) => {
