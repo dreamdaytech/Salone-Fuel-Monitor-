@@ -3,6 +3,7 @@ import path from 'node:path';
 import { build } from 'esbuild';
 import { ROUTE_SEO, STATIC_ARTICLE_SEO } from '../seo-routes.js';
 import { PHASE3_ROUTE_SEO } from '../seo-phase3-routes.js';
+import { STATIC_AUTHORITY_SEO } from '../seo-authority-routes.js';
 
 const root = process.cwd();
 const sourcePath = path.join(root, 'server.ts');
@@ -15,12 +16,16 @@ function routeFileName(route) {
   return `${route.slice(1).replace(/[^a-z0-9-]+/gi, '-')}.html`;
 }
 
-// Core public routes, Phase 3 evergreen guides and known published articles
-// are served from build-time SEO snapshots on direct requests. This gives
-// crawlers the correct title, canonical URL, description, structured data and
-// H1 before React starts. Dynamic/future blog articles still fall through to
-// the existing blog handler.
-const prerenderedRoutes = { ...ROUTE_SEO, ...PHASE3_ROUTE_SEO, ...STATIC_ARTICLE_SEO };
+// Core public routes, Phase 3 evergreen guides, repo-backed authority articles
+// and known published Firestore articles are served from build-time SEO snapshots
+// on direct requests. Dynamic/future blog articles still fall through to the
+// existing blog handler.
+const prerenderedRoutes = {
+  ...ROUTE_SEO,
+  ...PHASE3_ROUTE_SEO,
+  ...STATIC_ARTICLE_SEO,
+  ...STATIC_AUTHORITY_SEO,
+};
 const routeFiles = Object.fromEntries(
   Object.keys(prerenderedRoutes).map((route) => [route, routeFileName(route)])
 );
