@@ -7,6 +7,7 @@ import { getStaticArticle, STATIC_CONTENT_ARTICLES } from '../../content-article
 
 const SITE_URL = 'https://salonefuelmonitor.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
+const ORGANIZATION_LOGO = { '@type': 'ImageObject', url: `${SITE_URL}/logo.png` };
 
 function formatPublishedDate(value?: string) {
   if (!value) return 'Recently';
@@ -32,15 +33,13 @@ function StaticAuthorityArticle({ article }: { article: any }) {
       '@type': 'Organization',
       name: article.authorName || 'Salone Fuel Monitor',
       url: SITE_URL,
+      logo: ORGANIZATION_LOGO,
     },
     publisher: {
       '@type': 'Organization',
       name: 'Salone Fuel Monitor',
       url: SITE_URL,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${SITE_URL}/logo.png`,
-      },
+      logo: ORGANIZATION_LOGO,
     },
   };
 
