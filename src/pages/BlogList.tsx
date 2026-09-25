@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, orderBy, getDocs } from '../firebase';
+import { collection, getDocs } from '../firebase';
 import { db } from '../firebase';
 import { BlogPost } from '../types/blog';
 import { useSEO } from '../hooks/useSEO';
@@ -45,20 +45,19 @@ export default function BlogList() {
       const staticPosts = STATIC_CONTENT_ARTICLES as unknown as BlogPost[];
 
       try {
-        const q = query(
-          collection(db, 'blog_posts'),
-          where('isPublished', '==', true),
-          orderBy('publishedAt', 'desc')
-        );
-        const snapshot = await getDocs(q);
-        const fetchedPosts: BlogPost[] = [];
+        // Read every Blog Management record so an admin override remains
+        // authoritative even when it is unpublished. Only published records are
+        // displayed, but any matching slug suppresses the static fallback.
+        const snapshot = await getDocs(collection(db, 'blog_posts'));
+        const allFirestorePosts: BlogPost[] = [];
         snapshot.forEach(document => {
-          fetchedPosts.push({ id: document.id, ...document.data() } as BlogPost);
+          allFirestorePosts.push({ id: document.id, ...document.data() } as BlogPost);
         });
 
-        const firestoreSlugs = new Set(fetchedPosts.map((post) => post.slug));
+        const firestoreSlugs = new Set(allFirestorePosts.map((post) => post.slug));
+        const publishedFirestorePosts = allFirestorePosts.filter((post) => post.isPublished);
         const mergedPosts = [
-          ...fetchedPosts,
+          ...publishedFirestorePosts,
           ...staticPosts.filter((post) => !firestoreSlugs.has(post.slug)),
         ].sort((a, b) => toMillis(b.publishedAt) - toMillis(a.publishedAt));
 
@@ -107,7 +106,7 @@ export default function BlogList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map(post => (
               <Link
-                key={post.id}
+                key={post.id || post.slug}
                 to={`/blog/${post.slug}`}
                 className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col"
               >
