@@ -1,22 +1,24 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { build } from 'esbuild';
-import { ROUTE_SEO, STATIC_ARTICLE_SEO } from '../seo-routes.js';
+import { ROUTE_SEO } from '../seo-routes.js';
 
 const root = process.cwd();
 const sourcePath = path.join(root, 'server.ts');
 const tempPath = path.join(root, '.server-seo-build.ts');
 const outPath = path.join(root, 'dist', 'server.cjs');
 const source = fs.readFileSync(sourcePath, 'utf8');
-const allRoutes = { ...ROUTE_SEO, ...STATIC_ARTICLE_SEO };
 
 function routeFileName(route) {
   if (route === '/') return 'home.html';
   return `${route.slice(1).replace(/[^a-z0-9-]+/gi, '-')}.html`;
 }
 
+// Core static routes are served from build-time snapshots. Blog articles stay on
+// the existing dynamic blog handler so social/search crawlers can receive the
+// article's live Firestore title, description and cover image.
 const routeFiles = Object.fromEntries(
-  Object.keys(allRoutes).map((route) => [route, routeFileName(route)])
+  Object.keys(ROUTE_SEO).map((route) => [route, routeFileName(route)])
 );
 
 const blogMarker = "    app.get('/blog/:slug', async (req, res) => {";
