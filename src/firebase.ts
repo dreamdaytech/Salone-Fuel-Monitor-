@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, RecaptchaVerifier, signInWithPhoneNumber, linkWithPhoneNumber } from 'firebase/auth';
-import { initializeFirestore, enableIndexedDbPersistence, doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, orderBy, limit, getDocFromServer, terminate, writeBatch, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDoc, getDocs, setDoc, collection, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, orderBy, limit, getDocFromServer, writeBatch, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
 import { getStorage, ref as storageRef, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { getAnalytics, logEvent, setCurrentScreen } from 'firebase/analytics';
@@ -17,52 +17,22 @@ export { storageRef, uploadBytes, uploadBytesResumable, getDownloadURL, deleteOb
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 export { logEvent, setCurrentScreen };
 
-// Use initializeFirestore with auto long-polling for better reliability in sandboxed/proxy environments
+// Use Firestore's supported persistent local cache with explicit multi-tab
+// coordination. The previous enableIndexedDbPersistence(db) setup uses a
+// single-tab lease and can put Firestore into an unrecoverable internal state
+// when the admin dashboard is open in more than one tab/window.
 export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
 }, firebaseConfig.firestoreDatabaseId || '(default)');
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-// Enable offline persistence
-if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(db)
-    .then(() => {
-      console.log('Firebase offline persistence enabled');
-    })
-    .catch((err) => {
-      if (err.code == 'failed-precondition') {
-        console.warn('Firebase offline persistence failed: Multiple tabs open');
-      } else if (err.code == 'unimplemented') {
-        console.warn('Firebase offline persistence failed: Browser not supported');
-      }
-    });
-}
-
 // Initialize Messaging conditionally (only in browser)
 export const messaging = typeof window !== 'undefined' ? getMessaging(app) : null;
-
-// Connection test to help diagnose configuration issues
-async function testConnection() {
-  try {
-    console.log("Testing Firestore connection with config:", {
-      projectId: firebaseConfig.projectId,
-      databaseId: firebaseConfig.firestoreDatabaseId || '(default)',
-      authDomain: firebaseConfig.authDomain
-    });
-    
-    // Try to obtain a document metadata from server to verify connectivity
-    await getDocFromServer(doc(db, '_connection_test_', 'ping'));
-    console.log("Firestore connection test: Reachable (backend successfully responded).");
-  } catch (error: any) {
-    console.warn("Firestore connection test result:", error.code || error.message);
-    if (error.code === 'unavailable' || error.message?.includes('offline') || error.message?.includes('unavailable')) {
-      console.warn("Could not reach Firestore backend during startup test. Firestore will operate in offline/cache mode until a stable connection is established.");
-    }
-  }
-}
-testConnection();
 
 export {
   signInWithPopup,
