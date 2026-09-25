@@ -2,11 +2,11 @@ import { STATIC_CONTENT_ARTICLES as BASE_ARTICLES } from './content-articles.js'
 import { STATIC_CONTENT_ARTICLES as PUBLISHED_ARTICLES } from './content-articles-published.js';
 
 const ARTICLE_FEATURED_IMAGES = {
-  'why-fuel-prices-change-in-sierra-leone': '/images/articles/why-fuel-prices-change-in-sierra-leone.jpg',
-  'sierra-leone-fuel-price-history-2026': '/images/articles/sierra-leone-fuel-price-history-2026.jpg',
-  'sierra-leone-vs-liberia-fuel-prices': '/images/articles/sierra-leone-vs-liberia-fuel-prices.jpg',
-  'sierra-leone-vs-ghana-fuel-prices': '/images/articles/sierra-leone-vs-ghana-fuel-prices.jpg',
-  'sierra-leone-vs-nigeria-fuel-prices': '/images/articles/sierra-leone-vs-nigeria-fuel-prices.jpg',
+  'why-fuel-prices-change-in-sierra-leone': '/images/social/why-fuel-prices-change-in-sierra-leone.png',
+  'sierra-leone-fuel-price-history-2026': '/images/social/sierra-leone-fuel-price-history-2026.png',
+  'sierra-leone-vs-liberia-fuel-prices': '/images/social/sierra-leone-vs-liberia-fuel-prices.png',
+  'sierra-leone-vs-ghana-fuel-prices': '/images/social/sierra-leone-vs-ghana-fuel-prices.png',
+  'sierra-leone-vs-nigeria-fuel-prices': '/images/social/sierra-leone-vs-nigeria-fuel-prices.png',
 };
 
 const FINAL_META_OVERRIDES = {
