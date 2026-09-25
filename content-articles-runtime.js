@@ -1,6 +1,14 @@
 import { STATIC_CONTENT_ARTICLES as BASE_ARTICLES } from './content-articles.js';
 import { STATIC_CONTENT_ARTICLES as PUBLISHED_ARTICLES } from './content-articles-published.js';
 
+const ARTICLE_FEATURED_IMAGES = {
+  'why-fuel-prices-change-in-sierra-leone': '/images/articles/why-fuel-prices-change-in-sierra-leone.jpg',
+  'sierra-leone-fuel-price-history-2026': '/images/articles/sierra-leone-fuel-price-history-2026.jpg',
+  'sierra-leone-vs-liberia-fuel-prices': '/images/articles/sierra-leone-vs-liberia-fuel-prices.jpg',
+  'sierra-leone-vs-ghana-fuel-prices': '/images/articles/sierra-leone-vs-ghana-fuel-prices.jpg',
+  'sierra-leone-vs-nigeria-fuel-prices': '/images/articles/sierra-leone-vs-nigeria-fuel-prices.jpg',
+};
+
 const FINAL_META_OVERRIDES = {
   'sierra-leone-vs-ghana-fuel-prices': {
     seoDescription: 'Compare Sierra Leone and Ghana petrol and diesel prices with live regional data and context on currencies, pricing systems, taxes and market structure.',
@@ -12,7 +20,12 @@ const FINAL_META_OVERRIDES = {
 // the shared objects here ensures crawler snapshots and the React runtime use
 // the same corrected copy.
 for (const published of PUBLISHED_ARTICLES) {
-  const finalArticle = { ...published, ...(FINAL_META_OVERRIDES[published.slug] || {}) };
+  const coverImage = ARTICLE_FEATURED_IMAGES[published.slug];
+  const finalArticle = {
+    ...published,
+    ...(coverImage ? { coverImage } : {}),
+    ...(FINAL_META_OVERRIDES[published.slug] || {}),
+  };
   Object.assign(published, finalArticle);
 
   const base = BASE_ARTICLES.find((article) => article.slug === published.slug);
