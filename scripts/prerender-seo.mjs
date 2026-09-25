@@ -48,9 +48,18 @@ function removeTag(html, pattern) {
 
 function pageSchema(route, meta) {
   const canonical = `${SITE_URL}${route === '/' ? '/' : route}`;
+
+  // Static article snapshots intentionally use WebPage schema. The live React
+  // article page replaces this with richer Article schema using the real
+  // Firestore publication date, image and author. This prevents incomplete
+  // Article markup from being served before those fields are available.
+  const staticSchemaType = meta.schemaType === 'Article'
+    ? 'WebPage'
+    : (meta.schemaType || 'WebPage');
+
   const base = {
     '@context': 'https://schema.org',
-    '@type': meta.schemaType || 'WebPage',
+    '@type': staticSchemaType,
     name: meta.heading || meta.title,
     description: meta.description,
     url: canonical,
@@ -169,16 +178,15 @@ function renderRoute(route, meta) {
   return html;
 }
 
-// Route-specific HTML snapshots are served by Firebase/Netlify/Express rewrites
-// so crawlers receive a unique title, canonical, description, schema and H1
-// before React starts.
+// Route-specific HTML snapshots are served by the Hostinger production server
+// (and any supported static-host rewrites) so crawlers receive a unique title,
+// canonical, description, schema and H1 before React starts.
 for (const [route, meta] of Object.entries(allRoutes)) {
   fs.writeFileSync(path.join(seoDir, routeFileName(route)), renderRoute(route, meta));
 }
 
-// Firebase Hosting serves / from dist/index.html before applying rewrites, so the
-// production index itself must be the prerendered homepage rather than a generic
-// SPA shell. React hydrates/replaces the static SEO content normally on load.
+// Keep the production index itself as a prerendered homepage. This gives the
+// root URL useful crawlable HTML while React replaces the snapshot on load.
 if (allRoutes['/']) {
   fs.writeFileSync(indexPath, renderRoute('/', allRoutes['/']));
 }
