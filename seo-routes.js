@@ -5,7 +5,7 @@ export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 export const ROUTE_SEO = {
   '/': {
     title: 'Fuel Prices in Sierra Leone Today | Salone Fuel Monitor',
-    description: 'Check current petrol, diesel and kerosene prices in Sierra Leone, find fuel stations, compare West African fuel prices, view price trends and monitor global oil movements.',
+    description: 'Check current petrol, diesel and kerosene prices in Sierra Leone, find fuel stations, compare West Africa prices, view trends and track global oil.',
     heading: 'Fuel Prices in Sierra Leone Today',
     intro: 'Track official petrol, diesel and kerosene prices in Sierra Leone, compare historical changes, find fuel stations and understand how local pump prices compare with West Africa and global oil markets.',
     schemaType: 'WebPage',
@@ -24,8 +24,8 @@ export const ROUTE_SEO = {
     index: true,
   },
   '/price-trends': {
-    title: 'Sierra Leone Fuel Price History & Trends | Salone Fuel Monitor',
-    description: 'Explore Sierra Leone fuel price history by effective date. Compare petrol, diesel and kerosene price changes over time with interactive line, bar and table views.',
+    title: 'Sierra Leone Fuel Price History | Salone Fuel Monitor',
+    description: 'Explore Sierra Leone petrol, diesel and kerosene price history by effective date with charts, tables and official fuel-price trend records.',
     heading: 'Sierra Leone Fuel Price History and Trends',
     intro: 'Explore official fuel price changes in Sierra Leone by effective date, including petrol, diesel and kerosene. Compare historical movements using interactive charts and detailed price records.',
     schemaType: 'Dataset',
@@ -171,8 +171,8 @@ export const ROUTE_SEO = {
 
 export const STATIC_ARTICLE_SEO = {
   '/blog/the-true-cost-of-diesel-in-sierra-leone-a-regional-perspective': {
-    title: 'The True Cost of Diesel in Sierra Leone: A Regional Perspective | Salone Fuel Monitor',
-    description: 'Explore diesel pricing in Sierra Leone in a regional West African context and understand how local diesel costs compare with neighbouring markets.',
+    title: 'Diesel Price in Sierra Leone | Salone Fuel Monitor',
+    description: 'Explore Sierra Leone diesel prices in a West African context and understand how local diesel costs compare with selected neighbouring markets.',
     heading: 'The True Cost of Diesel in Sierra Leone: A Regional Perspective',
     intro: 'A regional perspective on diesel prices in Sierra Leone and how local costs compare with other West African markets.',
     schemaType: 'Article',
@@ -181,8 +181,8 @@ export const STATIC_ARTICLE_SEO = {
     index: true,
   },
   '/blog/barrel-vs-fuel-price-tracker-sierra-leone-2026': {
-    title: 'Barrel vs Fuel Price Tracker Sierra Leone 2026 | Salone Fuel Monitor',
-    description: 'Track global crude oil movements against Sierra Leone pump-price changes in 2026 and compare international oil trends with local fuel adjustments.',
+    title: 'Barrel vs Pump Prices in Sierra Leone | Salone Fuel Monitor',
+    description: 'Track global crude oil against Sierra Leone pump-price changes in 2026 and compare international oil trends with local fuel adjustments.',
     heading: 'Barrel vs Fuel Price Tracker Sierra Leone 2026',
     intro: 'Track global crude oil movements alongside Sierra Leone pump-price changes and compare international market trends with local fuel adjustments.',
     schemaType: 'Article',
