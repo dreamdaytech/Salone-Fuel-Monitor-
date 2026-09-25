@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && node scripts/prerender-seo.mjs && node scripts/harden-prerender-schema.mjs && node scripts/build-server-seo.mjs",
+    "build": "vite build && node scripts/prepare-social-images.mjs && node scripts/prerender-seo.mjs && node scripts/fix-social-images.mjs && node scripts/harden-prerender-schema.mjs && node scripts/build-server-seo.mjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
     "clean": "rm -rf dist",
