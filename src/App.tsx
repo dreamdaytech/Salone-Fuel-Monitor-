@@ -12,6 +12,7 @@ import { Toaster, toast } from 'sonner';
 import Navbar from './components/Navbar';
 import SystemUpdater from './components/SystemUpdater';
 import RouteSEO from './components/RouteSEO';
+import SEOAuthorityContent from './components/SEOAuthorityContent';
 import { usePageViewTracker } from './hooks/useAnalytics';
 
 /**
@@ -190,6 +191,7 @@ function AppContent() {
               </Routes>
             </React.Suspense>
           </main>
+          {isPublicRoute && <SEOAuthorityContent />}
           {isPublicRoute && <Footer />}
         </div>
       </NotificationProvider>
