@@ -8,6 +8,7 @@ import {
   isPrivateOrUtilityPath,
   normalizePathname,
 } from '../../seo-routes.js';
+import { getAuthorityContent } from '../../seo-content.js';
 
 type RouteMeta = {
   title: string;
@@ -16,6 +17,15 @@ type RouteMeta = {
   intro?: string;
   schemaType?: string;
   index?: boolean;
+};
+
+type AuthorityFaq = {
+  question: string;
+  answer: string;
+};
+
+type AuthorityContent = {
+  faqs?: AuthorityFaq[];
 };
 
 function setMeta(attribute: 'name' | 'property', key: string, value: string) {
@@ -83,6 +93,11 @@ export default function RouteSEO() {
     const staticMeta = getSeoForPath(pathname) as RouteMeta | null;
     const dynamicMeta = getDynamicMeta(pathname);
     const privatePath = isPrivateOrUtilityPath(pathname);
+    const authority = getAuthorityContent(pathname) as AuthorityContent | null;
+
+    // Remove the build-time schema after React takes control so client-side
+    // navigation never leaves structured data from the previous route behind.
+    document.getElementById('prerender-seo-jsonld')?.remove();
 
     // Clear richer page-specific schema from the previous route. A page such as
     // BlogPost can add it back in its own SEO effect after navigation completes.
@@ -157,15 +172,11 @@ export default function RouteSEO() {
         : {}),
     };
 
-    if (pathname === '/') {
-      setJsonLd(pageSchema);
-      return;
-    }
+    const schemas: unknown[] = [pageSchema];
 
-    const breadcrumbName = meta.heading || meta.title.replace(` | ${SITE_NAME}`, '');
-    setJsonLd([
-      pageSchema,
-      {
+    if (pathname !== '/') {
+      const breadcrumbName = meta.heading || meta.title.replace(` | ${SITE_NAME}`, '');
+      schemas.push({
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
@@ -182,8 +193,25 @@ export default function RouteSEO() {
             item: canonical,
           },
         ],
-      },
-    ]);
+      });
+    }
+
+    if (authority?.faqs?.length) {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: authority.faqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: faq.answer,
+          },
+        })),
+      });
+    }
+
+    setJsonLd(schemas.length === 1 ? schemas[0] : schemas);
   }, [location.pathname]);
 
   return null;
