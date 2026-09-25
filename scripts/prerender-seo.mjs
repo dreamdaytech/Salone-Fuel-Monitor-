@@ -135,6 +135,7 @@ function renderRoute(route, meta) {
   html = removeTag(html, /<meta\s+name=["']googlebot["'][^>]*>/gi);
   html = removeTag(html, /<link\s+rel=["']canonical["'][^>]*>/gi);
   html = removeTag(html, /<meta\s+property=["']og:(?:url|title|description|type|image)["'][^>]*>/gi);
+  html = removeTag(html, /<meta\s+property=["']og:(?:site_name|locale|image:width|image:height|image:type|image:alt)["'][^>]*>/gi);
   html = removeTag(html, /<meta\s+(?:name|property)=["']twitter:(?:url|title|description|card|image)["'][^>]*>/gi);
   html = removeTag(html, /<script\s+id=["']prerender-seo-jsonld["'][\s\S]*?<\/script>/gi);
 
@@ -147,12 +148,14 @@ function renderRoute(route, meta) {
     <link rel="canonical" href="${canonical}" />
     <meta property="og:type" content="${type}" />
     <meta property="og:site_name" content="${SITE_NAME}" />
+    <meta property="og:locale" content="en_SL" />
     <meta property="og:url" content="${canonical}" />
     <meta property="og:title" content="${escapeHtml(meta.title)}" />
     <meta property="og:description" content="${escapeHtml(meta.description)}" />
     <meta property="og:image" content="${DEFAULT_OG_IMAGE}" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:alt" content="${escapeHtml(meta.heading || SITE_NAME)}" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="${canonical}" />
