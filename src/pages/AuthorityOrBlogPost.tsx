@@ -17,14 +17,21 @@ function formatPublishedDate(value?: string) {
     : date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 
+function getAbsoluteImageUrl(value?: string) {
+  if (!value) return DEFAULT_OG_IMAGE;
+  if (/^https?:\/\//i.test(value)) return value;
+  return `${SITE_URL}${value.startsWith('/') ? value : `/${value}`}`;
+}
+
 function StaticAuthorityArticle({ article }: { article: any }) {
   const canonicalUrl = `${SITE_URL}/blog/${article.slug}`;
+  const featuredImageUrl = getAbsoluteImageUrl(article.coverImage);
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: article.title,
     description: article.seoDescription || article.excerpt,
-    image: DEFAULT_OG_IMAGE,
+    image: featuredImageUrl,
     mainEntityOfPage: canonicalUrl,
     url: canonicalUrl,
     datePublished: article.publishedAt,
@@ -46,7 +53,7 @@ function StaticAuthorityArticle({ article }: { article: any }) {
   useSEO({
     title: article.seoTitle || article.title,
     description: article.seoDescription || article.excerpt,
-    image: DEFAULT_OG_IMAGE,
+    image: featuredImageUrl,
     type: 'article',
     url: canonicalUrl,
     robots: 'index, follow, max-image-preview:large',
@@ -100,6 +107,20 @@ function StaticAuthorityArticle({ article }: { article: any }) {
         </div>
       </header>
 
+      {article.coverImage && (
+        <div className="mx-auto max-w-5xl px-4 pt-10 md:pt-14">
+          <div className="aspect-video overflow-hidden rounded-3xl border border-gray-100 bg-surface-50 shadow-xl shadow-surface-900/5">
+            <img
+              src={article.coverImage}
+              alt={`${article.title} featured image`}
+              className="h-full w-full object-cover"
+              loading="eager"
+              fetchPriority="high"
+            />
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto max-w-3xl px-4 py-12 pb-24">
         <article className="blog-content max-w-none text-lg leading-relaxed text-surface-900" dangerouslySetInnerHTML={{ __html: article.content }} />
       </main>
@@ -109,11 +130,18 @@ function StaticAuthorityArticle({ article }: { article: any }) {
           <h2 className="mb-8 text-2xl font-black text-surface-900">More Fuel Guides</h2>
           <div className="grid gap-6 md:grid-cols-3">
             {related.map((item) => (
-              <Link key={item.slug} to={`/blog/${item.slug}`} className="group flex flex-col rounded-2xl border border-gray-100 bg-white p-6 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wider text-primary">{item.tags?.[0] || 'Fuel Guide'}</p>
-                <h3 className="text-lg font-bold text-surface-900 transition-colors group-hover:text-primary">{item.title}</h3>
-                <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-500">{item.excerpt}</p>
-                <div className="mt-5 flex items-center gap-1 text-sm font-bold text-primary">Read guide <ChevronRight className="h-4 w-4" /></div>
+              <Link key={item.slug} to={`/blog/${item.slug}`} className="group overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10">
+                {item.coverImage && (
+                  <div className="aspect-video overflow-hidden bg-surface-100">
+                    <img src={item.coverImage} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                  </div>
+                )}
+                <div className="p-6">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-primary">{item.tags?.[0] || 'Fuel Guide'}</p>
+                  <h3 className="text-lg font-bold text-surface-900 transition-colors group-hover:text-primary">{item.title}</h3>
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-gray-500">{item.excerpt}</p>
+                  <div className="mt-5 flex items-center gap-1 text-sm font-bold text-primary">Read guide <ChevronRight className="h-4 w-4" /></div>
+                </div>
               </Link>
             ))}
           </div>
