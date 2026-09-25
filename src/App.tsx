@@ -68,7 +68,7 @@ const RegionalComparison = lazyWithRetry(() => import('./pages/RegionalCompariso
 const MarketIntelligence = lazyWithRetry(() => import('./pages/MarketIntelligence'));
 const ExchangeRates = lazyWithRetry(() => import('./pages/ExchangeRates'));
 const BlogList = lazyWithRetry(() => import('./pages/BlogList'));
-const BlogPost = lazyWithRetry(() => import('./pages/BlogPost'));
+const BlogPost = lazyWithRetry(() => import('./pages/AuthorityOrBlogPost'));
 const BarrelVsFuel = lazyWithRetry(() => import('./pages/BarrelVsFuel'));
 const AdminBarrelVsFuel = lazyWithRetry(() => import('./pages/AdminBarrelVsFuel'));
 const MyGarage = lazyWithRetry(() => import('./pages/MyGarage'));
