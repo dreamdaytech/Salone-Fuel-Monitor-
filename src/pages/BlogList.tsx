@@ -116,7 +116,8 @@ export default function BlogList() {
                     <img
                       src={post.coverImage}
                       alt={post.title}
-                      className="w-full h-full object-contain bg-white group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-surface-100">
