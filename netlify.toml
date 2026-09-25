@@ -1,7 +1,179 @@
+# SEO prerendered public routes. These preserve the clean public URL while
+# serving route-specific HTML metadata/content before React starts.
 [[redirects]]
-  from = "/*"
+  from = "/"
+  to = "/_seo/home.html"
+  status = 200
+
+[[redirects]]
+  from = "/stations"
+  to = "/_seo/stations.html"
+  status = 200
+
+[[redirects]]
+  from = "/price-trends"
+  to = "/_seo/price-trends.html"
+  status = 200
+
+[[redirects]]
+  from = "/transport-prices"
+  to = "/_seo/transport-prices.html"
+  status = 200
+
+[[redirects]]
+  from = "/regional-comparison"
+  to = "/_seo/regional-comparison.html"
+  status = 200
+
+[[redirects]]
+  from = "/barrel-vs-fuel"
+  to = "/_seo/barrel-vs-fuel.html"
+  status = 200
+
+[[redirects]]
+  from = "/market-intelligence"
+  to = "/_seo/market-intelligence.html"
+  status = 200
+
+[[redirects]]
+  from = "/exchange-rates"
+  to = "/_seo/exchange-rates.html"
+  status = 200
+
+[[redirects]]
+  from = "/calculator"
+  to = "/_seo/calculator.html"
+  status = 200
+
+[[redirects]]
+  from = "/transport-trends"
+  to = "/_seo/transport-trends.html"
+  status = 200
+
+[[redirects]]
+  from = "/blog"
+  to = "/_seo/blog.html"
+  status = 200
+
+[[redirects]]
+  from = "/about"
+  to = "/_seo/about.html"
+  status = 200
+
+[[redirects]]
+  from = "/contact"
+  to = "/_seo/contact.html"
+  status = 200
+
+[[redirects]]
+  from = "/donate"
+  to = "/_seo/donate.html"
+  status = 200
+
+[[redirects]]
+  from = "/terms"
+  to = "/_seo/terms.html"
+  status = 200
+
+[[redirects]]
+  from = "/privacy"
+  to = "/_seo/privacy.html"
+  status = 200
+
+[[redirects]]
+  from = "/cookies"
+  to = "/_seo/cookies.html"
+  status = 200
+
+# Known published articles get route-specific HTML immediately.
+[[redirects]]
+  from = "/blog/the-true-cost-of-diesel-in-sierra-leone-a-regional-perspective"
+  to = "/_seo/blog-the-true-cost-of-diesel-in-sierra-leone-a-regional-perspective.html"
+  status = 200
+
+[[redirects]]
+  from = "/blog/barrel-vs-fuel-price-tracker-sierra-leone-2026"
+  to = "/_seo/blog-barrel-vs-fuel-price-tracker-sierra-leone-2026.html"
+  status = 200
+
+[[redirects]]
+  from = "/blog/introducing-salone-fuel-monitor-bringing-fuel-price-transparency-to-sierra-leone"
+  to = "/_seo/blog-introducing-salone-fuel-monitor-bringing-fuel-price-transparency-to-sierra-leone.html"
+  status = 200
+
+# Dynamic public routes still use the SPA shell; the client SEO layer replaces
+# metadata with the exact canonical after the record loads.
+[[redirects]]
+  from = "/blog/*"
   to = "/index.html"
   status = 200
+
+[[redirects]]
+  from = "/transport-prices/*"
+  to = "/index.html"
+  status = 200
+
+# Authenticated/application routes are intentionally not indexable.
+[[redirects]]
+  from = "/admin/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/profile"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/onboarding"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/my-garage"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/location-picker"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/login"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/signup"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/register"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/donate/success"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/donate/cancel"
+  to = "/index.html"
+  status = 200
+
+# Unknown URLs return a genuine HTTP 404 instead of a homepage-like soft 404.
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
 
 [[headers]]
   for = "/index.html"
@@ -9,6 +181,36 @@
     Cache-Control = "no-cache, no-store, must-revalidate"
 
 [[headers]]
+  for = "/_seo/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300, must-revalidate"
+
+[[headers]]
   for = "/assets/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/dashboard"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/profile"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/login"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/signup"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
