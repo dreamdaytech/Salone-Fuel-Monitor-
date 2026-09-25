@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Calendar, ChevronRight, Share2 } from 'lucide-react';
 import BlogPost from './BlogPost';
 import { useSEO } from '../hooks/useSEO';
-import { getStaticArticle, STATIC_CONTENT_ARTICLES } from '../../content-articles.js';
+import { getStaticArticle, STATIC_CONTENT_ARTICLES } from '../../content-articles-runtime.js';
 
 const SITE_URL = 'https://salonefuelmonitor.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
