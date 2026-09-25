@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { getAuthorityContent } from '../../seo-content.js';
+import { getPhase3SeoForPath } from '../../seo-phase3-routes.js';
 
 type AuthoritySection = {
   heading: string;
@@ -21,7 +22,8 @@ type AuthorityContent = {
 
 export default function SEOAuthorityContent() {
   const location = useLocation();
-  const content = getAuthorityContent(location.pathname) as AuthorityContent | null;
+  const phase3Meta = getPhase3SeoForPath(location.pathname) as { authority?: AuthorityContent } | null;
+  const content = (getAuthorityContent(location.pathname) as AuthorityContent | null) || phase3Meta?.authority || null;
 
   if (!content) return null;
 
