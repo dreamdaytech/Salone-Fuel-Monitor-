@@ -139,20 +139,14 @@ export default function Navbar() {
                         <Calculator className="h-4 w-4" />
                         <span>Calculator</span>
                       </Link>
-                      {/* My Garage — only shown when logged in */}
-                      {user && (
-                        <>
-                          <div className="mx-4 my-1.5 border-t border-gray-100" />
-                          <Link
-                            to="/my-garage"
-                            onClick={() => setIsToolsMenuOpen(false)}
-                            className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isActive('/my-garage') ? 'bg-emerald-50 text-primary font-bold' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
-                          >
-                            <Car className="h-4 w-4" />
-                            <span>My Garage</span>
-                          </Link>
-                        </>
-                      )}
+                      <Link
+                        to="/my-garage"
+                        onClick={() => setIsToolsMenuOpen(false)}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${isActive('/my-garage') ? 'bg-emerald-50 text-primary font-bold' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+                      >
+                        <Car className="h-4 w-4" />
+                        <span>My Garage</span>
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -195,7 +189,6 @@ export default function Navbar() {
 
                   {isMenuOpen && (
                     <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden transform origin-top-right transition-all z-50">
-                      {/* Dropdown Header */}
                       <div className="p-5 bg-emerald-50/50 border-b border-emerald-100">
                         <h3 className="text-lg font-bold text-surface-900 leading-tight">
                           {profile?.name || 'User'}
@@ -211,7 +204,6 @@ export default function Navbar() {
                         )}
                       </div>
 
-                      {/* Menu Items */}
                       <div className="p-1.5">
                         <Link
                           to={profile?.role === 'admin' ? '/admin' : '/dashboard'}
@@ -260,7 +252,6 @@ export default function Navbar() {
                         </Link>
                       </div>
 
-                      {/* Logout */}
                       <div className="p-1.5 border-t border-gray-100">
                         <Button
                           onClick={handleLogout}
@@ -310,7 +301,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="sm:hidden border-t border-gray-100 bg-white animate-in slide-in-from-top-2 duration-200">
           <div className="px-4 pt-2 pb-4 space-y-1">
@@ -374,17 +364,14 @@ export default function Navbar() {
                 <Calculator className="h-5 w-5" />
                 <span>Fuel Calculator</span>
               </Link>
-              {/* My Garage — inside Our Tools, auth-gated */}
-              {user && (
-                <Link
-                  to="/my-garage"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/my-garage') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
-                >
-                  <Car className="h-5 w-5" />
-                  <span>My Garage</span>
-                </Link>
-              )}
+              <Link
+                to="/my-garage"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-3 py-3 rounded-xl font-medium transition-colors ${isActive('/my-garage') ? 'bg-emerald-50 text-primary' : 'text-gray-700 hover:bg-emerald-50 hover:text-primary'}`}
+              >
+                <Car className="h-5 w-5" />
+                <span>My Garage</span>
+              </Link>
             </div>
             
             <div className="pt-2 mt-2 border-t border-gray-100">
