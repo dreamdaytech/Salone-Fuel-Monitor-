@@ -72,6 +72,7 @@ const BlogPost = lazyWithRetry(() => import('./pages/AuthorityOrBlogPost'));
 const BarrelVsFuel = lazyWithRetry(() => import('./pages/BarrelVsFuel'));
 const AdminBarrelVsFuel = lazyWithRetry(() => import('./pages/AdminBarrelVsFuel'));
 const MyGarage = lazyWithRetry(() => import('./pages/MyGarage'));
+const MyGaragePublic = lazyWithRetry(() => import('./pages/MyGaragePublic'));
 const Donate = lazyWithRetry(() => import('./pages/Donate'));
 const DonateSuccess = lazyWithRetry(() => import('./pages/DonateSuccess'));
 const DonateCancel = lazyWithRetry(() => import('./pages/DonateCancel'));
@@ -117,7 +118,7 @@ function AppContent() {
     };
   }, []);
 
-  const publicRoutes = ['/', '/transport-prices', '/calculator', '/price-trends', '/petrol-price-sierra-leone', '/diesel-price-sierra-leone', '/kerosene-price-sierra-leone', '/data-methodology', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/contact', '/terms', '/privacy', '/cookies', '/blog', '/stations', '/donate', '/donate/success', '/donate/cancel'];
+  const publicRoutes = ['/', '/transport-prices', '/calculator', '/my-garage', '/price-trends', '/petrol-price-sierra-leone', '/diesel-price-sierra-leone', '/kerosene-price-sierra-leone', '/data-methodology', '/transport-trends', '/regional-comparison', '/market-intelligence', '/exchange-rates', '/barrel-vs-fuel', '/about', '/contact', '/terms', '/privacy', '/cookies', '/blog', '/stations', '/donate', '/donate/success', '/donate/cancel'];
   const isPublicRoute = publicRoutes.includes(location.pathname) || location.pathname.startsWith('/blog/') || location.pathname.startsWith('/transport-prices/');
 
   useEffect(() => {
@@ -191,7 +192,7 @@ function AppContent() {
                 <Route path="/dashboard" element={user && (profile?.role === 'station_owner' || profile?.role === 'admin') ? <StationDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
                 <Route path="/admin" element={user && profile?.role === 'admin' ? <AdminDashboard /> : <Navigate to={user ? "/" : "/login"} />} />
                 <Route path="/admin/transport-prices/:id" element={user && profile?.role === 'admin' ? <AdminTransportPriceDetails /> : <Navigate to={user ? "/" : '/login'} />} />
-                <Route path="/my-garage" element={user ? <MyGarage /> : <Navigate to="/login" />} />
+                <Route path="/my-garage" element={user ? <MyGarage /> : <MyGaragePublic />} />
                 <Route path="/admin/reviews" element={user && profile?.role === 'admin' ? <AdminReviews /> : <Navigate to={user ? "/" : '/login'} />} />
                 <Route path="*" element={user && !profile ? <Register /> : <NotFound />} />
               </Routes>
