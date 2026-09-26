@@ -124,6 +124,16 @@ export const PHASE3_ROUTE_SEO = {
       sources: [['https://pra.gov.sl/', 'National Petroleum Regulatory Authority (NPRA)']]
     }
   },
+  '/my-garage': {
+    title: 'My Garage | Vehicle & Fuel Tracker | Salone Fuel Monitor',
+    description: 'Manage personal vehicles, trips, fuel fill-ups, maintenance records and PDF reports with My Garage on Salone Fuel Monitor.',
+    heading: 'My Garage — Personal Vehicle and Fuel Tracker',
+    intro: 'Use My Garage to keep your personal vehicle records together, including trips, fuel purchases, maintenance history and downloadable reports.',
+    schemaType: 'WebPage',
+    changefreq: 'monthly',
+    priority: '0.75',
+    index: true
+  },
   '/data-methodology': {
     title: 'Fuel Data Sources & Methodology | Salone Fuel Monitor',
     description: 'Learn how Salone Fuel Monitor handles official Sierra Leone fuel prices, effective dates, missing values, regional comparisons and corrections.',
