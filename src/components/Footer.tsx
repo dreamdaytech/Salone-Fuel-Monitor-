@@ -1,6 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+const socialLinks = [
+  {
+    label: 'Facebook',
+    shortLabel: 'FB',
+    href: 'https://www.facebook.com/salonefuelmonitor/',
+  },
+  {
+    label: 'TikTok',
+    shortLabel: 'TT',
+    href: 'https://www.tiktok.com/@salonefuelmonitor',
+  },
+  {
+    label: 'WhatsApp Channel',
+    shortLabel: 'WA',
+    href: 'https://whatsapp.com/channel/0029Vb9SnPdJuyAEbHMPcy2x',
+  },
+];
+
 export default function Footer() {
   return (
     <footer className="relative overflow-hidden bg-gradient-to-br from-[#0072C6] via-[#005aa0] to-[#1EB53A]">
@@ -71,6 +89,27 @@ export default function Footer() {
               <Link to="/about" className="hover:text-white transition-colors">About Us</Link>
               <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
               <Link to="/donate" className="hover:text-white transition-colors">Donate Now</Link>
+            </div>
+
+            <div className="mt-6">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Follow Us</h4>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {socialLinks.map((social) => (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Follow Salone Fuel Monitor on ${social.label}`}
+                    className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/70"
+                  >
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/15 text-[10px] font-extrabold tracking-tight">
+                      {social.shortLabel}
+                    </span>
+                    <span>{social.label}</span>
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         </div>
