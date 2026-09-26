@@ -10,6 +10,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { FavoriteProvider } from './contexts/FavoriteContext';
 import { Toaster, toast } from 'sonner';
 import Navbar from './components/Navbar';
+import ContactSocialLinks from './components/ContactSocialLinks';
 import SystemUpdater from './components/SystemUpdater';
 import RouteSEO from './components/RouteSEO';
 import SEOAuthorityContent from './components/SEOAuthorityContent';
@@ -198,6 +199,7 @@ function AppContent() {
               </Routes>
             </React.Suspense>
           </main>
+          {location.pathname === '/contact' && <ContactSocialLinks />}
           {isPublicRoute && <SEOAuthorityContent />}
           {isPublicRoute && <Footer />}
         </div>
